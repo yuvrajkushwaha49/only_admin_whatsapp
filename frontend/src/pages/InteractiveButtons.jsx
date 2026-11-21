@@ -8,7 +8,8 @@ export default function InteractiveButtons() {
 
   // Role validation: Super Admin, Owner, Admin only
   const userRole = (user?.role || '').toLowerCase();
-  const hasAccess = isSuperAdmin || ['superadmin', 'super_admin', 'owner', 'admin'].includes(userRole);
+  const isSuper = typeof isSuperAdmin === 'function' ? isSuperAdmin() : Boolean(isSuperAdmin);
+  const hasAccess = isSuper || ['superadmin', 'super_admin', 'owner', 'admin'].includes(userRole);
 
   const [buttons, setButtons] = useState([]);
   const [stats, setStats] = useState({ total: 0, urlCount: 0, phoneCount: 0, quickReplyCount: 0, copyCodeCount: 0 });

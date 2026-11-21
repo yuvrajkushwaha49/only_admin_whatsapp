@@ -1,11 +1,12 @@
 import express from 'express';
+import { authenticate } from '../../middleware/auth.js';
 import { requireTenant, requireRole } from '../../middleware/tenant.js';
 import * as controller from './interactiveButtons.controller.js';
 
 const router = express.Router();
 
 // Strict Access Control: Super Admin (handled implicitly in requireRole), Owner, and Admin only
-router.use(requireTenant);
+router.use(authenticate, requireTenant);
 router.use(requireRole(['owner', 'admin']));
 
 router.get('/', controller.list);

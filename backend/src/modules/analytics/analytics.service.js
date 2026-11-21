@@ -136,31 +136,37 @@ export async function getDashboardStats(businessId, timeRange = 'Last 7 Days', u
     );
 
     if (!Array.isArray(schedRows) || schedRows.length === 0) {
-      // Find an account and template id for this business, or fall back to null
+      // Find an account and template id for this business, if any exist
       const accRows = await executeQuery(
         `SELECT id FROM whatsapp_accounts WHERE business_id = ? LIMIT 1`,
         [businessId]
       );
-      const accId = accRows?.[0]?.id || 45;
+      const accId = accRows?.[0]?.id;
 
       const tplRows = await executeQuery(
         `SELECT id FROM templates WHERE business_id = ? LIMIT 1`,
         [businessId]
       );
-      const tplId = tplRows?.[0]?.id || 164;
+      const tplId = tplRows?.[0]?.id;
 
-      await executeQuery(`
-        INSERT INTO campaigns (business_id, whatsapp_account_id, template_id, name, purpose, status, total_recipients, scheduled_at) VALUES
-        (?, ?, ?, 'Product Launch', 'Product Announcement', 'scheduled', 2500, DATE_ADD(NOW(), INTERVAL 2 DAY)),
-        (?, ?, ?, 'Offer Reminder', 'Discount Offer', 'scheduled', 1200, DATE_ADD(NOW(), INTERVAL 3 DAY)),
-        (?, ?, ?, 'Payment Reminder', 'Payment Due Notification', 'scheduled', 1800, DATE_ADD(NOW(), INTERVAL 4 DAY))
-      `, [businessId, accId, tplId, businessId, accId, tplId, businessId, accId, tplId]);
+      if (accId && tplId) {
+        try {
+          await executeQuery(`
+            INSERT INTO campaigns (business_id, whatsapp_account_id, template_id, name, purpose, status, total_recipients, scheduled_at) VALUES
+            (?, ?, ?, 'Product Launch', 'Product Announcement', 'scheduled', 2500, DATE_ADD(NOW(), INTERVAL 2 DAY)),
+            (?, ?, ?, 'Offer Reminder', 'Discount Offer', 'scheduled', 1200, DATE_ADD(NOW(), INTERVAL 3 DAY)),
+            (?, ?, ?, 'Payment Reminder', 'Payment Due Notification', 'scheduled', 1800, DATE_ADD(NOW(), INTERVAL 4 DAY))
+          `, [businessId, accId, tplId, businessId, accId, tplId, businessId, accId, tplId]);
 
-      schedRows = await executeQuery(
-        `SELECT id, name, status, scheduled_at, created_at 
-         FROM campaigns WHERE business_id = ? AND status = 'scheduled' ORDER BY scheduled_at ASC LIMIT 5`,
-        [businessId]
-      );
+          schedRows = await executeQuery(
+            `SELECT id, name, status, scheduled_at, created_at 
+             FROM campaigns WHERE business_id = ? AND status = 'scheduled' ORDER BY scheduled_at ASC LIMIT 5`,
+            [businessId]
+          );
+        } catch (insertErr) {
+          logger.warn(`[Analytics] Skipped seeding dummy campaigns: ${insertErr.message}`);
+        }
+      }
     }
 
     if (Array.isArray(schedRows) && schedRows.length > 0) {
