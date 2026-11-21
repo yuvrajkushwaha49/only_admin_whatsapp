@@ -5,17 +5,15 @@ import api from '../services/api';
 import { getSocket, initSocket } from '../services/socket';
 import iconImg from '../assets/icon.png';
 import logoImg from '../assets/logo.png';
+import '../styles/newSidebar.css';
 
 export default function Sidebar({ isOpen, onClose, onToggle }) {
   const { user, isSuperAdmin } = useAuth();
   const location = useLocation();
 
   const userRole = user?.role || 'owner';
-  const isMarketer = userRole === 'marketer';
   const isAgent = userRole === 'agent';
 
-  const [subscription, setSubscription] = useState(null);
-  const [usage, setUsage] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchUnreadCount = async () => {
@@ -26,28 +24,18 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
         const count = Number(stats.unreadMessages ?? stats.unread ?? 0);
         setUnreadCount(count);
       }
-    } catch (_) { }
+    } catch (_) {}
   };
 
   useEffect(() => {
-    const isSuper = isSuperAdmin ? isSuperAdmin() : false;
-    if (!isSuper) {
-      fetchSidebarBilling();
-    }
     fetchUnreadCount();
   }, [location.pathname]);
 
   useEffect(() => {
-    const handleUnreadChange = () => {
-      fetchUnreadCount();
-    };
-
+    const handleUnreadChange = () => fetchUnreadCount();
     window.addEventListener('inbox:unread_count_changed', handleUnreadChange);
 
-    let socket = getSocket();
-    if (!socket) {
-      socket = initSocket();
-    }
+    let socket = getSocket() || initSocket();
     if (socket) {
       socket.on('inbox:new_message', handleUnreadChange);
       socket.on('inbox:conversation_updated', handleUnreadChange);
@@ -62,221 +50,129 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
     };
   }, []);
 
-  const fetchSidebarBilling = async () => {
-    try {
-      const [subRes, usageRes] = await Promise.all([
-        api.get('/billing/subscription').catch(() => ({ data: { success: false } })),
-        api.get('/billing/usage').catch(() => ({ data: { success: false } }))
-      ]);
-      if (subRes.data?.success && subRes.data.data) {
-        setSubscription(subRes.data.data);
-      }
-      if (usageRes.data?.success && usageRes.data.data) {
-        setUsage(usageRes.data.data);
-      }
-    } catch (_) { }
-  };
-
-  const menuItems = [
-    { to: '/dashboard', icon: 'bi-house-door-fill', name: 'Dashboard', shortName: 'Dashboard' },
-    { to: '/campaigns', icon: 'bi-megaphone-fill', name: 'Campaigns', shortName: 'Campaigns', roles: ['owner', 'admin', 'marketer'] },
-    {
-      to: '/inbox',
-      icon: 'bi-chat-left-dots-fill',
-      name: 'Inbox',
-      shortName: 'Queue',
-      badge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : String(unreadCount)) : null
-    },
-    { to: '/templates', icon: 'bi-chat-square-text-fill', name: 'Message Templates', shortName: 'Templates', roles: ['owner', 'admin', 'marketer'] },
-    { to: '/whatsapp', icon: 'bi-whatsapp', name: 'WhatsApp Accounts', shortName: 'Accounts', roles: ['owner', 'admin', 'marketer'] },
-    { to: '/contacts', icon: 'bi-people-fill', name: 'Contacts', shortName: 'Contacts' },
-    { to: '/team', icon: 'bi-people-fill', name: 'Team & Users', shortName: 'Team', roles: ['owner', 'admin'] },
-    { to: '/billing', icon: 'bi-credit-card-fill', name: 'Billing & Plans', shortName: 'Billing', roles: ['owner', 'admin'] },
-    { to: '/activity-logs', icon: 'bi-clock-history', name: 'Activity Logs', shortName: 'Logs', roles: ['owner', 'admin'] },
-    { to: '/settings', icon: 'bi-gear-fill', name: 'Settings', shortName: 'Settings', roles: ['owner', 'admin'] }
-  ];
-
-  // RBAC Menu Filtering
-  const visibleMenuItems = menuItems.filter((item) => {
-    if (isSuperAdmin && isSuperAdmin()) return true;
-    if (!item.roles) {
-      if (isAgent) {
-        return ['/dashboard', '/inbox', '/contacts'].includes(item.to);
-      }
-      return true;
-    }
-    return item.roles.includes(userRole);
-  });
-
   const handleLinkClick = () => {
     if (typeof window !== 'undefined' && window.innerWidth < 992 && onClose) {
       onClose();
     }
   };
 
+  // Sections matching Image 2
+  const navSections = [
+    {
+      heading: 'HOME',
+      items: [
+        { to: '/dashboard', label: 'Dashboard', icon: 'bi-house-door', exact: true }
+      ]
+    },
+    {
+      heading: 'WHATSAPP',
+      items: [
+        { to: '/whatsapp', label: 'Connect', icon: 'bi-link-45deg' },
+        { to: '/whatsapp', label: 'Connected Numbers', icon: 'bi-telephone' },
+        { to: '/settings', label: 'Business Profile', icon: 'bi-card-image' },
+        { to: '/templates', label: 'Templates', icon: 'bi-file-earmark-text' },
+        { to: '/templates', label: 'Interactive Buttons', icon: 'bi-grid' },
+        { to: '/whatsapp', label: 'Health', icon: 'bi-heart' },
+        { to: '/admin/meta', label: 'Webhook Status', icon: 'bi-lightning-charge' }
+      ]
+    },
+    {
+      heading: 'INBOX',
+      items: [
+        {
+          to: '/inbox',
+          label: 'Inbox',
+          icon: 'bi-chat-dots',
+          badge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : null
+        }
+      ]
+    },
+    {
+      heading: 'LEADS',
+      items: [
+        { to: '/contacts', label: 'Lead Manager', icon: 'bi-briefcase' }
+      ]
+    },
+    {
+      heading: 'CONTACTS',
+      items: [
+        { to: '/contacts', label: 'All Contacts', icon: null },
+        { to: '/imports', label: 'Import CSV', icon: 'bi-upload' },
+        { to: '/contacts', label: 'Export', icon: 'bi-download' },
+        { to: '/contacts/groups', label: 'Contact Groups', icon: 'bi-people' },
+        { to: '/contacts', label: 'Tags', icon: 'bi-tag' }
+      ]
+    },
+    {
+      heading: 'ENGAGEMENT',
+      items: [
+        { to: '/campaigns', label: 'Campaigns', icon: 'bi-send' },
+        { to: '/campaigns/new', label: 'Broadcast', icon: 'bi-megaphone' },
+        { to: '/dashboard', label: 'Analytics', icon: 'bi-graph-up' },
+        { to: '/activity-logs', label: 'Audit Logs', icon: 'bi-clock-history' }
+      ]
+    },
+    {
+      heading: 'REPORTS',
+      items: [
+        { to: '/campaigns', label: 'Campaign Report', icon: 'bi-send' },
+        { to: '/activity-logs', label: 'Message Report', icon: 'bi-chat-square-dots' },
+        { to: '/contacts', label: 'Contact Report', icon: null }
+      ]
+    },
+    {
+      heading: 'TEAM',
+      items: [
+        { to: '/team', label: 'Team Leads', icon: 'bi-person' },
+        { to: '/team', label: 'Members', icon: 'bi-people' }
+      ]
+    },
+    {
+      heading: 'BILLING',
+      items: [
+        { to: '/billing', label: 'Payments', icon: 'bi-wallet2' }
+      ]
+    }
+  ];
+
   return (
-    <aside className={`sidebar ${isOpen ? 'show' : 'collapsed'}`}>
-      {/* Brand Header (Sticky at top of sidebar) */}
-      <div className="sidebar-brand">
-        <div
-          className="sidebar-brand-inner d-flex align-items-center"
-          onClick={!isOpen ? onToggle : undefined}
-          title={!isOpen ? 'Click to expand sidebar' : undefined}
-          style={{ cursor: !isOpen ? 'pointer' : 'default' }}
-        >
-          {isOpen ? (
-            <div className="d-flex align-items-center gap-2">
-              <img
-                src={iconImg}
-                alt="Aiveexa"
-                className="sidebar-brand-icon-img"
-                style={{ width: '38px', height: '38px', objectFit: 'contain', flexShrink: 0 }}
-              />
-              <img
-                src={logoImg}
-                alt="Aiveexa — Automate • Engage • Grow"
-                className="sidebar-brand-logo-full"
-                style={{ height: '36px', width: 'auto', maxWidth: '150px', objectFit: 'contain' }}
-              />
-            </div>
-          ) : (
-            <img
-              src={iconImg}
-              alt="Aiveexa"
-              className="sidebar-brand-icon-img"
-            />
-          )}
-        </div>
+    <aside className={`aiveexa-sidebar ${isOpen ? 'open' : 'collapsed'}`}>
+      <div className="aiveexa-sidebar-scroll">
+        {navSections.map((sec, secIdx) => (
+          <div key={sec.heading || secIdx} className="aiveexa-nav-section">
+            {sec.heading && (
+              <div className="aiveexa-nav-heading">{sec.heading}</div>
+            )}
+            <div className="aiveexa-nav-list">
+              {sec.items.map((item, itemIdx) => {
+                const isDashboardItem = item.to === '/dashboard';
+                const isExactActive = isDashboardItem
+                  ? location.pathname === '/' || location.pathname === '/dashboard'
+                  : location.pathname === item.to || (item.to !== '/' && location.pathname.startsWith(item.to));
 
-        {/* Close / Collapse Toggle Button */}
-        <button
-          type="button"
-          className="sidebar-close-btn"
-          onClick={onToggle || onClose}
-          aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-          title={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-        >
-          <i className={`bi ${isOpen ? 'bi-chevron-left' : 'bi-chevron-right'}`}></i>
-        </button>
-      </div>
-
-      {/* Scrollable Body: Menu items and Pro Plan card scroll together */}
-      <div className="sidebar-body">
-        {/* Menu List */}
-        <ul className="sidebar-menu">
-          {visibleMenuItems.map((item) => (
-            <li key={item.to} className="sidebar-item">
-              <NavLink
-                to={item.to}
-                className={({ isActive }) => {
-                  const active =
-                    isActive ||
-                    (item.to === '/contacts' &&
-                      (location.pathname.startsWith('/contacts') || location.pathname.startsWith('/imports'))) ||
-                    (item.to === '/campaigns' && location.pathname.startsWith('/campaigns')) ||
-                    (item.to === '/billing' && location.pathname.startsWith('/billing'));
-                  return `sidebar-link ${active ? 'active' : ''}`;
-                }}
-                onClick={handleLinkClick}
-                title={!isOpen ? item.name : undefined}
-              >
-                <div className="sidebar-link-icon-wrap">
-                  <i className={`bi ${item.icon}`}></i>
-                  {item.badge ? (
-                    <span className="badge aiwavo-mini-badge">
-                      {item.badge}
-                    </span>
-                  ) : null}
-                </div>
-                <span className="sidebar-link-full-text">{item.name}</span>
-                <span className="sidebar-link-mini-text">{item.shortName}</span>
-
-                {item.hasChevron && (
-                  <i className="bi bi-chevron-down ms-auto sidebar-chevron"></i>
-                )}
-                {item.badge ? (
-                  <span className="badge ms-auto aiwavo-queue-badge sidebar-link-full-badge">
-                    {item.badge}
-                  </span>
-                ) : null}
-              </NavLink>
-            </li>
-          ))}
-
-          {isSuperAdmin && isSuperAdmin() && (
-            <li className="sidebar-item">
-              <NavLink
-                to="/admin"
-                className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-                onClick={handleLinkClick}
-                title={!isOpen ? 'Super Admin' : undefined}
-              >
-                <div className="sidebar-link-icon-wrap">
-                  <i className="bi bi-shield-lock-fill text-warning"></i>
-                </div>
-                <span className="sidebar-link-full-text text-warning">Super Admin</span>
-                <span className="sidebar-link-mini-text text-warning">Admin</span>
-              </NavLink>
-            </li>
-          )}
-        </ul>
-
-        {/* Dynamic Workspace Plan Card (Synchronized with Database) */}
-        {(!isSuperAdmin || !isSuperAdmin()) && (() => {
-          const planName = subscription?.plan_name || 'Pro Automation';
-          const planShort = planName.includes('Pro') ? 'PRO' : planName.substring(0, 3).toUpperCase();
-          const currentEnd = subscription?.current_period_end
-            ? new Date(subscription.current_period_end).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
-            : '30 Nov 2026';
-
-          const currentMsgs = usage?.metrics?.messages?.current ?? 4;
-          const limitMsgs = usage?.metrics?.messages?.limit ?? (subscription?.max_messages_per_month || 75000);
-          const percentage = usage?.metrics?.messages?.percentage ?? Math.min(100, Math.round((currentMsgs / limitMsgs) * 100));
-          const progressWidth = `${Math.max(percentage, currentMsgs > 0 ? 3 : 0)}%`;
-
-          return (
-            <div className="sidebar-pro-card">
-              {/* Full View when Expanded */}
-              <div className="sidebar-pro-full">
-                <div className="sidebar-pro-header">
-                  <i className="bi bi-crown-fill sidebar-pro-crown"></i>
-                  <span>{planName}</span>
-                </div>
-                <div className="sidebar-pro-valid">Valid till: {currentEnd}</div>
-                <div className="sidebar-pro-progress-bg">
-                  <div className="sidebar-pro-progress-fill" style={{ width: progressWidth }}></div>
-                </div>
-                <div className="sidebar-pro-text">{currentMsgs.toLocaleString()} / {limitMsgs.toLocaleString()} Messages</div>
-                {!isMarketer && !isAgent ? (
-                  <NavLink to="/billing" className="sidebar-pro-btn" onClick={handleLinkClick}>
-                    <span>Upgrade Plan</span>
-                    <i className="bi bi-arrow-right"></i>
+                return (
+                  <NavLink
+                    key={`${sec.heading}_${item.label}_${itemIdx}`}
+                    to={item.to}
+                    onClick={handleLinkClick}
+                    className={`aiveexa-nav-item ${isExactActive ? 'active' : ''}`}
+                    title={item.label}
+                  >
+                    {item.icon ? (
+                      <i className={`bi ${item.icon} aiveexa-nav-icon`}></i>
+                    ) : (
+                      <span className="aiveexa-nav-bullet"></span>
+                    )}
+                    <span className="aiveexa-nav-label">{item.label}</span>
+                    {item.badge && (
+                      <span className="aiveexa-nav-badge">{item.badge}</span>
+                    )}
                   </NavLink>
-                ) : (
-                  <div className="sidebar-pro-role-tag">
-                    <i className="bi bi-person-badge-fill me-1"></i>
-                    <span>{isMarketer ? 'Marketing Panel' : 'Support Agent'}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Mini View when Collapsed */}
-              <div className="sidebar-pro-mini" title={`${planName} (${currentMsgs.toLocaleString()} / ${limitMsgs.toLocaleString()} Messages)`}>
-                {!isMarketer && !isAgent ? (
-                  <NavLink to="/billing" className="sidebar-pro-mini-btn" onClick={handleLinkClick}>
-                    <i className="bi bi-crown-fill sidebar-pro-crown"></i>
-                    <span className="sidebar-pro-mini-label">{planShort}</span>
-                  </NavLink>
-                ) : (
-                  <div className="sidebar-pro-mini-btn" style={{ cursor: 'default' }}>
-                    <i className="bi bi-crown-fill sidebar-pro-crown"></i>
-                    <span className="sidebar-pro-mini-label">{planShort}</span>
-                  </div>
-                )}
-              </div>
+                );
+              })}
             </div>
-          );
-        })()}
+          </div>
+        ))}
       </div>
     </aside>
   );

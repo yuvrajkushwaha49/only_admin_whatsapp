@@ -1,0 +1,155 @@
+/* =========================================================
+   Aiveexa Top Navbar - Matching Image 1 Design
+   ========================================================= */
+
+.aiveexa-top-navbar {
+  height: 64px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  width: 100%;
+}
+
+.aiveexa-top-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.aiveexa-brand-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.aiveexa-brand-icon {
+  height: 34px;
+  width: auto;
+  object-fit: contain;
+}
+
+.aiveexa-brand-logo-text {
+  height: 30px;
+  width: auto;
+  object-fit: contain;
+}
+
+.aiveexa-hamburger-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  color: #334155;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease;
+}
+
+.aiveexa-hamburger-btn:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.aiveexa-top-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.aiveexa-icon-btn {
+  background: transparent;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 1.15rem;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.aiveexa-icon-btn:hover {
+  background-color: #f1f5f9;
+  color: #1e293b;
+}
+
+.aiveexa-notif-badge {
+  position: absolute;
+  top: 2px;
+  right: 0px;
+  background-color: #ef4444;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 9999px;
+  line-height: 1.2;
+  border: 1.5px solid #ffffff;
+}
+
+.aiveexa-profile-container {
+  position: relative;
+}
+
+.aiveexa-avatar-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #3b0764;
+  color: #ffffff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  transition: transform 0.15s ease;
+}
+
+.aiveexa-avatar-btn:hover {
+  transform: scale(1.05);
+}
+
+.aiveexa-profile-dropdown {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  width: 230px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 8px 0;
+  z-index: 1050;
+  animation: fadeInDown 0.15s ease;
+}
+
+.aiveexa-profile-dropdown-header {
+  padding: 8px 16px;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

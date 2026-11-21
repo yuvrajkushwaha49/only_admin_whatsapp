@@ -16,7 +16,6 @@ export default function AppLayout() {
 
   const location = useLocation();
   const isInbox = location.pathname.startsWith('/inbox');
-  const isDashboard = location.pathname === '/' || location.pathname === '/dashboard';
 
   const isImpersonating = localStorage.getItem('cf_impersonating') === 'true';
   const impersonatedBiz = localStorage.getItem('cf_impersonated_biz');
@@ -45,11 +44,6 @@ export default function AppLayout() {
     localStorage.setItem('cf_sidebar_open', 'false');
   };
 
-  const openSidebar = () => {
-    setSidebarOpen(true);
-    localStorage.setItem('cf_sidebar_open', 'true');
-  };
-
   // Close sidebar on mobile route navigation
   useEffect(() => {
     if (typeof window !== 'undefined' && window.innerWidth < 992) {
@@ -58,49 +52,56 @@ export default function AppLayout() {
   }, [location.pathname]);
 
   return (
-    <div className={`app-wrapper ${sidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'}`}>
+    <div className="aiveexa-app-shell d-flex flex-column min-vh-100 bg-light-subtle">
       {/* Global Real-time Floating Live Progress Bar (Campaign & Import) */}
       <FloatingLiveProgress />
 
-      {/* Mobile Backdrop overlay */}
-      {sidebarOpen && (
-        <div
-          className="sidebar-backdrop d-lg-none"
-          onClick={closeSidebar}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Sidebar Component with onToggle support */}
-      <Sidebar
-        isOpen={sidebarOpen}
-        onClose={closeSidebar}
-        onToggle={toggleSidebar}
+      {/* Top Navbar Header matching Image 1 */}
+      <Navbar
+        onToggleSidebar={toggleSidebar}
+        sidebarOpen={sidebarOpen}
       />
 
-      {/* Main Content Area */}
-      <div className={`main-content ${isInbox ? 'main-content-inbox' : ''}`}>
-        {/* SuperAdmin Client View Banner */}
-        {isImpersonating && (
-          <div className="admin-impersonation-bar">
-            <div className="admin-impersonation-content">
-              <i className="bi bi-shield-shaded me-2"></i>
-              <span>
-                Viewing as <strong>{impersonatedBiz || 'Client'}</strong> (Super Admin Client View Mode)
-              </span>
-            </div>
-            <button
-              onClick={handleReturnToAdmin}
-              className="btn btn-sm btn-light text-dark fw-bold admin-impersonation-exit-btn"
-            >
-              <i className="bi bi-box-arrow-left me-1"></i> Return to Super Admin Suite
-            </button>
+      {/* SuperAdmin Client View Banner if impersonating */}
+      {isImpersonating && (
+        <div className="admin-impersonation-bar">
+          <div className="admin-impersonation-content">
+            <i className="bi bi-shield-shaded me-2"></i>
+            <span>
+              Viewing as <strong>{impersonatedBiz || 'Client'}</strong> (Super Admin Client View Mode)
+            </span>
           </div>
+          <button
+            onClick={handleReturnToAdmin}
+            className="btn btn-sm btn-light text-dark fw-bold admin-impersonation-exit-btn"
+          >
+            <i className="bi bi-box-arrow-left me-1"></i> Return to Super Admin Suite
+          </button>
+        </div>
+      )}
+
+      {/* Main Container below Top Navbar */}
+      <div className="d-flex flex-grow-1 position-relative">
+        {/* Mobile Backdrop overlay */}
+        {sidebarOpen && (
+          <div
+            className="sidebar-backdrop d-lg-none"
+            onClick={closeSidebar}
+            aria-hidden="true"
+          />
         )}
+
+        {/* Sidebar Component matching Image 2 */}
+        <Sidebar
+          isOpen={sidebarOpen}
+          onClose={closeSidebar}
+          onToggle={toggleSidebar}
+        />
+
+        {/* Main Content Area */}
         <main
-          className={`content-container ${
-            isInbox ? 'inbox-container-reset' : ''
-          } p-0 border-0 bg-transparent`}
+          className={`flex-grow-1 ${isInbox ? 'p-0' : 'p-3 p-md-4'} overflow-auto`}
+          style={{ minWidth: 0, backgroundColor: '#f8fafc' }}
         >
           <Outlet context={{ onToggleSidebar: toggleSidebar, sidebarOpen }} />
         </main>
