@@ -6,7 +6,7 @@
   border-radius: 8px;
   background: #EDF4FF;
   border: 1px solid #BFDBFE;
-  color: #0866FF;
+  color: #7c3aed;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -17,9 +17,9 @@
 }
 
 .mc-action-btn-green:hover {
-  background: #0866FF;
+  background: #7c3aed;
   color: #ffffff;
-  border-color: #0866FF;
+  border-color: #7c3aed;
   transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(8, 102, 255, 0.25);
 }
@@ -79,7 +79,7 @@
   height: 40px;
   border-radius: 12px;
   background: #EDF4FF;
-  color: #0866FF;
+  color: #7c3aed;
   border: 1px solid #BFDBFE;
   display: flex;
   align-items: center;
@@ -158,14 +158,14 @@
 }
 
 .resend-option-card.selected {
-  border-color: #0866FF;
+  border-color: #7c3aed;
   background: #EDF4FF;
-  box-shadow: 0 0 0 1px #0866FF;
+  box-shadow: 0 0 0 1px #7c3aed;
 }
 
 .resend-option-radio {
   margin-top: 3px;
-  accent-color: #0866FF;
+  accent-color: #7c3aed;
   width: 17px;
   height: 17px;
   cursor: pointer;
@@ -241,7 +241,7 @@
 }
 
 .resend-mode-tab.active i {
-  color: #0866FF;
+  color: #7c3aed;
 }
 
 /* Campaign Name Input */
@@ -261,7 +261,7 @@
 
 .resend-name-input:focus {
   outline: none;
-  border-color: #0866FF;
+  border-color: #7c3aed;
   box-shadow: 0 0 0 3px rgba(8, 102, 255, 0.12);
 }
 
@@ -317,8 +317,8 @@
   border-radius: 10px;
   font-size: 0.84rem;
   font-weight: 700;
-  border: 1px solid #0866FF;
-  background: #0866FF;
+  border: 1px solid #7c3aed;
+  background: #7c3aed;
   color: #ffffff;
   cursor: pointer;
   display: inline-flex;

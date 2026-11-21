@@ -22,7 +22,7 @@
   box-shadow: 0 4px 12px rgba(8, 102, 255, 0.2);
   width: 56px;
   height: 56px;
-  background: #0866FF;
+  background: #7c3aed;
 }
 
 .auth-card {
@@ -48,7 +48,7 @@
   background: none;
   border: none;
   padding: 0;
-  color: #0866FF;
+  color: #7c3aed;
   font-size: 0.8125rem;
   font-weight: 600;
   text-decoration: none;

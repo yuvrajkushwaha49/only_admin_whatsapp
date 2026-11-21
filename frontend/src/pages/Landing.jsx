@@ -351,7 +351,7 @@ export default function Landing() {
 
             {/* Feature 5 */}
             <div className="col-12 col-md-6 col-lg-4">
-              <div className="feature-card" style={{ borderTop: '3px solid #0866FF' }}>
+              <div className="feature-card" style={{ borderTop: '3px solid #7c3aed' }}>
                 <div className="feature-icon-wrapper bg-primary-subtle text-primary">
                   <i className="bi bi-file-code-fill"></i>
                 </div>

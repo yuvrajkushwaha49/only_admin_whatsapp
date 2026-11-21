@@ -4,7 +4,7 @@
    ========================================================================== */
 
 :root {
-  --cf-primary: #0866FF;
+  --cf-primary: #7c3aed;
   --cf-primary-dark: #0756D6;
   --cf-primary-light: #EDF4FF;
   --cf-accent: #00C8F0;
@@ -220,8 +220,8 @@ h6,
 
 .sidebar-close-btn:hover {
   transform: translateY(-50%) scale(1.1);
-  color: #0866FF;
-  border-color: #0866FF;
+  color: #7c3aed;
+  border-color: #7c3aed;
   box-shadow: 0 2px 8px rgba(8, 102, 255, 0.2);
 }
 
@@ -284,16 +284,16 @@ h6,
 }
 
 .sidebar-link:hover {
-  color: #0866FF;
+  color: #7c3aed;
   background-color: #F8FAFC;
 }
 
 .sidebar-link:hover i {
-  color: #0866FF;
+  color: #7c3aed;
 }
 
 .sidebar-link.active {
-  color: #0866FF !important;
+  color: #7c3aed !important;
   background-color: #EDF4FF !important;
   border-radius: 12px;
   font-weight: 600;
@@ -302,7 +302,7 @@ h6,
 }
 
 .sidebar-link.active i {
-  color: #0866FF !important;
+  color: #7c3aed !important;
 }
 
 .sidebar-chevron {
@@ -312,12 +312,12 @@ h6,
 }
 
 .sidebar-link:hover .sidebar-chevron {
-  color: #0866FF;
+  color: #7c3aed;
 }
 
 .aiwavo-queue-badge {
   font-size: 0.7rem;
-  background-color: #0866FF;
+  background-color: #7c3aed;
   color: #ffffff;
   border-radius: 9999px;
   padding: 0.22rem 0.55rem;

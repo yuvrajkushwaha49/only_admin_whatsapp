@@ -103,7 +103,7 @@
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: #0866FF;
+  background: #7c3aed;
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -159,7 +159,7 @@
 }
 
 .inbox-account-icon {
-  color: #0866FF;
+  color: #7c3aed;
   font-size: 0.95rem;
   margin-right: 8px;
   flex-shrink: 0;
@@ -289,7 +289,7 @@
 }
 
 .filter-chip.active {
-  background: #0866FF;
+  background: #7c3aed;
   color: #ffffff;
   font-weight: 600;
 }
@@ -354,7 +354,7 @@
 
 .conversation-item.active,
 .conversation-item.has-unread {
-  border-color: #0866FF;
+  border-color: #7c3aed;
   background: #ffffff;
 }
 
@@ -372,7 +372,7 @@
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: #0866FF;
+  background: #7c3aed;
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -434,7 +434,7 @@
 }
 
 .conversation-time.text-green {
-  color: #0866FF;
+  color: #7c3aed;
   font-weight: 600;
 }
 
@@ -481,7 +481,7 @@
 }
 
 .conversation-unread-badge {
-  background: #0866FF;
+  background: #7c3aed;
   color: #ffffff;
   font-size: 0.7rem;
   font-weight: 700;
@@ -544,7 +544,7 @@
   height: 108px;
   border-radius: 50%;
   background: #EDF4FF;
-  color: #0866FF;
+  color: #7c3aed;
   display: flex;
   align-items: center;
   justify-content: center;

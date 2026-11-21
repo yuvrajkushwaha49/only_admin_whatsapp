@@ -46,7 +46,7 @@
   align-items: center;
   gap: 6px;
   background-color: #eff6ff;
-  color: #0866ff;
+  color: #7c3aed;
   border: 1px solid #bfdbfe;
   font-size: 0.8125rem;
   font-weight: 600;
@@ -106,16 +106,16 @@
 
 .legal-toc-link:hover {
   background-color: #f8fafc;
-  color: #0866ff;
+  color: #7c3aed;
   font-weight: 500;
   transform: translateX(2px);
 }
 
 .legal-toc-link.active {
   background-color: #eff6ff;
-  color: #0866ff;
+  color: #7c3aed;
   font-weight: 600;
-  border-left: 3px solid #0866ff;
+  border-left: 3px solid #7c3aed;
 }
 
 /* Content Card */
@@ -159,7 +159,7 @@
   width: 28px;
   height: 28px;
   background-color: #eff6ff;
-  color: #0866ff;
+  color: #7c3aed;
   font-size: 0.8125rem;
   font-weight: 700;
   border-radius: 8px;
@@ -193,7 +193,7 @@
 .legal-callout-info {
   background-color: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-left: 4px solid #0866ff;
+  border-left: 4px solid #7c3aed;
   border-radius: 10px;
   padding: 16px 20px;
   margin: 20px 0;

@@ -75,13 +75,13 @@
 }
 
 .template-stat-card.active-filter {
-  border-color: #0866FF;
+  border-color: #7c3aed;
   background: #fcfdfd;
   box-shadow: 0 0 0 2px rgba(8, 102, 255, 0.22), 0 4px 12px rgba(8, 102, 255, 0.06);
 }
 
 .template-stat-card.active-filter::before {
-  background: #0866FF;
+  background: #7c3aed;
 }
 
 .template-stat-card .stat-icon {
@@ -1018,7 +1018,7 @@
 .mt-hero-icon {
   width: 50px;
   height: 50px;
-  background: #0866FF;
+  background: #7c3aed;
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -1053,8 +1053,8 @@
 
 .mt-btn-sync {
   background: #ffffff;
-  border: 1.5px solid #0866FF;
-  color: #0866FF;
+  border: 1.5px solid #7c3aed;
+  color: #7c3aed;
   font-weight: 600;
   border-radius: 10px;
   padding: 0.55rem 1.15rem;
@@ -1072,9 +1072,9 @@
 }
 
 .mt-btn-create {
-  background: #0866FF;
+  background: #7c3aed;
   color: #ffffff;
-  border: 1px solid #0866FF;
+  border: 1px solid #7c3aed;
   font-weight: 600;
   border-radius: 10px;
   padding: 0.55rem 1.35rem;
@@ -1135,9 +1135,9 @@
 }
 
 .mt-stat-card.active {
-  border-color: #0866FF;
+  border-color: #7c3aed;
   background: #ffffff;
-  box-shadow: 0 0 0 1px #0866FF;
+  box-shadow: 0 0 0 1px #7c3aed;
 }
 
 .mt-stat-icon-wrap {
@@ -1153,7 +1153,7 @@
 
 .mt-stat-icon-green-square {
   background: #EDF4FF;
-  color: #0866FF;
+  color: #7c3aed;
   border-radius: 8px;
 }
 
@@ -1265,7 +1265,7 @@
 }
 
 .mt-filter-select:focus {
-  border-color: #0866FF;
+  border-color: #7c3aed;
 }
 
 .mt-view-toggle {
@@ -1290,8 +1290,8 @@
 }
 
 .mt-view-btn.active {
-  background: #0866FF;
-  border-color: #0866FF;
+  background: #7c3aed;
+  border-color: #7c3aed;
   color: #ffffff;
 }
 
@@ -1365,7 +1365,7 @@
 }
 
 .mt-tpl-name:hover {
-  color: #0866FF;
+  color: #7c3aed;
 }
 
 .mt-status-badge {
@@ -1567,7 +1567,7 @@
 
 .mt-btn-quick-test {
   flex: 1;
-  background: #0866FF;
+  background: #7c3aed;
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -1686,8 +1686,8 @@
 
 .td-btn-check-status-top {
   background: #ffffff;
-  border: 1.5px solid #0866FF;
-  color: #0866FF;
+  border: 1.5px solid #7c3aed;
+  color: #7c3aed;
   border-radius: 8px;
   font-weight: 600;
   font-size: 0.85rem;
@@ -1827,7 +1827,7 @@
 }
 
 .td-btn-launch {
-  background: #0866FF;
+  background: #7c3aed;
   border: none;
   color: #ffffff;
   border-radius: 8px;
@@ -1933,7 +1933,7 @@
   left: 30px;
   right: 30px;
   height: 2px;
-  background: #0866FF;
+  background: #7c3aed;
   z-index: 1;
 }
 
@@ -1951,7 +1951,7 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: #0866FF;
+  background: #7c3aed;
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -2098,8 +2098,8 @@
 }
 
 .td-tab-btn.active {
-  color: #0866FF;
-  border-bottom-color: #0866FF;
+  color: #7c3aed;
+  border-bottom-color: #7c3aed;
   font-weight: 700;
 }
 
