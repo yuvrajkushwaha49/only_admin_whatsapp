@@ -977,7 +977,6 @@
    ========================================================= */
 
 .mt-page-container {
-  padding: 0rem 1rem 1rem 1rem;
   background: #f8fafc;
   min-height: calc(100vh - 72px);
   max-width: 100%;
@@ -985,11 +984,7 @@
   box-sizing: border-box;
 }
 
-@media (max-width: 991px) {
-  .mt-page-container {
-    padding: 1rem 1rem 2rem 1rem;
-  }
-}
+
 
 /* 1. Hero Banner */
 .mt-hero-banner {
