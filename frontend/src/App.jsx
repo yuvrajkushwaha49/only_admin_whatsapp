@@ -16,6 +16,8 @@ import ContactDetail from './pages/ContactDetail';
 import ContactGroups from './pages/ContactGroups';
 import CsvImport from './pages/CsvImport';
 import ExportContacts from './pages/ExportContacts';
+import Tags from './pages/Tags';
+import TagDetail from './pages/TagDetail';
 import WhatsAppAccounts from './pages/WhatsAppAccounts';
 import WhatsAppAccountDetail from './pages/WhatsAppAccountDetail';
 import Templates from './pages/Templates';
@@ -137,6 +139,26 @@ export default function App() {
         <Route
           path="/contacts/export"
           element={<Navigate to="/export" replace />}
+        />
+        <Route
+          path="/tags"
+          element={
+            <ProtectedRoute allowedRoles={['owner', 'admin', 'marketer']}>
+              <Tags />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tags/:id"
+          element={
+            <ProtectedRoute allowedRoles={['owner', 'admin', 'marketer']}>
+              <TagDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/contacts/tags"
+          element={<Navigate to="/tags" replace />}
         />
         <Route
           path="/whatsapp"

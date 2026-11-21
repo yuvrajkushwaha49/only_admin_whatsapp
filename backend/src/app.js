@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import authRouter from './modules/auth/auth.routes.js';
 import contactsRouter from './modules/contacts/contacts.routes.js';
 import contactGroupsRouter from './modules/contact_groups/contactGroups.routes.js';
+import tagsRouter from './modules/tags/tags.routes.js';
 import importsRouter from './modules/imports/imports.routes.js';
 import whatsappRouter from './modules/whatsapp/whatsapp.routes.js';
 import webhooksRouter from './modules/webhooks/webhooks.routes.js';
@@ -95,6 +96,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/contacts', contactsRouter);
 app.use('/api/contact-groups', contactGroupsRouter);
+app.use('/api/tags', tagsRouter);
 app.use('/api/imports', importsRouter);
 app.use('/api/whatsapp', whatsappRouter);
 app.use('/api/meta', metaRouter);

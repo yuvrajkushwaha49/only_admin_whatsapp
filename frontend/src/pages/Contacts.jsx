@@ -13,6 +13,8 @@ export default function Contacts() {
     const params = new URLSearchParams(location.search);
     if (params.get('action') === 'export') {
       navigate('/export', { replace: true });
+    } else if (params.get('view') === 'tags') {
+      navigate('/tags', { replace: true });
     }
   }, [location.search, navigate]);
   const isAgent = user?.role === 'agent';

@@ -104,7 +104,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
         { to: '/imports', label: 'Import CSV', icon: 'bi-upload' },
         { to: '/export', label: 'Export', icon: 'bi-download' },
         { to: '/contacts/groups', label: 'Contact Groups', icon: 'bi-people' },
-        { to: '/contacts?view=tags', label: 'Tags', icon: 'bi-tag' }
+        { to: '/tags', label: 'Tags', icon: 'bi-tag' }
       ]
     },
     {

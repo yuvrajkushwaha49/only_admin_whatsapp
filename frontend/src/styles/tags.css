@@ -1,0 +1,447 @@
+/* ==========================================================================
+   Tags & Tag Detail Pages - Aiveexa Brand Theme Design
+   Consistent with Contacts, Groups, and Templates
+   ========================================================================== */
+
+.tag-page-container {
+  max-width: 1440px;
+  margin: 0 auto;
+  min-height: calc(100vh - 72px);
+  padding: 1.5rem 2rem 3rem 2rem;
+  background: #f8fafc;
+}
+
+@media (max-width: 768px) {
+  .tag-page-container {
+    padding: 1rem 1rem 2rem 1rem;
+  }
+}
+
+/* 1. Hero Title Banner */
+.tag-hero-banner {
+  background: #ffffff;
+  border: 1px solid #e5eaf2;
+  border-radius: 14px;
+  padding: 1.25rem 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.tag-hero-left {
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+}
+
+.tag-brand-square {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 1.45rem;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+  flex-shrink: 0;
+}
+
+.tag-hero-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.tag-hero-subtitle {
+  font-size: 0.86rem;
+  color: #64748b;
+  margin: 0.25rem 0 0 0;
+}
+
+.tag-primary-btn {
+  background: #7c3aed;
+  border: 1px solid #7c3aed;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.6rem 1.25rem;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+  text-decoration: none;
+}
+
+.tag-primary-btn:hover {
+  background: #6d28d9;
+  border-color: #6d28d9;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
+}
+
+/* 2. KPI Metric Cards Grid */
+.tag-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 991px) {
+  .tag-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 576px) {
+  .tag-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tag-kpi-card {
+  background: #ffffff;
+  border: 1px solid #e5eaf2;
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.tag-kpi-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.tag-kpi-icon-circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.tag-kpi-icon-circle.purple { background: #f5f0ff; color: #7c3aed; }
+.tag-kpi-icon-circle.green  { background: #ecfdf5; color: #10b981; }
+.tag-kpi-icon-circle.blue   { background: #eff6ff; color: #3b82f6; }
+.tag-kpi-icon-circle.amber  { background: #fffbeb; color: #f59e0b; }
+
+.tag-kpi-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.15;
+  display: block;
+}
+
+.tag-kpi-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #64748b;
+  margin-top: 0.2rem;
+  display: block;
+}
+
+/* 3. Search & Filter Bar */
+.tag-filter-bar {
+  background: #ffffff;
+  border: 1px solid #e5eaf2;
+  border-radius: 12px;
+  padding: 0.85rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  flex-wrap: wrap;
+}
+
+.tag-search-box {
+  position: relative;
+  flex: 1;
+  min-width: 240px;
+}
+
+.tag-search-box i {
+  position: absolute;
+  left: 0.95rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 0.95rem;
+}
+
+.tag-search-input {
+  width: 100%;
+  padding: 0.55rem 0.9rem 0.55rem 2.45rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  color: #1e293b;
+  outline: none;
+  transition: all 0.2s ease;
+  background: #ffffff;
+}
+
+.tag-search-input:focus {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+/* 4. Tags Cards Grid */
+.tag-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 1.25rem;
+}
+
+.tag-card {
+  background: #ffffff;
+  border: 1px solid #e5eaf2;
+  border-radius: 14px;
+  padding: 1.25rem 1.4rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.tag-card:hover {
+  transform: translateY(-2px);
+  border-color: #cbd5e1;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+.tag-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.tag-pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  border: 1px solid transparent;
+}
+
+.tag-dot-circle {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.tag-card-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f1f5f9;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.tag-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.tag-btn-action {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  border-radius: 7px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tag-btn-action:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.tag-btn-action.delete:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #ef4444;
+}
+
+/* 5. Color Swatches Picker */
+.tag-color-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+}
+
+.tag-color-swatch-item {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 0.85rem;
+  transition: transform 0.15s;
+}
+
+.tag-color-swatch-item:hover {
+  transform: scale(1.15);
+}
+
+.tag-color-swatch-item.selected {
+  border-color: #0f172a;
+  transform: scale(1.1);
+}
+
+/* 6. Tag Detail Page Styles */
+.tag-detail-banner {
+  background: #ffffff;
+  border: 1px solid #e5eaf2;
+  border-radius: 16px;
+  padding: 1.75rem 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  margin-bottom: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}
+
+.tag-detail-info {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.tag-detail-pill {
+  font-size: 1.25rem;
+  font-weight: 700;
+  padding: 0.5rem 1.4rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  border: 1px solid transparent;
+}
+
+.tag-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+/* 7. Tagged Contacts Table Card */
+.tag-contacts-card {
+  background: #ffffff;
+  border: 1px solid #e5eaf2;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+}
+
+.tag-contacts-head {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.tag-contacts-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.tag-contacts-table th {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.tag-contacts-table td {
+  padding: 0.95rem 1.25rem;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.88rem;
+  color: #1e293b;
+  vertical-align: middle;
+}
+
+.tag-contacts-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.tag-contact-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.tag-empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #64748b;
+}
+
+.tag-empty-icon {
+  font-size: 3rem;
+  color: #cbd5e1;
+  margin-bottom: 1rem;
+  display: block;
+}
