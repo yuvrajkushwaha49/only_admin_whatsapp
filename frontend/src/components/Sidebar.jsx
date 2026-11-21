@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
 import { getSocket, initSocket } from '../services/socket';
@@ -167,7 +167,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
                 const active = isItemActive(item.to);
 
                 return (
-                  <NavLink
+                  <Link
                     key={`${sec.heading}_${item.label}_${itemIdx}`}
                     to={item.to}
                     onClick={handleLinkClick}
@@ -183,7 +183,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
                     {item.badge && (
                       <span className="aiveexa-nav-badge">{item.badge}</span>
                     )}
-                  </NavLink>
+                  </Link>
                 );
               })}
             </div>
