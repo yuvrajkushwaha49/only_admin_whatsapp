@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import api from '../services/api';
+import interactiveButtonsService from '../services/interactiveButtons.service';
 import AiwavoHeader from '../components/AiwavoHeader';
 import { useAuth } from '../hooks/useAuth';
 import '../styles/templates.css';
@@ -79,6 +80,110 @@ export default function Templates() {
   const [buttons, setButtons] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+
+  // Interactive Button Presets for Call to Action buttons builder
+  const [interactivePresets, setInteractivePresets] = useState([]);
+  const [presetDropdownOpen, setPresetDropdownOpen] = useState(false);
+  const [presetSearch, setPresetSearch] = useState('');
+  const presetDropdownRef = useRef(null);
+
+  const fetchInteractivePresets = async () => {
+    try {
+      const res = await interactiveButtonsService.getButtons();
+      if (res?.success && Array.isArray(res.data)) {
+        setInteractivePresets(res.data);
+      }
+    } catch (_) {}
+  };
+
+  useEffect(() => {
+    fetchInteractivePresets();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (presetDropdownRef.current && !presetDropdownRef.current.contains(e.target)) {
+        setPresetDropdownOpen(false);
+      }
+    };
+    if (presetDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [presetDropdownOpen]);
+
+  const filteredPresets = useMemo(() => {
+    if (!presetSearch.trim()) return interactivePresets;
+    const q = presetSearch.toLowerCase();
+    return interactivePresets.filter(p => {
+      const matchTitle = (p.title || '').toLowerCase().includes(q);
+      const matchType = (p.component_type || p.button_type || '').toLowerCase().includes(q);
+      const matchText = (p.message_text || '').toLowerCase().includes(q);
+      const matchBtns = Array.isArray(p.buttons_data) && p.buttons_data.some(b => (b.label || '').toLowerCase().includes(q));
+      return matchTitle || matchType || matchText || matchBtns;
+    });
+  }, [interactivePresets, presetSearch]);
+
+  const handleSelectInteractivePreset = (preset) => {
+    let presetButtons = [];
+
+    if (Array.isArray(preset.buttons_data) && preset.buttons_data.length > 0) {
+      presetButtons = preset.buttons_data.slice(0, 3).map((b) => {
+        let bType = 'QUICK_REPLY';
+        let bUrl = 'https://example.com';
+        let bPhone = '+919999999999';
+
+        if (
+          preset.component_type === 'Call to action' ||
+          preset.button_type === 'URL' ||
+          b.url ||
+          (typeof b.id === 'string' && (b.id.startsWith('http://') || b.id.startsWith('https://')))
+        ) {
+          bType = 'URL';
+          bUrl = b.url || (preset.value && preset.value.startsWith('http') ? preset.value : 'https://example.com');
+        } else if (
+          preset.button_type === 'PHONE_NUMBER' ||
+          b.phone_number ||
+          (typeof b.id === 'string' && /^\+?[0-9]{7,15}$/.test(b.id))
+        ) {
+          bType = 'PHONE_NUMBER';
+          bPhone = b.phone_number || (preset.value ? preset.value : '+919999999999');
+        } else {
+          bType = 'QUICK_REPLY';
+        }
+
+        const item = {
+          type: bType,
+          text: (b.label || b.text || 'Action').slice(0, 25)
+        };
+        if (bType === 'URL') item.url = bUrl;
+        if (bType === 'PHONE_NUMBER') item.phone_number = bPhone;
+        return item;
+      });
+    } else if (preset.button_text) {
+      let bType = preset.button_type || 'QUICK_REPLY';
+      if (!['QUICK_REPLY', 'URL', 'PHONE_NUMBER'].includes(bType)) {
+        bType = 'QUICK_REPLY';
+      }
+      const item = {
+        type: bType,
+        text: preset.button_text.slice(0, 25)
+      };
+      if (bType === 'URL') item.url = preset.value || 'https://example.com';
+      if (bType === 'PHONE_NUMBER') item.phone_number = preset.value || '+919999999999';
+      presetButtons = [item];
+    }
+
+    if (presetButtons.length === 0) {
+      presetButtons = [{ type: 'QUICK_REPLY', text: (preset.title || 'Action').slice(0, 25) }];
+    }
+
+    setButtons(presetButtons);
+    setPresetDropdownOpen(false);
+    setPresetSearch('');
+  };
 
   const isFirstMountRef = useRef(true);
 
@@ -1251,30 +1356,133 @@ export default function Templates() {
 
                         {/* Interactive Buttons Builder */}
                         <div className="mb-4">
-                          <div className="d-flex align-items-center justify-content-between mb-2">
-                            <label className="form-label small fw-bold mb-0">Call to Action Buttons (Max 3)</label>
-                            <div className="btn-group btn-group-sm">
-                              <button
-                                type="button"
-                                className="btn btn-outline-secondary"
-                                onClick={() => handleAddButton('QUICK_REPLY')}
-                              >
-                                + Quick Reply
-                              </button>
-                              <button
-                                type="button"
-                                className="btn btn-outline-secondary"
-                                onClick={() => handleAddButton('URL')}
-                              >
-                                + Website URL
-                              </button>
-                              <button
-                                type="button"
-                                className="btn btn-outline-secondary"
-                                onClick={() => handleAddButton('PHONE_NUMBER')}
-                              >
-                                + Phone Number
-                              </button>
+                          <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                            <div>
+                              <label className="form-label small fw-bold mb-0">Call to Action Buttons (Max 3)</label>
+                              <div className="text-muted" style={{ fontSize: '0.72rem' }}>
+                                Add custom buttons or choose from your saved Interactive Buttons Library
+                              </div>
+                            </div>
+
+                            <div className="d-flex align-items-center gap-2">
+                              {/* Searchable Preset Dropdown */}
+                              <div className="tpl-preset-dropdown-wrap" ref={presetDropdownRef}>
+                                <button
+                                  type="button"
+                                  className="tpl-preset-trigger-btn"
+                                  onClick={() => {
+                                    setPresetDropdownOpen(!presetDropdownOpen);
+                                    if (!presetDropdownOpen && interactivePresets.length === 0) {
+                                      fetchInteractivePresets();
+                                    }
+                                  }}
+                                  title="Load buttons from saved Interactive Buttons preset"
+                                >
+                                  <i className="bi bi-grid-fill"></i>
+                                  <span>Interactive Buttons</span>
+                                  <i className={`bi bi-chevron-${presetDropdownOpen ? 'up' : 'down'} ms-1`} style={{ fontSize: '0.7rem' }}></i>
+                                </button>
+
+                                {presetDropdownOpen && (
+                                  <div className="tpl-preset-menu shadow-lg">
+                                    {/* Search box inside dropdown */}
+                                    <div className="tpl-preset-search-wrap">
+                                      <div className="position-relative">
+                                        <i className="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-2 text-muted" style={{ fontSize: '0.75rem' }}></i>
+                                        <input
+                                          type="text"
+                                          className="tpl-preset-search-input"
+                                          placeholder="Search buttons..."
+                                          value={presetSearch}
+                                          onChange={(e) => setPresetSearch(e.target.value)}
+                                          autoFocus
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* Presets List */}
+                                    <div className="tpl-preset-list">
+                                      {filteredPresets.length === 0 ? (
+                                        <div className="p-3 text-center text-muted small">
+                                          <i className="bi bi-inbox d-block mb-1 fs-5"></i>
+                                          {presetSearch ? 'No matching button presets' : 'No presets found'}
+                                        </div>
+                                      ) : (
+                                        filteredPresets.map((preset) => {
+                                          const cardBtns = Array.isArray(preset.buttons_data) && preset.buttons_data.length > 0
+                                            ? preset.buttons_data
+                                            : (preset.button_text ? [{ label: preset.button_text }] : []);
+
+                                          return (
+                                            <div
+                                              key={preset.id}
+                                              className="tpl-preset-item"
+                                              onClick={() => handleSelectInteractivePreset(preset)}
+                                              title="Click to apply these buttons"
+                                            >
+                                              <div className="tpl-preset-item-header">
+                                                <span className="tpl-preset-item-title">{preset.title}</span>
+                                                <span className="tpl-preset-item-type">
+                                                  {preset.component_type || preset.button_type}
+                                                </span>
+                                              </div>
+                                              {preset.message_text && (
+                                                <div className="text-muted text-truncate" style={{ fontSize: '0.72rem' }}>
+                                                  "{preset.message_text}"
+                                                </div>
+                                              )}
+                                              <div className="tpl-preset-item-btns">
+                                                {cardBtns.map((cb, idx) => (
+                                                  <span key={idx} className="tpl-preset-mini-pill">
+                                                    {cb.label}
+                                                  </span>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          );
+                                        })
+                                      )}
+                                    </div>
+
+                                    {/* Footer Link to Interactive Buttons Manager */}
+                                    <div className="tpl-preset-footer">
+                                      <span className="text-muted">{interactivePresets.length} saved presets</span>
+                                      <Link
+                                        to="/interactive-buttons"
+                                        target="_blank"
+                                        className="text-primary text-decoration-none fw-semibold"
+                                        onClick={() => setPresetDropdownOpen(false)}
+                                      >
+                                        Manage Library &rarr;
+                                      </Link>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="btn-group btn-group-sm">
+                                <button
+                                  type="button"
+                                  className="btn btn-outline-secondary"
+                                  onClick={() => handleAddButton('QUICK_REPLY')}
+                                >
+                                  + Quick Reply
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-outline-secondary"
+                                  onClick={() => handleAddButton('URL')}
+                                >
+                                  + Website URL
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-outline-secondary"
+                                  onClick={() => handleAddButton('PHONE_NUMBER')}
+                                >
+                                  + Phone Number
+                                </button>
+                              </div>
                             </div>
                           </div>
 
