@@ -19,6 +19,7 @@ import aiRouter from './modules/ai/ai.routes.js';
 import metaRouter from './modules/whatsapp/metaSetup.routes.js';
 import logsRouter from './modules/logs/logs.routes.js';
 import notificationsRouter from './modules/notifications/notifications.routes.js';
+import interactiveButtonsRouter from './modules/interactive_buttons/interactiveButtons.routes.js';
 
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { isUsingFallback } from './database/db.js';
@@ -107,6 +108,8 @@ app.use('/api/ai', aiRouter);
 app.use('/api/activity-logs', logsRouter);
 app.use('/api/logs', logsRouter);
 app.use('/api/notifications', notificationsRouter);
+app.use('/api/interactive-buttons', interactiveButtonsRouter);
+app.use('/api/whatsapp/interactive-buttons', interactiveButtonsRouter);
 
 // 404 & Centralized Error Handler
 app.use(notFoundHandler);

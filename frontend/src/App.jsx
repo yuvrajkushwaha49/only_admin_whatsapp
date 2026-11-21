@@ -19,6 +19,7 @@ import WhatsAppAccounts from './pages/WhatsAppAccounts';
 import WhatsAppAccountDetail from './pages/WhatsAppAccountDetail';
 import Templates from './pages/Templates';
 import TemplateDetail from './pages/TemplateDetail';
+import InteractiveButtons from './pages/InteractiveButtons';
 import Inbox from './pages/Inbox';
 import CampaignList from './pages/CampaignList';
 import CampaignBuilder from './pages/CampaignBuilder';
@@ -163,6 +164,18 @@ export default function App() {
               <TemplateDetail />
             </ProtectedRoute>
           }
+        />
+        <Route
+          path="/interactive-buttons"
+          element={
+            <ProtectedRoute allowedRoles={['owner', 'admin']}>
+              <InteractiveButtons />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/whatsapp/interactive-buttons"
+          element={<Navigate to="/interactive-buttons" replace />}
         />
         <Route
           path="/campaigns"

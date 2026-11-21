@@ -11,8 +11,10 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
   const { user, isSuperAdmin } = useAuth();
   const location = useLocation();
 
-  const userRole = user?.role || 'owner';
+  const userRole = (user?.role || 'owner').toLowerCase();
   const isAgent = userRole === 'agent';
+  const isSuper = isSuperAdmin ? (typeof isSuperAdmin === 'function' ? isSuperAdmin() : isSuperAdmin) : (userRole === 'superadmin' || userRole === 'super_admin');
+  const canManageButtons = isSuper || ['superadmin', 'super_admin', 'owner', 'admin'].includes(userRole);
 
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -71,7 +73,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
         { to: '/whatsapp', label: 'Connected Numbers', icon: 'bi-telephone' },
         { to: '/settings?tab=profile', label: 'Business Profile', icon: 'bi-card-image' },
         { to: '/templates', label: 'Templates', icon: 'bi-file-earmark-text' },
-        { to: '/templates?type=buttons', label: 'Interactive Buttons', icon: 'bi-grid' }
+        ...(canManageButtons ? [{ to: '/interactive-buttons', label: 'Interactive Buttons', icon: 'bi-grid' }] : [])
         // { to: '/whatsapp?tab=health', label: 'Health', icon: 'bi-heart' }
         // { to: '/admin/meta', label: 'Webhook Status', icon: 'bi-lightning-charge' }
       ]

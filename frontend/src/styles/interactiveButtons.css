@@ -1,0 +1,626 @@
+/* =========================================================
+   Interactive Buttons Library - Aiveexa Modern Purple Theme
+   ========================================================= */
+
+.ib-container {
+  padding: 1.5rem;
+  max-width: 1440px;
+  margin: 0 auto;
+  min-height: calc(100vh - 72px);
+}
+
+/* 1. Header & Top Bar */
+.ib-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.ib-title-wrap h1 {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 0.25rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ib-role-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  background: #f5f0ff;
+  color: #7c3aed;
+  border: 1px solid #e9d5ff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ib-title-wrap p {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.ib-create-btn {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  color: #ffffff;
+  border: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.6rem 1.25rem;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.ib-create-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.35);
+  color: #ffffff;
+}
+
+/* 2. Stat Metric Cards */
+.ib-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.ib-stat-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+}
+
+.ib-stat-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.ib-stat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.ib-stat-icon.purple { background: #f5f0ff; color: #7c3aed; }
+.ib-stat-icon.blue   { background: #eff6ff; color: #3b82f6; }
+.ib-stat-icon.green  { background: #ecfdf5; color: #10b981; }
+.ib-stat-icon.indigo { background: #eef2ff; color: #6366f1; }
+.ib-stat-icon.amber  { background: #fffbeb; color: #d97706; }
+
+.ib-stat-num {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.1;
+}
+
+.ib-stat-lbl {
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* 3. Filter Bar */
+.ib-filter-bar {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ib-search-box {
+  position: relative;
+  flex: 1 1 260px;
+  max-width: 400px;
+}
+
+.ib-search-box i {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 0.95rem;
+}
+
+.ib-search-input {
+  width: 100%;
+  padding: 0.55rem 0.85rem 0.55rem 2.4rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  color: #1e293b;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.ib-search-input:focus {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+.ib-filter-tabs {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.ib-tab-btn {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ib-tab-btn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.ib-tab-btn.active {
+  background: #f5f0ff;
+  border-color: #c4b5fd;
+  color: #7c3aed;
+  font-weight: 600;
+}
+
+/* 4. Main Two Column Layout */
+.ib-main-layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .ib-main-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 5. Button Cards Grid */
+.ib-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 1rem;
+}
+
+.ib-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.ib-card:hover {
+  border-color: #c4b5fd;
+  box-shadow: 0 6px 14px rgba(124, 58, 237, 0.08);
+  transform: translateY(-2px);
+}
+
+.ib-card.selected {
+  border-color: #8b5cf6;
+  background: #faf7ff;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+}
+
+.ib-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.ib-card-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.ib-badge-type {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+.ib-badge-type.URL          { background: #eff6ff; color: #2563eb; }
+.ib-badge-type.PHONE_NUMBER { background: #ecfdf5; color: #059669; }
+.ib-badge-type.QUICK_REPLY  { background: #eef2ff; color: #4f46e5; }
+.ib-badge-type.COPY_CODE    { background: #fffbeb; color: #d97706; }
+
+/* The Simulated WhatsApp Button Pill */
+.ib-wa-btn-preview {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.55rem 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  color: #2563eb;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0.65rem 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  text-align: center;
+}
+
+.ib-wa-btn-preview.phone { color: #059669; }
+.ib-wa-btn-preview.reply { color: #4f46e5; }
+.ib-wa-btn-preview.code  { color: #d97706; }
+
+.ib-card-meta {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin-bottom: 0.85rem;
+  word-break: break-all;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ib-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f1f5f9;
+  margin-top: auto;
+}
+
+.ib-card-action-btn {
+  background: transparent;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #64748b;
+  padding: 0.3rem 0.55rem;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: all 0.2s ease;
+}
+
+.ib-card-action-btn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.ib-card-action-btn.delete:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.ib-card-action-btn.edit:hover {
+  background: #f5f0ff;
+  color: #7c3aed;
+}
+
+/* 6. Sticky WhatsApp Mockup Preview */
+.ib-preview-sticky {
+  position: sticky;
+  top: 90px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.ib-mockup-header {
+  background: #075e54;
+  color: #ffffff;
+  padding: 0.85rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ib-mockup-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.ib-mockup-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.ib-mockup-sub {
+  font-size: 0.72rem;
+  opacity: 0.85;
+}
+
+.ib-mockup-body {
+  background: #efeae2;
+  background-image: radial-gradient(#d5cbb8 0.75px, transparent 0.75px);
+  background-size: 14px 14px;
+  padding: 1.2rem;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.ib-mockup-bubble {
+  background: #ffffff;
+  border-radius: 8px 8px 8px 0;
+  padding: 0.75rem 0.85rem 0.4rem 0.85rem;
+  max-width: 90%;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.12);
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+.ib-mockup-bubble-text {
+  font-size: 0.86rem;
+  color: #111b21;
+  line-height: 1.4;
+  margin-bottom: 0.35rem;
+}
+
+.ib-mockup-time {
+  font-size: 0.68rem;
+  color: #667781;
+  text-align: right;
+  margin-bottom: 0.2rem;
+}
+
+.ib-mockup-cta-btn {
+  background: #ffffff;
+  border: 1px solid #e9edef;
+  border-radius: 6px;
+  padding: 0.65rem 0.85rem;
+  color: #00a884;
+  font-weight: 600;
+  font-size: 0.86rem;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ib-mockup-cta-btn:hover {
+  background: #f8fafc;
+}
+
+.ib-mockup-details {
+  padding: 1rem;
+  background: #ffffff;
+  border-top: 1px solid #f1f5f9;
+}
+
+.ib-mockup-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  margin-bottom: 0.35rem;
+  color: #64748b;
+}
+
+.ib-mockup-row span:last-child {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* 7. Modal Styling */
+.ib-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(3px);
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.ib-modal-content {
+  background: #ffffff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 580px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  animation: ibModalPop 0.2s ease-out;
+}
+
+@keyframes ibModalPop {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.ib-modal-header {
+  padding: 1.2rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ib-modal-header h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.ib-modal-close {
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.ib-modal-body {
+  padding: 1.5rem;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.ib-form-group {
+  margin-bottom: 1.1rem;
+}
+
+.ib-form-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0.35rem;
+}
+
+.ib-form-control {
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  color: #1e293b;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.ib-form-control:focus {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+.ib-char-count {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.74rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
+.ib-char-count.warn {
+  color: #ef4444;
+}
+
+.ib-modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  background: #f8fafc;
+}
+
+.ib-btn-cancel {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  font-weight: 600;
+  font-size: 0.88rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.ib-btn-save {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  border: none;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.88rem;
+  padding: 0.55rem 1.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(124, 58, 237, 0.3);
+}
+
+/* 8. Empty State */
+.ib-empty-state {
+  background: #ffffff;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: #64748b;
+}
+
+.ib-empty-icon {
+  font-size: 2.8rem;
+  color: #cbd5e1;
+  margin-bottom: 0.75rem;
+}
+
+.ib-empty-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0.35rem;
+}
