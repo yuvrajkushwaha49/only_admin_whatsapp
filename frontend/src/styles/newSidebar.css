@@ -148,16 +148,16 @@
   color: #1e293b;
 }
 
-/* Active State - Theme-Matched Accent (Matching Image 2 Green Highlight) */
+/* Active State - Aiveexa Brand Purple Theme */
 .aiveexa-nav-item.active {
-  color: #00c067 !important;
+  color: #7c3aed !important;
   font-weight: 700 !important;
-  background-color: #eafbf3 !important;
-  border-left: 3.5px solid #00c067 !important;
+  background-color: #f5f0ff !important;
+  border-left: 3.5px solid #8b5cf6 !important;
   border-radius: 4px 8px 8px 4px !important;
-  box-shadow: 0 1px 4px rgba(0, 192, 103, 0.12);
+  box-shadow: 0 1px 4px rgba(139, 92, 246, 0.14);
 }
 
 .aiveexa-nav-item.active .aiveexa-nav-icon {
-  color: #00c067 !important;
+  color: #8b5cf6 !important;
 }

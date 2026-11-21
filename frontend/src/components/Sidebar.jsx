@@ -29,7 +29,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
 
   useEffect(() => {
     fetchUnreadCount();
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
   useEffect(() => {
     const handleUnreadChange = () => fetchUnreadCount();
@@ -56,23 +56,23 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
     }
   };
 
-  // Sections matching Image 2
+  // Dedicated routes & query states so items don't collide
   const navSections = [
     {
       heading: 'HOME',
       items: [
-        { to: '/dashboard', label: 'Dashboard', icon: 'bi-house-door', exact: true }
+        { to: '/dashboard', label: 'Dashboard', icon: 'bi-house-door' }
       ]
     },
     {
       heading: 'WHATSAPP',
       items: [
-        { to: '/whatsapp', label: 'Connect', icon: 'bi-link-45deg' },
+        { to: '/whatsapp?tab=connect', label: 'Connect', icon: 'bi-link-45deg' },
         { to: '/whatsapp', label: 'Connected Numbers', icon: 'bi-telephone' },
-        { to: '/settings', label: 'Business Profile', icon: 'bi-card-image' },
+        { to: '/settings?tab=profile', label: 'Business Profile', icon: 'bi-card-image' },
         { to: '/templates', label: 'Templates', icon: 'bi-file-earmark-text' },
-        { to: '/templates', label: 'Interactive Buttons', icon: 'bi-grid' },
-        { to: '/whatsapp', label: 'Health', icon: 'bi-heart' },
+        { to: '/templates?type=buttons', label: 'Interactive Buttons', icon: 'bi-grid' },
+        { to: '/whatsapp?tab=health', label: 'Health', icon: 'bi-heart' },
         { to: '/admin/meta', label: 'Webhook Status', icon: 'bi-lightning-charge' }
       ]
     },
@@ -90,7 +90,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
     {
       heading: 'LEADS',
       items: [
-        { to: '/contacts', label: 'Lead Manager', icon: 'bi-briefcase' }
+        { to: '/contacts?view=leads', label: 'Lead Manager', icon: 'bi-briefcase' }
       ]
     },
     {
@@ -98,9 +98,9 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
       items: [
         { to: '/contacts', label: 'All Contacts', icon: null },
         { to: '/imports', label: 'Import CSV', icon: 'bi-upload' },
-        { to: '/contacts', label: 'Export', icon: 'bi-download' },
+        { to: '/contacts?action=export', label: 'Export', icon: 'bi-download' },
         { to: '/contacts/groups', label: 'Contact Groups', icon: 'bi-people' },
-        { to: '/contacts', label: 'Tags', icon: 'bi-tag' }
+        { to: '/contacts?view=tags', label: 'Tags', icon: 'bi-tag' }
       ]
     },
     {
@@ -108,22 +108,22 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
       items: [
         { to: '/campaigns', label: 'Campaigns', icon: 'bi-send' },
         { to: '/campaigns/new', label: 'Broadcast', icon: 'bi-megaphone' },
-        { to: '/dashboard', label: 'Analytics', icon: 'bi-graph-up' },
+        { to: '/dashboard?view=analytics', label: 'Analytics', icon: 'bi-graph-up' },
         { to: '/activity-logs', label: 'Audit Logs', icon: 'bi-clock-history' }
       ]
     },
     {
       heading: 'REPORTS',
       items: [
-        { to: '/campaigns', label: 'Campaign Report', icon: 'bi-send' },
-        { to: '/activity-logs', label: 'Message Report', icon: 'bi-chat-square-dots' },
-        { to: '/contacts', label: 'Contact Report', icon: null }
+        { to: '/campaigns?view=reports', label: 'Campaign Report', icon: 'bi-send' },
+        { to: '/activity-logs?type=messages', label: 'Message Report', icon: 'bi-chat-square-dots' },
+        { to: '/contacts?view=reports', label: 'Contact Report', icon: null }
       ]
     },
     {
       heading: 'TEAM',
       items: [
-        { to: '/team', label: 'Team Leads', icon: 'bi-person' },
+        { to: '/team?role=lead', label: 'Team Leads', icon: 'bi-person' },
         { to: '/team', label: 'Members', icon: 'bi-people' }
       ]
     },
@@ -135,6 +135,21 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
     }
   ];
 
+  const currentFullPath = location.pathname + location.search;
+
+  const isItemActive = (targetTo) => {
+    if (targetTo === '/dashboard') {
+      return location.pathname === '/' || (location.pathname === '/dashboard' && !location.search);
+    }
+    if (targetTo.includes('?')) {
+      return currentFullPath === targetTo;
+    }
+    if (location.pathname === targetTo) {
+      return !location.search;
+    }
+    return false;
+  };
+
   return (
     <aside className={`aiveexa-sidebar ${isOpen ? 'open' : 'collapsed'}`}>
       <div className="aiveexa-sidebar-scroll">
@@ -145,17 +160,14 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
             )}
             <div className="aiveexa-nav-list">
               {sec.items.map((item, itemIdx) => {
-                const isDashboardItem = item.to === '/dashboard';
-                const isExactActive = isDashboardItem
-                  ? location.pathname === '/' || location.pathname === '/dashboard'
-                  : location.pathname === item.to || (item.to !== '/' && location.pathname.startsWith(item.to));
+                const active = isItemActive(item.to);
 
                 return (
                   <NavLink
                     key={`${sec.heading}_${item.label}_${itemIdx}`}
                     to={item.to}
                     onClick={handleLinkClick}
-                    className={`aiveexa-nav-item ${isExactActive ? 'active' : ''}`}
+                    className={`aiveexa-nav-item ${active ? 'active' : ''}`}
                     title={item.label}
                   >
                     {item.icon ? (
