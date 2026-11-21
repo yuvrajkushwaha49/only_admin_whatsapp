@@ -455,7 +455,7 @@ export default function InteractiveButtons() {
         </div>
       </div>
 
-      {/* 4. Button Sets Content (Box or Table View) */}
+      {/* 4. Button Sets Content (Box or Table View with Live Right-Side WhatsApp Preview) */}
       {loading ? (
         <div className="d-flex justify-content-center p-5">
           <div className="spinner-border text-primary" role="status"></div>
@@ -471,165 +471,287 @@ export default function InteractiveButtons() {
             <i className="bi bi-plus-lg"></i> + Create Button Set
           </button>
         </div>
-      ) : viewMode === 'box' ? (
-        <div className="ib-cards-grid">
-          {buttons.map((btn) => {
-            const isSelected = selectedButton?.id === btn.id;
-            const cardButtons = Array.isArray(btn.buttons_data) && btn.buttons_data.length > 0
-              ? btn.buttons_data
-              : (btn.button_text ? [{ id: btn.value, label: btn.button_text }] : []);
-
-            return (
-              <div
-                key={btn.id}
-                className={`ib-card ${isSelected ? 'selected' : ''}`}
-                onClick={() => setSelectedButton(btn)}
-              >
-                <div>
-                  <div className="ib-card-head">
-                    <h4 className="ib-card-title">{btn.title}</h4>
-                    <span className="ib-badge-type">
-                      {btn.component_type || btn.button_type}
-                    </span>
-                  </div>
-
-                  {btn.message_text && (
-                    <div className="ib-card-msg">
-                      "{btn.message_text}"
-                    </div>
-                  )}
-
-                  {/* Render the buttons list in the card */}
-                  <div className="ib-card-btns-list">
-                    {cardButtons.map((cb, idx) => (
-                      <div key={idx} className="ib-card-btn-item">
-                        <span>{cb.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="ib-card-actions">
-                  <span className="small text-muted">
-                    {cardButtons.length} button{cardButtons.length !== 1 ? 's' : ''}
-                  </span>
-                  <div className="d-flex align-items-center gap-1">
-                    <button
-                      className="ib-card-action-btn"
-                      onClick={(e) => handleCopySnippet(btn, e)}
-                      title="Copy Meta JSON Snippet"
-                    >
-                      <i className="bi bi-code-slash"></i>
-                    </button>
-                    <button
-                      className="ib-card-action-btn edit"
-                      onClick={(e) => handleOpenEditModal(btn, e)}
-                      title="Edit Button Set"
-                    >
-                      <i className="bi bi-pencil"></i> Edit
-                    </button>
-                    <button
-                      className="ib-card-action-btn delete"
-                      onClick={(e) => handleDeleteButtonSet(btn, e)}
-                      title="Delete Button Set"
-                    >
-                      <i className="bi bi-trash"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
       ) : (
-        <div className="ib-table-wrap">
-          <table className="ib-data-table">
-            <thead>
-              <tr>
-                <th>Name / ID</th>
-                <th>Component Type</th>
-                <th>Delivery</th>
-                <th>Message Text</th>
-                <th>Buttons Configured</th>
-                <th>Follow-up</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {buttons.map((btn) => {
-                const cardButtons = Array.isArray(btn.buttons_data) && btn.buttons_data.length > 0
-                  ? btn.buttons_data
-                  : (btn.button_text ? [{ id: btn.value, label: btn.button_text }] : []);
+        <div className="ib-split-layout">
+          {/* Left Column: Cards or Table */}
+          <div className="ib-split-left">
+            {viewMode === 'box' ? (
+              <div className="ib-cards-grid">
+                {buttons.map((btn) => {
+                  const isSelected = selectedButton?.id === btn.id;
+                  const cardButtons = Array.isArray(btn.buttons_data) && btn.buttons_data.length > 0
+                    ? btn.buttons_data
+                    : (btn.button_text ? [{ id: btn.value, label: btn.button_text }] : []);
 
-                return (
-                  <tr key={btn.id}>
-                    <td>
-                      <span className="ib-table-name">{btn.title}</span>
-                      <span className="ib-table-sub">ID: #{btn.id}</span>
-                    </td>
-                    <td>
-                      <span className={`ib-table-badge ${btn.component_type ? btn.component_type.replace(/\s+/g, '_') : 'Feedback'}`}>
-                        {btn.component_type || 'Feedback'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="badge bg-light text-dark border">
-                        {btn.delivery_type === 'keyword_list' ? 'Keyword list' : 'Buttons'}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="ib-table-msg" title={btn.message_text}>
-                        {btn.message_text ? `"${btn.message_text}"` : <span className="text-muted italic">No message text</span>}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="ib-table-btns-wrap">
-                        {cardButtons.map((cb, idx) => (
-                          <span key={idx} className="ib-table-btn-chip">
-                            {cb.label}
+                  return (
+                    <div
+                      key={btn.id}
+                      className={`ib-card ${isSelected ? 'selected' : ''}`}
+                      onClick={() => setSelectedButton(btn)}
+                    >
+                      <div>
+                        <div className="ib-card-head">
+                          <h4 className="ib-card-title">{btn.title}</h4>
+                          <span className={`ib-badge-type ${btn.component_type ? btn.component_type.replace(/\s+/g, '_') : 'Feedback'}`}>
+                            {btn.component_type || btn.button_type}
                           </span>
-                        ))}
+                        </div>
+
+                        {btn.message_text && (
+                          <div className="ib-card-msg">
+                            "{btn.message_text}"
+                          </div>
+                        )}
+
+                        {/* Render the buttons list in the card */}
+                        <div className="ib-card-btns-list">
+                          {cardButtons.map((cb, idx) => (
+                            <div key={idx} className="ib-card-btn-item">
+                              <span>{cb.label}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </td>
-                    <td>
-                      {btn.follow_up_enabled ? (
-                        <span className="badge bg-success-subtle text-success border border-success-subtle">
-                          <i className="bi bi-check-circle me-1"></i> Enabled
+
+                      <div className="ib-card-actions">
+                        <span className="small text-muted">
+                          {cardButtons.length} button{cardButtons.length !== 1 ? 's' : ''}
                         </span>
-                      ) : (
-                        <span className="text-muted small">None</span>
-                      )}
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div className="ib-table-actions justify-content-end">
-                        <button
-                          className="btn btn-sm btn-outline-secondary"
-                          onClick={(e) => handleCopySnippet(btn, e)}
-                          title="Copy Meta JSON Snippet"
+                        <div className="d-flex align-items-center gap-1">
+                          <button
+                            className="ib-card-action-btn"
+                            onClick={(e) => handleCopySnippet(btn, e)}
+                            title="Copy Meta JSON Snippet"
+                          >
+                            <i className="bi bi-code-slash"></i>
+                          </button>
+                          <button
+                            className="ib-card-action-btn edit"
+                            onClick={(e) => handleOpenEditModal(btn, e)}
+                            title="Edit Button Set"
+                          >
+                            <i className="bi bi-pencil"></i> Edit
+                          </button>
+                          <button
+                            className="ib-card-action-btn delete"
+                            onClick={(e) => handleDeleteButtonSet(btn, e)}
+                            title="Delete Button Set"
+                          >
+                            <i className="bi bi-trash"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="ib-table-wrap">
+                <table className="ib-data-table">
+                  <thead>
+                    <tr>
+                      <th>Name / ID</th>
+                      <th>Component Type</th>
+                      <th>Delivery</th>
+                      <th>Message Text</th>
+                      <th>Buttons</th>
+                      <th>Follow-up</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {buttons.map((btn) => {
+                      const isSelected = selectedButton?.id === btn.id;
+                      const cardButtons = Array.isArray(btn.buttons_data) && btn.buttons_data.length > 0
+                        ? btn.buttons_data
+                        : (btn.button_text ? [{ id: btn.value, label: btn.button_text }] : []);
+
+                      return (
+                        <tr
+                          key={btn.id}
+                          className={isSelected ? 'ib-table-row-selected' : ''}
+                          onClick={() => setSelectedButton(btn)}
+                          style={{ cursor: 'pointer' }}
                         >
-                          <i className="bi bi-code-slash"></i>
+                          <td>
+                            <span className="ib-table-name">{btn.title}</span>
+                            <span className="ib-table-sub">ID: #{btn.id}</span>
+                          </td>
+                          <td>
+                            <span className={`ib-table-badge ${btn.component_type ? btn.component_type.replace(/\s+/g, '_') : 'Feedback'}`}>
+                              {btn.component_type || 'Feedback'}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="badge bg-light text-dark border">
+                              {btn.delivery_type === 'keyword_list' ? 'Keyword list' : 'Buttons'}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="ib-table-msg" title={btn.message_text}>
+                              {btn.message_text ? `"${btn.message_text}"` : <span className="text-muted italic">No message text</span>}
+                            </div>
+                          </td>
+                          <td>
+                            <div className="ib-table-btns-wrap">
+                              {cardButtons.map((cb, idx) => (
+                                <span key={idx} className="ib-table-btn-chip">
+                                  {cb.label}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td>
+                            {btn.follow_up_enabled ? (
+                              <span className="badge bg-success-subtle text-success border border-success-subtle">
+                                <i className="bi bi-check-circle me-1"></i> Enabled
+                              </span>
+                            ) : (
+                              <span className="text-muted small">None</span>
+                            )}
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <div className="ib-table-actions justify-content-end" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                className="btn btn-sm btn-outline-secondary"
+                                onClick={(e) => handleCopySnippet(btn, e)}
+                                title="Copy Meta JSON Snippet"
+                              >
+                                <i className="bi bi-code-slash"></i>
+                              </button>
+                              <button
+                                className="btn btn-sm btn-outline-success"
+                                onClick={(e) => handleOpenEditModal(btn, e)}
+                                title="Edit"
+                              >
+                                <i className="bi bi-pencil"></i>
+                              </button>
+                              <button
+                                className="btn btn-sm btn-outline-danger"
+                                onClick={(e) => handleDeleteButtonSet(btn, e)}
+                                title="Delete"
+                              >
+                                <i className="bi bi-trash"></i>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Right Column: Live Sticky WhatsApp Preview of the Selected Button Set */}
+          <div className="ib-split-right">
+            <div className="ib-side-preview-card">
+              <div className="ib-side-preview-header">
+                <h4 className="ib-side-preview-title">
+                  <i className="bi bi-eye-fill text-primary"></i>
+                  <span>Live WhatsApp Preview</span>
+                </h4>
+                {selectedButton && (
+                  <span className="ib-side-preview-badge">
+                    {selectedButton.title}
+                  </span>
+                )}
+              </div>
+
+              {selectedButton ? (
+                <>
+                  {/* WhatsApp Brand Header Bar */}
+                  <div className="ib-device-bar">
+                    <div className="ib-device-avatar">
+                      <i className="bi bi-whatsapp"></i>
+                    </div>
+                    <div className="ib-device-info">
+                      <h5>TechSky Media <i className="bi bi-patch-check-fill text-info"></i></h5>
+                      <span>Official WhatsApp Business</span>
+                    </div>
+                  </div>
+
+                  {/* WhatsApp Chat Wallpaper Screen */}
+                  <div className="ib-device-screen">
+                    {/* Bubble */}
+                    <div className="ib-device-bubble">
+                      <div className="ib-device-bubble-text">
+                        {selectedButton.message_text || 'Your message text appears here.'}
+                      </div>
+                      <div className="ib-device-bubble-time">
+                        <span>10:48 AM</span>
+                        <span className="text-primary fw-bold">✓✓</span>
+                      </div>
+                    </div>
+
+                    {/* Stack of Tappable Buttons */}
+                    <div className="ib-device-buttons-stack">
+                      {(Array.isArray(selectedButton.buttons_data) && selectedButton.buttons_data.length > 0
+                        ? selectedButton.buttons_data
+                        : (selectedButton.button_text ? [{ id: selectedButton.value, label: selectedButton.button_text }] : [])
+                      ).map((cb, idx) => (
+                        <div key={idx} className="ib-device-btn-pill">
+                          <span>{cb.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Metadata & Actions */}
+                  <div className="ib-side-preview-meta">
+                    <div className="ib-side-preview-row">
+                      <span>Preset Name:</span>
+                      <span>{selectedButton.title}</span>
+                    </div>
+                    <div className="ib-side-preview-row">
+                      <span>Component Type:</span>
+                      <span>{selectedButton.component_type || selectedButton.button_type}</span>
+                    </div>
+                    <div className="ib-side-preview-row">
+                      <span>Delivery Mode:</span>
+                      <span>{selectedButton.delivery_type === 'keyword_list' ? 'Keyword list' : 'Tappable buttons'}</span>
+                    </div>
+                    <div className="ib-side-preview-row">
+                      <span>Follow-up:</span>
+                      <span>{selectedButton.follow_up_enabled ? 'Enabled' : 'None'}</span>
+                    </div>
+
+                    <div className="ib-side-preview-actions">
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-primary w-100 fw-semibold"
+                        onClick={(e) => handleCopySnippet(selectedButton, e)}
+                      >
+                        <i className="bi bi-clipboard me-1"></i> Copy Meta JSON Component
+                      </button>
+                      <div className="d-flex gap-2">
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-success flex-fill fw-semibold"
+                          onClick={(e) => handleOpenEditModal(selectedButton, e)}
+                        >
+                          <i className="bi bi-pencil me-1"></i> Edit Preset
                         </button>
                         <button
-                          className="btn btn-sm btn-outline-success"
-                          onClick={(e) => handleOpenEditModal(btn, e)}
-                          title="Edit"
+                          type="button"
+                          className="btn btn-sm btn-outline-danger flex-fill fw-semibold"
+                          onClick={(e) => handleDeleteButtonSet(selectedButton, e)}
                         >
-                          <i className="bi bi-pencil"></i>
-                        </button>
-                        <button
-                          className="btn btn-sm btn-outline-danger"
-                          onClick={(e) => handleDeleteButtonSet(btn, e)}
-                          title="Delete"
-                        >
-                          <i className="bi bi-trash"></i>
+                          <i className="bi bi-trash me-1"></i> Delete
                         </button>
                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="p-4 text-center text-muted small">
+                  <i className="bi bi-cursor fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                  Click any button set on the left to preview it live here
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
