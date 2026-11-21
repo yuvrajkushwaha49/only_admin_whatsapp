@@ -326,11 +326,66 @@
 
 .ib-split-left {
   min-width: 0;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 0.6rem;
+  scroll-behavior: smooth;
+}
+
+/* Custom slim scrollbar for left column */
+.ib-split-left::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ib-split-left::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 8px;
+}
+
+.ib-split-left::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 8px;
+}
+
+.ib-split-left::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .ib-split-right {
   position: sticky;
-  top: 90px;
+  top: 84px;
+  align-self: start;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.ib-split-right::-webkit-scrollbar {
+  width: 5px;
+}
+
+.ib-split-right::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ib-split-right::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 8px;
+}
+
+@media (max-width: 991px) {
+  .ib-split-left {
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
+  }
+
+  .ib-split-right {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+    margin-top: 1.5rem;
+  }
 }
 
 .ib-side-preview-card {
