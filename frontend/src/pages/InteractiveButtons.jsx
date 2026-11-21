@@ -288,7 +288,7 @@ export default function InteractiveButtons() {
 
   if (!hasAccess) {
     return (
-      <div className="ib-container">
+      <div className="ib-page-container">
         <div className="alert alert-danger d-flex align-items-center gap-3 p-4 rounded-3 shadow-sm" role="alert">
           <i className="bi bi-shield-lock-fill fs-2 text-danger"></i>
           <div>
@@ -303,7 +303,7 @@ export default function InteractiveButtons() {
   }
 
   return (
-    <div className="ib-container">
+    <div className="ib-page-container">
       {/* Toast Alert */}
       {toastMessage && (
         <div style={{
@@ -327,60 +327,66 @@ export default function InteractiveButtons() {
         </div>
       )}
 
-      {/* 1. Top Header Bar */}
-      <div className="ib-header-bar">
-        <div className="ib-title-wrap">
-          <h1>
-            Interactive Buttons Library
-            <span className="ib-role-badge">Super Admin & Owner & Admin</span>
-          </h1>
-          <p>
-            Create, store, and reuse verified WhatsApp Call-to-Action (CTA), Feedback, and Quick Reply button presets.
-          </p>
+      {/* 1. Top Hero Title Bar (Matching Other Pages) */}
+      <div className="ib-hero-banner">
+        <div className="ib-hero-left">
+          <div className="ib-brand-square">
+            <i className="bi bi-grid-fill"></i>
+          </div>
+          <div>
+            <h1 className="ib-hero-title">
+              Manage Interactive Buttons
+              <span className="ib-role-tag">Super Admin & Owner & Admin</span>
+            </h1>
+            <p className="ib-hero-subtitle">
+              Pre-configure and manage interactive WhatsApp button presets for templates, campaigns, and instant replies.
+            </p>
+          </div>
         </div>
-        <div>
-          <button className="ib-create-btn" onClick={handleOpenCreateModal}>
+        <div className="ib-hero-actions">
+          <button className="ib-primary-btn" onClick={handleOpenCreateModal}>
             <i className="bi bi-plus-lg"></i>
-            <span>+ Create Interactive Button</span>
+            <span>+ Create Button Set</span>
           </button>
         </div>
       </div>
 
-      {/* 2. Stat Metric Cards */}
-      <div className="ib-stats-grid">
-        <div className="ib-stat-card">
-          <div className="ib-stat-icon purple"><i className="bi bi-grid-fill"></i></div>
-          <div>
-            <div className="ib-stat-num">{stats.total}</div>
-            <div className="ib-stat-lbl">Total Button Sets</div>
+      {/* 2. Four KPI Metric Cards (Matching wa-kpi-grid & cnt-kpi-grid) */}
+      <div className="ib-kpi-grid">
+        <div className="ib-kpi-card">
+          <div className="ib-kpi-icon-circle purple">
+            <i className="bi bi-grid-fill"></i>
+          </div>
+          <div className="ib-kpi-info">
+            <span className="ib-kpi-value">{stats.total}</span>
+            <span className="ib-kpi-label">Total Button Sets</span>
           </div>
         </div>
-        <div className="ib-stat-card">
-          <div className="ib-stat-icon green"><i className="bi bi-chat-square-dots-fill"></i></div>
-          <div>
-            <div className="ib-stat-num">{stats.quickReplyCount}</div>
-            <div className="ib-stat-lbl">Feedback / Quick Replies</div>
+        <div className="ib-kpi-card">
+          <div className="ib-kpi-icon-circle green">
+            <i className="bi bi-chat-square-dots-fill"></i>
+          </div>
+          <div className="ib-kpi-info">
+            <span className="ib-kpi-value">{stats.quickReplyCount}</span>
+            <span className="ib-kpi-label">Feedback / Quick Replies</span>
           </div>
         </div>
-        <div className="ib-stat-card">
-          <div className="ib-stat-icon blue"><i className="bi bi-link-45deg"></i></div>
-          <div>
-            <div className="ib-stat-num">{stats.urlCount}</div>
-            <div className="ib-stat-lbl">Website URL CTAs</div>
+        <div className="ib-kpi-card">
+          <div className="ib-kpi-icon-circle blue">
+            <i className="bi bi-link-45deg"></i>
+          </div>
+          <div className="ib-kpi-info">
+            <span className="ib-kpi-value">{stats.urlCount}</span>
+            <span className="ib-kpi-label">Website URL CTAs</span>
           </div>
         </div>
-        <div className="ib-stat-card">
-          <div className="ib-stat-icon indigo"><i className="bi bi-telephone-fill"></i></div>
-          <div>
-            <div className="ib-stat-num">{stats.phoneCount}</div>
-            <div className="ib-stat-lbl">Phone Call Buttons</div>
+        <div className="ib-kpi-card">
+          <div className="ib-kpi-icon-circle amber">
+            <i className="bi bi-telephone-fill"></i>
           </div>
-        </div>
-        <div className="ib-stat-card">
-          <div className="ib-stat-icon amber"><i className="bi bi-tag-fill"></i></div>
-          <div>
-            <div className="ib-stat-num">{stats.copyCodeCount}</div>
-            <div className="ib-stat-lbl">Coupon / Code Copies</div>
+          <div className="ib-kpi-info">
+            <span className="ib-kpi-value">{stats.phoneCount}</span>
+            <span className="ib-kpi-label">Phone Call Buttons</span>
           </div>
         </div>
       </div>
