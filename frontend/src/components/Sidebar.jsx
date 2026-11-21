@@ -71,8 +71,8 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
         { to: '/whatsapp', label: 'Connected Numbers', icon: 'bi-telephone' },
         { to: '/settings?tab=profile', label: 'Business Profile', icon: 'bi-card-image' },
         { to: '/templates', label: 'Templates', icon: 'bi-file-earmark-text' },
-        { to: '/templates?type=buttons', label: 'Interactive Buttons', icon: 'bi-grid' },
-        { to: '/whatsapp?tab=health', label: 'Health', icon: 'bi-heart' }
+        { to: '/templates?type=buttons', label: 'Interactive Buttons', icon: 'bi-grid' }
+        // { to: '/whatsapp?tab=health', label: 'Health', icon: 'bi-heart' }
         // { to: '/admin/meta', label: 'Webhook Status', icon: 'bi-lightning-charge' }
       ]
     },
