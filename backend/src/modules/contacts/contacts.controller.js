@@ -76,6 +76,38 @@ export async function resolveByPhones(req, res, next) {
   }
 }
 
+export async function exportContactsFile(req, res, next) {
+  try {
+    const { format = 'csv', groupId, tagId, status } = req.query;
+    const { buffer, contentType, filename, count } = await contactsService.exportContacts(
+      req.businessId,
+      { format, groupId, tagId, status },
+      req.user
+    );
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('X-Export-Count', count);
+    res.send(buffer);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function exportCount(req, res, next) {
+  try {
+    const { groupId, tagId, status } = req.query;
+    const count = await contactsService.getExportCount(
+      req.businessId,
+      { groupId, tagId, status },
+      req.user
+    );
+    res.json({ success: true, count });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export default {
   list,
   details,
@@ -84,5 +116,7 @@ export default {
   updateConsent,
   remove,
   tags,
-  resolveByPhones
+  resolveByPhones,
+  exportContactsFile,
+  exportCount
 };

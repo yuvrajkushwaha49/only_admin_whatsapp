@@ -1,5 +1,6 @@
 import { executeQuery, isUsingFallback, getMemoryStore } from '../../database/db.js';
 import { normalizePhone } from '../../utils/phone.js';
+import ExcelJS from 'exceljs';
 
 export async function listContacts(businessId, { page = 1, limit = 20, search = '', tag = '', status = '', optedIn = '' }, user = null) {
   const offset = (Number(page) - 1) * Number(limit);
@@ -601,6 +602,164 @@ export async function resolveContactsByPhones(businessId, phones = []) {
   };
 }
 
+export async function exportContacts(businessId, { format = 'csv', groupId, tagId, status }, user = null) {
+  const numBizId = Number(businessId);
+  const whereClauses = ['c.business_id = ?'];
+  const params = [numBizId];
+
+  if (groupId && groupId !== 'all' && groupId !== '') {
+    whereClauses.push('EXISTS (SELECT 1 FROM contact_group_members cgm WHERE cgm.contact_id = c.id AND cgm.group_id = ?)');
+    params.push(Number(groupId));
+  }
+
+  if (tagId && tagId !== 'all' && tagId !== '') {
+    whereClauses.push('EXISTS (SELECT 1 FROM contact_tags ct WHERE ct.contact_id = c.id AND ct.tag_id = ?)');
+    params.push(Number(tagId));
+  }
+
+  if (status && status !== 'all' && status !== '') {
+    whereClauses.push('c.status = ?');
+    params.push(status);
+  }
+
+  // Agent role restriction
+  if (user?.role === 'agent') {
+    whereClauses.push(`(
+      c.assigned_user_id = ? OR 
+      EXISTS (SELECT 1 FROM whatsapp_conversations wc WHERE wc.business_id = ? AND wc.assigned_user_id = ? AND (wc.contact_id = c.id OR wc.customer_phone = c.phone))
+    )`);
+    params.push(user.id, numBizId, user.id);
+  }
+
+  const whereSql = whereClauses.join(' AND ');
+
+  const sql = `
+    SELECT 
+      c.id,
+      c.name,
+      c.phone,
+      c.email,
+      c.status,
+      c.is_opted_in,
+      c.created_at,
+      (
+        SELECT GROUP_CONCAT(t.name SEPARATOR ', ')
+        FROM contact_tags ct
+        JOIN tags t ON ct.tag_id = t.id
+        WHERE ct.contact_id = c.id
+      ) AS tags,
+      (
+        SELECT GROUP_CONCAT(g.name SEPARATOR ', ')
+        FROM contact_group_members cgm
+        JOIN contact_groups g ON cgm.group_id = g.id
+        WHERE cgm.contact_id = c.id
+      ) AS \`groups\`
+    FROM contacts c
+    WHERE ${whereSql}
+    ORDER BY c.created_at DESC
+  `;
+
+  let rows = [];
+  if (isUsingFallback()) {
+    const store = getMemoryStore();
+    rows = (store.contacts || []).filter(c => c.business_id === numBizId);
+    if (groupId && groupId !== 'all') {
+      const gMembers = (store.contact_group_members || []).filter(m => m.group_id === Number(groupId)).map(m => m.contact_id);
+      rows = rows.filter(c => gMembers.includes(c.id));
+    }
+    if (tagId && tagId !== 'all') {
+      const tMembers = (store.contact_tags || []).filter(ct => ct.tag_id === Number(tagId)).map(ct => ct.contact_id);
+      rows = rows.filter(c => tMembers.includes(c.id));
+    }
+  } else {
+    rows = await executeQuery(sql, params);
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'Aiveexa WhatsApp Platform';
+  workbook.created = new Date();
+
+  const worksheet = workbook.addWorksheet('Contacts');
+  worksheet.columns = [
+    { header: 'ID', key: 'id', width: 10 },
+    { header: 'Name', key: 'name', width: 25 },
+    { header: 'Phone Number', key: 'phone', width: 20 },
+    { header: 'Email Address', key: 'email', width: 28 },
+    { header: 'Status', key: 'status', width: 14 },
+    { header: 'WhatsApp Opted In', key: 'is_opted_in', width: 18 },
+    { header: 'Contact Groups', key: 'groups', width: 26 },
+    { header: 'Tags', key: 'tags', width: 26 },
+    { header: 'Created Date', key: 'created_at', width: 20 }
+  ];
+
+  // Header styling: purple background, white bold text
+  worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  worksheet.getRow(1).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF7C3AED' }
+  };
+  worksheet.getRow(1).height = 24;
+  worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+  rows.forEach(c => {
+    worksheet.addRow({
+      id: c.id,
+      name: c.name || '',
+      phone: c.phone || '',
+      email: c.email || '',
+      status: c.status || 'active',
+      is_opted_in: c.is_opted_in ? 'Yes' : 'No',
+      groups: c.groups || '',
+      tags: c.tags || '',
+      created_at: c.created_at ? new Date(c.created_at).toISOString().split('T')[0] : ''
+    });
+  });
+
+  const isExcel = format.toLowerCase() === 'excel' || format.toLowerCase() === 'xlsx';
+  const timestamp = new Date().toISOString().slice(0, 10);
+  const filename = `contacts_export_${timestamp}.${isExcel ? 'xlsx' : 'csv'}`;
+  const contentType = isExcel
+    ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    : 'text/csv; charset=utf-8';
+
+  const buffer = isExcel ? await workbook.xlsx.writeBuffer() : await workbook.csv.writeBuffer();
+
+  return {
+    buffer,
+    filename,
+    contentType,
+    count: rows.length
+  };
+}
+
+export async function getExportCount(businessId, { groupId, tagId, status }, user = null) {
+  const numBizId = Number(businessId);
+  const whereClauses = ['c.business_id = ?'];
+  const params = [numBizId];
+
+  if (groupId && groupId !== 'all' && groupId !== '') {
+    whereClauses.push('EXISTS (SELECT 1 FROM contact_group_members cgm WHERE cgm.contact_id = c.id AND cgm.group_id = ?)');
+    params.push(Number(groupId));
+  }
+  if (tagId && tagId !== 'all' && tagId !== '') {
+    whereClauses.push('EXISTS (SELECT 1 FROM contact_tags ct WHERE ct.contact_id = c.id AND ct.tag_id = ?)');
+    params.push(Number(tagId));
+  }
+  if (status && status !== 'all' && status !== '') {
+    whereClauses.push('c.status = ?');
+    params.push(status);
+  }
+
+  const whereSql = whereClauses.join(' AND ');
+  if (isUsingFallback()) {
+    const store = getMemoryStore();
+    return (store.contacts || []).filter(c => c.business_id === numBizId).length;
+  }
+  const result = await executeQuery(`SELECT COUNT(*) as count FROM contacts c WHERE ${whereSql}`, params);
+  return Number(result[0]?.count || 0);
+}
+
 export default {
   listContacts,
   getContactDetails,
@@ -609,5 +768,7 @@ export default {
   updateConsent,
   deleteContact,
   listTags,
-  resolveContactsByPhones
+  resolveContactsByPhones,
+  exportContacts,
+  getExportCount
 };

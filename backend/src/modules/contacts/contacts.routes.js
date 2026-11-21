@@ -8,6 +8,8 @@ const router = Router();
 router.use(authenticate, requireTenant);
 
 router.get('/', contactsController.list);
+router.get('/export', contactsController.exportContactsFile);
+router.get('/export/count', contactsController.exportCount);
 router.get('/tags', contactsController.tags);
 router.post('/resolve-by-phones', contactsController.resolveByPhones);
 router.get('/:id', contactsController.details);
