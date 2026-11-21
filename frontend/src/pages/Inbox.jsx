@@ -1058,7 +1058,7 @@ export default function Inbox() {
                 <div>
                   <div className="inbox-brand-title">WhatsApp Inbox</div>
                   <div className="inbox-brand-subtitle">
-                    2 Chats • 1 Unread
+                    {stats?.all ?? conversations.length} Chat{(stats?.all ?? conversations.length) === 1 ? '' : 's'} • {stats?.unread ?? 0} Unread
                   </div>
                 </div>
               </div>
@@ -1089,7 +1089,7 @@ export default function Inbox() {
                   loadStats(newAccId);
                 }}
               >
-                <option value="all">All WhatsApp Channels ({accounts.length || 2})</option>
+                <option value="all">All WhatsApp Channels ({accounts.length})</option>
                 {accounts.map(acc => (
                   <option key={acc.id} value={acc.id}>
                     {acc.display_name || acc.verified_name || acc.account_name || 'WhatsApp'} ({acc.phone_number}) {acc.is_primary ? '★ Primary' : ''}
