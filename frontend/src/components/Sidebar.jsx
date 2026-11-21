@@ -100,7 +100,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
     {
       heading: 'CONTACTS',
       items: [
-        { to: '/contacts', label: 'All Contacts', icon: null },
+        { to: '/contacts', label: 'All Contacts', icon: 'bi-person-lines-fill' },
         { to: '/imports', label: 'Import CSV', icon: 'bi-upload' },
         { to: '/export', label: 'Export', icon: 'bi-download' },
         { to: '/contacts/groups', label: 'Contact Groups', icon: 'bi-people' },
