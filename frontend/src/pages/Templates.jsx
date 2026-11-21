@@ -1163,7 +1163,7 @@ export default function Templates() {
                   <button type="button" className="btn-close" onClick={() => setShowCreateModal(false)}></button>
                 </div>
 
-                <div className="modal-body p-4">
+                <div className="modal-body p-4 tpl-create-modal-body">
                   {formError && (
                     <div className="alert alert-danger py-2 px-3 small d-flex align-items-center gap-2 mb-3 rounded-3">
                       <i className="bi bi-exclamation-triangle-fill fs-5 flex-shrink-0"></i>
@@ -1171,9 +1171,9 @@ export default function Templates() {
                     </div>
                   )}
 
-                  <div className="row g-4">
-                    {/* Left Column: Form Controls */}
-                    <div className="col-12 col-lg-7">
+                  <div className="row g-4 align-items-start">
+                    {/* Left Column: Form Controls (Scrollable) */}
+                    <div className="col-12 col-lg-7 tpl-modal-form-scroll">
                       <form onSubmit={handleCreateSubmit}>
                         {/* Target WhatsApp Account */}
                         <div className="mb-3">
@@ -1574,8 +1574,8 @@ export default function Templates() {
                       </form>
                     </div>
 
-                    {/* Right Column: Live WhatsApp Mobile Simulator */}
-                    <div className="col-12 col-lg-5 text-center">
+                    {/* Right Column: Live WhatsApp Mobile Simulator (Fixed) */}
+                    <div className="col-12 col-lg-5 text-center tpl-modal-preview-fixed">
                       <div className="small fw-bold text-muted mb-2 text-uppercase d-flex align-items-center justify-content-center gap-1">
                         <i className="bi bi-phone"></i>
                         <span>Live WhatsApp Phone Simulator</span>
