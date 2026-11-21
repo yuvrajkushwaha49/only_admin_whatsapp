@@ -3,6 +3,8 @@ import { useAuth } from '../hooks/useAuth';
 import interactiveButtonsService from '../services/interactiveButtons.service';
 import '../styles/interactiveButtons.css';
 
+const QUICK_EMOJIS = ['👍', '👎', '✅', '❌', '📞', '🔗', '⭐', '😃'];
+
 export default function InteractiveButtons() {
   const { user, isSuperAdmin } = useAuth();
 
@@ -16,22 +18,33 @@ export default function InteractiveButtons() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedType, setSelectedType] = useState('ALL');
-  const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [selectedButton, setSelectedButton] = useState(null);
 
-  // Modal State
+  // Modal State matching user reference screenshot
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    button_type: 'URL',
-    button_text: '',
-    value: '',
-    url_type: 'STATIC',
-    category: 'MARKETING',
-    icon: 'bi-link-45deg',
-    is_active: 1
-  });
+  const [name, setName] = useState('feedback_btn');
+  const [componentType, setComponentType] = useState('Feedback');
+  const [delivery, setDelivery] = useState('Buttons');
+  const [messageText, setMessageText] = useState('Are you interested in this property?');
+  const [buttonsList, setButtonsList] = useState([
+    {
+      id: 'helpful',
+      label: '👍 Helpful',
+      when_chosen: 'Record feedback',
+      target: '',
+      auto_reply: 'Thanks for your interest.'
+    },
+    {
+      id: 'not_helpful',
+      label: '👎 Not Helpful',
+      when_chosen: 'Record feedback',
+      target: '',
+      auto_reply: 'Thanks {{name}}! An agent will contact you shortly.'
+    }
+  ]);
+  const [askFollowUp, setAskFollowUp] = useState(false);
+  const [followUpText, setFollowUpText] = useState('');
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
@@ -47,8 +60,7 @@ export default function InteractiveButtons() {
       setLoading(true);
       const res = await interactiveButtonsService.getButtons({
         search,
-        type: selectedType,
-        category: selectedCategory
+        type: selectedType
       });
       if (res.success && res.data) {
         setButtons(res.data.buttons || []);
@@ -67,113 +79,191 @@ export default function InteractiveButtons() {
 
   useEffect(() => {
     loadButtons();
-  }, [search, selectedType, selectedCategory]);
+  }, [search, selectedType]);
 
   const handleOpenCreateModal = () => {
     setEditingId(null);
-    setFormData({
-      title: '',
-      button_type: 'URL',
-      button_text: '',
-      value: '',
-      url_type: 'STATIC',
-      category: 'MARKETING',
-      icon: 'bi-link-45deg',
-      is_active: 1
-    });
+    setName('feedback_btn');
+    setComponentType('Feedback');
+    setDelivery('Buttons');
+    setMessageText('Are you interested in this property?');
+    setButtonsList([
+      {
+        id: 'helpful',
+        label: '👍 Helpful',
+        when_chosen: 'Record feedback',
+        target: '',
+        auto_reply: 'Thanks for your interest.'
+      },
+      {
+        id: 'not_helpful',
+        label: '👎 Not Helpful',
+        when_chosen: 'Record feedback',
+        target: '',
+        auto_reply: 'Thanks {{name}}! An agent will contact you shortly.'
+      }
+    ]);
+    setAskFollowUp(false);
+    setFollowUpText('');
     setFormError('');
     setShowModal(true);
   };
 
-  const handleOpenEditModal = (btn, e) => {
+  const handleOpenEditModal = (item, e) => {
     e.stopPropagation();
-    setEditingId(btn.id);
-    setFormData({
-      title: btn.title || '',
-      button_type: btn.button_type || 'URL',
-      button_text: btn.button_text || '',
-      value: btn.value || '',
-      url_type: btn.url_type || 'STATIC',
-      category: btn.category || 'MARKETING',
-      icon: btn.icon || 'bi-link-45deg',
-      is_active: btn.is_active !== undefined ? btn.is_active : 1
-    });
+    setEditingId(item.id);
+    setName(item.title || item.name || 'feedback_btn');
+    setComponentType(item.component_type || 'Feedback');
+    setDelivery(item.delivery_type === 'keyword_list' ? 'Keyword list' : 'Buttons');
+    setMessageText(item.message_text || 'Are you interested in this property?');
+
+    const loadedBtns = Array.isArray(item.buttons_data) && item.buttons_data.length > 0
+      ? item.buttons_data
+      : (item.button_text ? [{ id: item.value || 'btn_1', label: item.button_text, when_chosen: 'Record feedback', target: item.value || '', auto_reply: '' }] : []);
+
+    setButtonsList(loadedBtns.length > 0 ? loadedBtns : [
+      { id: 'btn_1', label: 'Option 1', when_chosen: 'Record feedback', target: '', auto_reply: '' }
+    ]);
+    setAskFollowUp(Boolean(item.follow_up_enabled));
+    setFollowUpText(item.follow_up_text || '');
     setFormError('');
     setShowModal(true);
   };
 
-  const handleSaveButton = async (e) => {
+  const handleAddButton = () => {
+    if (buttonsList.length >= 3) {
+      showToast('WhatsApp allows a maximum of 3 interactive buttons.', 'error');
+      return;
+    }
+    const nextIdx = buttonsList.length + 1;
+    setButtonsList([
+      ...buttonsList,
+      {
+        id: `option_${nextIdx}`,
+        label: `Option ${nextIdx}`,
+        when_chosen: 'Record feedback',
+        target: '',
+        auto_reply: ''
+      }
+    ]);
+  };
+
+  const handleRemoveButton = (idx) => {
+    if (buttonsList.length <= 1) {
+      showToast('A button set must have at least one button.', 'error');
+      return;
+    }
+    const updated = buttonsList.filter((_, i) => i !== idx);
+    setButtonsList(updated);
+  };
+
+  const handleMoveButton = (idx, direction) => {
+    const targetIdx = idx + direction;
+    if (targetIdx < 0 || targetIdx >= buttonsList.length) return;
+    const updated = [...buttonsList];
+    const temp = updated[idx];
+    updated[idx] = updated[targetIdx];
+    updated[targetIdx] = temp;
+    setButtonsList(updated);
+  };
+
+  const handleUpdateButtonField = (idx, field, value) => {
+    const updated = [...buttonsList];
+    updated[idx] = { ...updated[idx], [field]: value };
+    // Auto-generate button id from label if not manually customized
+    if (field === 'label' && (!updated[idx].id || updated[idx].id.startsWith('btn_') || updated[idx].id.startsWith('option_'))) {
+      const cleanSlug = value.toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/[-\s]+/g, '_');
+      if (cleanSlug) updated[idx].id = cleanSlug;
+    }
+    setButtonsList(updated);
+  };
+
+  const handleAppendEmoji = (btnIdx, emoji) => {
+    const currentLabel = buttonsList[btnIdx]?.label || '';
+    if (currentLabel.length + emoji.length <= 20) {
+      handleUpdateButtonField(btnIdx, 'label', `${emoji} ${currentLabel}`.trim());
+    } else {
+      handleUpdateButtonField(btnIdx, 'label', `${emoji}`);
+    }
+  };
+
+  const handleSaveButtonSet = async (e) => {
     e.preventDefault();
     setFormError('');
 
-    if (!formData.title.trim()) {
-      setFormError('Please enter a preset title');
+    if (!name.trim()) {
+      setFormError('Name is required');
       return;
     }
-    if (!formData.button_text.trim()) {
-      setFormError('Please enter button display text');
+
+    if (buttonsList.length === 0) {
+      setFormError('Please add at least one button');
       return;
     }
-    if (formData.button_text.length > 25) {
-      setFormError('Button display text cannot exceed 25 characters (Meta WhatsApp requirement)');
-      return;
+
+    for (let i = 0; i < buttonsList.length; i++) {
+      const b = buttonsList[i];
+      if (!b.label?.trim()) {
+        setFormError(`Button ${i + 1} Label is required`);
+        return;
+      }
+      if (b.label.length > 20) {
+        setFormError(`Button ${i + 1} Label exceeds 20 characters`);
+        return;
+      }
+      if (!b.id?.trim()) {
+        setFormError(`Button ${i + 1} Button ID is required`);
+        return;
+      }
     }
-    if (!formData.value.trim()) {
-      setFormError('Please enter the destination value (URL, phone number, or coupon code)');
-      return;
-    }
+
+    const payload = {
+      name: name.trim(),
+      title: name.trim(),
+      component_type: componentType,
+      delivery_type: delivery === 'Buttons' ? 'buttons' : 'keyword_list',
+      message_text: messageText,
+      buttons_data: buttonsList,
+      follow_up_enabled: askFollowUp ? 1 : 0,
+      follow_up_text: followUpText,
+      button_type: componentType === 'Call to action' ? 'URL' : 'QUICK_REPLY',
+      button_text: buttonsList[0]?.label || 'Button',
+      value: buttonsList[0]?.target || buttonsList[0]?.id || 'btn_1'
+    };
 
     try {
       setSubmitting(true);
       if (editingId) {
-        await interactiveButtonsService.updateButton(editingId, formData);
-        showToast('Interactive button updated successfully');
+        await interactiveButtonsService.updateButton(editingId, payload);
+        showToast('Button set updated successfully');
       } else {
-        await interactiveButtonsService.createButton(formData);
-        showToast('Interactive button preset created successfully');
+        await interactiveButtonsService.createButton(payload);
+        showToast('Button set created successfully');
       }
       setShowModal(false);
       await loadButtons();
     } catch (err) {
-      setFormError(err.response?.data?.error?.message || err.message || 'Failed to save button');
+      setFormError(err.response?.data?.error?.message || err.message || 'Failed to save button set');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDeleteButton = async (btn, e) => {
+  const handleDeleteButtonSet = async (btn, e) => {
     e.stopPropagation();
-    if (!window.confirm(`Are you sure you want to delete the interactive button "${btn.title}"?`)) {
+    if (!window.confirm(`Are you sure you want to delete the button set "${btn.title}"?`)) {
       return;
     }
     try {
       await interactiveButtonsService.deleteButton(btn.id);
-      showToast('Button preset deleted');
+      showToast('Button set deleted');
       if (selectedButton?.id === btn.id) {
         setSelectedButton(null);
       }
       await loadButtons();
     } catch (err) {
-      showToast(err.response?.data?.error?.message || 'Failed to delete button', 'error');
+      showToast(err.response?.data?.error?.message || 'Failed to delete button set', 'error');
     }
-  };
-
-  const handleCopySnippet = (btn, e) => {
-    e.stopPropagation();
-    const metaComponent = {
-      type: 'BUTTONS',
-      buttons: [
-        {
-          type: btn.button_type,
-          text: btn.button_text,
-          ...(btn.button_type === 'URL' ? { url: btn.value } : {}),
-          ...(btn.button_type === 'PHONE_NUMBER' ? { phone_number: btn.value } : {}),
-          ...(btn.button_type === 'COPY_CODE' ? { coupon_code: btn.value } : {})
-        }
-      ]
-    };
-    navigator.clipboard.writeText(JSON.stringify(metaComponent, null, 2));
-    showToast('Meta WhatsApp JSON Component copied to clipboard!');
   };
 
   if (!hasAccess) {
@@ -191,15 +281,6 @@ export default function InteractiveButtons() {
       </div>
     );
   }
-
-  const getButtonIcon = (type) => {
-    switch (type) {
-      case 'PHONE_NUMBER': return 'bi-telephone-fill';
-      case 'QUICK_REPLY': return 'bi-reply-fill';
-      case 'COPY_CODE': return 'bi-clipboard-check-fill';
-      default: return 'bi-box-arrow-up-right';
-    }
-  };
 
   return (
     <div className="ib-container">
@@ -226,18 +307,20 @@ export default function InteractiveButtons() {
         </div>
       )}
 
-      {/* 1. Header Bar */}
+      {/* 1. Top Header Bar */}
       <div className="ib-header-bar">
         <div className="ib-title-wrap">
           <h1>
             Interactive Buttons Library
+            <span className="ib-role-badge">Super Admin & Owner & Admin</span>
           </h1>
           <p>
-            Create, store, and reuse verified WhatsApp Call-to-Action (CTA) and Quick Reply buttons across templates and broadcasts.
+            Create, store, and reuse verified WhatsApp Call-to-Action (CTA), Feedback, and Quick Reply button presets.
           </p>
         </div>
         <div>
           <button className="ib-create-btn" onClick={handleOpenCreateModal}>
+            <i className="bi bi-plus-lg"></i>
             <span>+ Create Interactive Button</span>
           </button>
         </div>
@@ -249,7 +332,14 @@ export default function InteractiveButtons() {
           <div className="ib-stat-icon purple"><i className="bi bi-grid-fill"></i></div>
           <div>
             <div className="ib-stat-num">{stats.total}</div>
-            <div className="ib-stat-lbl">Total Preset Buttons</div>
+            <div className="ib-stat-lbl">Total Button Sets</div>
+          </div>
+        </div>
+        <div className="ib-stat-card">
+          <div className="ib-stat-icon green"><i className="bi bi-chat-square-dots-fill"></i></div>
+          <div>
+            <div className="ib-stat-num">{stats.quickReplyCount}</div>
+            <div className="ib-stat-lbl">Feedback / Quick Replies</div>
           </div>
         </div>
         <div className="ib-stat-card">
@@ -260,17 +350,10 @@ export default function InteractiveButtons() {
           </div>
         </div>
         <div className="ib-stat-card">
-          <div className="ib-stat-icon green"><i className="bi bi-telephone-fill"></i></div>
+          <div className="ib-stat-icon indigo"><i className="bi bi-telephone-fill"></i></div>
           <div>
             <div className="ib-stat-num">{stats.phoneCount}</div>
             <div className="ib-stat-lbl">Phone Call Buttons</div>
-          </div>
-        </div>
-        <div className="ib-stat-card">
-          <div className="ib-stat-icon indigo"><i className="bi bi-reply-fill"></i></div>
-          <div>
-            <div className="ib-stat-num">{stats.quickReplyCount}</div>
-            <div className="ib-stat-lbl">Quick Replies</div>
           </div>
         </div>
         <div className="ib-stat-card">
@@ -289,7 +372,7 @@ export default function InteractiveButtons() {
           <input
             type="text"
             className="ib-search-input"
-            placeholder="Search button name, label, or URL..."
+            placeholder="Search button set name, label, or message..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -303,310 +386,424 @@ export default function InteractiveButtons() {
             All Types
           </button>
           <button
-            className={`ib-tab-btn ${selectedType === 'URL' ? 'active' : ''}`}
-            onClick={() => setSelectedType('URL')}
+            className={`ib-tab-btn ${selectedType === 'Feedback' ? 'active' : ''}`}
+            onClick={() => setSelectedType('Feedback')}
           >
-            <i className="bi bi-link-45deg"></i> URL Links
+            <i className="bi bi-hand-thumbs-up"></i> Feedback Sets
           </button>
           <button
-            className={`ib-tab-btn ${selectedType === 'PHONE_NUMBER' ? 'active' : ''}`}
-            onClick={() => setSelectedType('PHONE_NUMBER')}
+            className={`ib-tab-btn ${selectedType === 'Call to action' ? 'active' : ''}`}
+            onClick={() => setSelectedType('Call to action')}
           >
-            <i className="bi bi-telephone"></i> Phone Call
+            <i className="bi bi-link-45deg"></i> Call To Action
           </button>
           <button
-            className={`ib-tab-btn ${selectedType === 'QUICK_REPLY' ? 'active' : ''}`}
-            onClick={() => setSelectedType('QUICK_REPLY')}
+            className={`ib-tab-btn ${selectedType === 'Quick reply' ? 'active' : ''}`}
+            onClick={() => setSelectedType('Quick reply')}
           >
             <i className="bi bi-reply"></i> Quick Reply
           </button>
-          <button
-            className={`ib-tab-btn ${selectedType === 'COPY_CODE' ? 'active' : ''}`}
-            onClick={() => setSelectedType('COPY_CODE')}
-          >
-            <i className="bi bi-tag"></i> Copy Code
+        </div>
+      </div>
+
+      {/* 4. Button Cards Grid */}
+      {loading ? (
+        <div className="d-flex justify-content-center p-5">
+          <div className="spinner-border text-primary" role="status"></div>
+        </div>
+      ) : buttons.length === 0 ? (
+        <div className="ib-empty-state">
+          <i className="bi bi-grid ib-empty-icon"></i>
+          <div className="ib-empty-title">No Interactive Button Sets Found</div>
+          <p className="small mb-3">
+            Get started by creating your first pre-configured Interactive Button Set.
+          </p>
+          <button className="ib-create-btn" onClick={handleOpenCreateModal}>
+            <i className="bi bi-plus-lg"></i> + Create Button Set
           </button>
         </div>
-      </div>
+      ) : (
+        <div className="ib-cards-grid">
+          {buttons.map((btn) => {
+            const isSelected = selectedButton?.id === btn.id;
+            const cardButtons = Array.isArray(btn.buttons_data) && btn.buttons_data.length > 0
+              ? btn.buttons_data
+              : (btn.button_text ? [{ id: btn.value, label: btn.button_text }] : []);
 
-      {/* 4. Two Column Layout */}
-      <div className="ib-main-layout">
-        {/* Left Column: Button Cards */}
-        <div>
-          {loading ? (
-            <div className="d-flex justify-content-center p-5">
-              <div className="spinner-border text-primary" role="status"></div>
-            </div>
-          ) : buttons.length === 0 ? (
-            <div className="ib-empty-state">
-              <i className="bi bi-grid ib-empty-icon"></i>
-              <div className="ib-empty-title">No Interactive Buttons Found</div>
-              <p className="small mb-3">
-                {search || selectedType !== 'ALL'
-                  ? 'No buttons match the current search filters.'
-                  : 'Get started by creating your first pre-configured Call to Action button.'}
-              </p>
-              <button className="ib-create-btn" onClick={handleOpenCreateModal}>
-                <i className="bi bi-plus-lg"></i> Create First Button
-              </button>
-            </div>
-          ) : (
-            <div className="ib-cards-grid">
-              {buttons.map((btn) => {
-                const isSelected = selectedButton?.id === btn.id;
-                return (
-                  <div
-                    key={btn.id}
-                    className={`ib-card ${isSelected ? 'selected' : ''}`}
-                    onClick={() => setSelectedButton(btn)}
-                  >
-                    <div>
-                      <div className="ib-card-head">
-                        <h4 className="ib-card-title">{btn.title}</h4>
-                        <span className={`ib-badge-type ${btn.button_type}`}>
-                          <i className={`bi ${getButtonIcon(btn.button_type)}`}></i>
-                          {btn.button_type === 'PHONE_NUMBER' ? 'CALL' : btn.button_type}
-                        </span>
-                      </div>
-
-                      {/* WhatsApp Simulated Button */}
-                      <div className={`ib-wa-btn-preview ${btn.button_type === 'PHONE_NUMBER' ? 'phone' :
-                        btn.button_type === 'QUICK_REPLY' ? 'reply' :
-                          btn.button_type === 'COPY_CODE' ? 'code' : ''
-                        }`}>
-                        <i className={`bi ${getButtonIcon(btn.button_type)}`}></i>
-                        <span>{btn.button_text}</span>
-                      </div>
-
-                      <div className="ib-card-meta">
-                        <i className="bi bi-arrow-return-right"></i>
-                        <span>{btn.value}</span>
-                      </div>
-                    </div>
-
-                    <div className="ib-card-actions">
-                      <button
-                        className="ib-card-action-btn"
-                        onClick={(e) => handleCopySnippet(btn, e)}
-                        title="Copy Meta JSON Snippet"
-                      >
-                        <i className="bi bi-code-slash"></i> Snippet
-                      </button>
-                      <div className="d-flex align-items-center gap-1">
-                        <button
-                          className="ib-card-action-btn edit"
-                          onClick={(e) => handleOpenEditModal(btn, e)}
-                          title="Edit Button"
-                        >
-                          <i className="bi bi-pencil"></i>
-                        </button>
-                        <button
-                          className="ib-card-action-btn delete"
-                          onClick={(e) => handleDeleteButton(btn, e)}
-                          title="Delete Button"
-                        >
-                          <i className="bi bi-trash"></i>
-                        </button>
-                      </div>
-                    </div>
+            return (
+              <div
+                key={btn.id}
+                className={`ib-card ${isSelected ? 'selected' : ''}`}
+                onClick={() => setSelectedButton(btn)}
+              >
+                <div>
+                  <div className="ib-card-head">
+                    <h4 className="ib-card-title">{btn.title}</h4>
+                    <span className="ib-badge-type">
+                      {btn.component_type || btn.button_type}
+                    </span>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
 
-        {/* Right Column: Sticky Live WhatsApp Preview */}
-        <div>
-          <div className="ib-preview-sticky">
-            <div className="ib-mockup-header">
-              <div className="ib-mockup-avatar">
-                <i className="bi bi-whatsapp"></i>
-              </div>
-              <div>
-                <div className="ib-mockup-title">
-                  TechSky Media <i className="bi bi-patch-check-fill text-info"></i>
-                </div>
-                <div className="ib-mockup-sub">Meta WhatsApp Official Business</div>
-              </div>
-            </div>
+                  {btn.message_text && (
+                    <div className="ib-card-msg">
+                      "{btn.message_text}"
+                    </div>
+                  )}
 
-            <div className="ib-mockup-body">
-              <div className="ib-mockup-bubble">
-                <div className="ib-mockup-bubble-text">
-                  Hello! Thank you for reaching out to us. We have prepared an update for you. Click the button below to take immediate action:
+                  {/* Render the buttons list in the card */}
+                  <div className="ib-card-btns-list">
+                    {cardButtons.map((cb, idx) => (
+                      <div key={idx} className="ib-card-btn-item">
+                        <span>{cb.label}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="ib-mockup-time">10:42 AM <i className="bi bi-check2-all text-primary"></i></div>
-              </div>
 
-              {/* The CTA Interactive Button */}
-              {selectedButton ? (
-                <div className="ib-mockup-cta-btn">
-                  <i className={`bi ${getButtonIcon(selectedButton.button_type)}`}></i>
-                  <span>{selectedButton.button_text}</span>
-                </div>
-              ) : (
-                <div className="text-center p-3 text-muted small bg-white rounded-2">
-                  Select a button on the left to preview it here
-                </div>
-              )}
-            </div>
-
-            {selectedButton && (
-              <div className="ib-mockup-details">
-                <div className="ib-mockup-row">
-                  <span>Preset Name:</span>
-                  <span>{selectedButton.title}</span>
-                </div>
-                <div className="ib-mockup-row">
-                  <span>Type:</span>
-                  <span>{selectedButton.button_type}</span>
-                </div>
-                <div className="ib-mockup-row">
-                  <span>Target Value:</span>
-                  <span style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {selectedButton.value}
+                <div className="ib-card-actions">
+                  <span className="small text-muted">
+                    {cardButtons.length} button{cardButtons.length !== 1 ? 's' : ''}
                   </span>
-                </div>
-                <div className="ib-mockup-row">
-                  <span>Category:</span>
-                  <span>{selectedButton.category || 'MARKETING'}</span>
-                </div>
-                <div className="mt-3">
-                  <button
-                    className="btn btn-sm btn-outline-primary w-100 fw-semibold"
-                    onClick={(e) => handleCopySnippet(selectedButton, e)}
-                  >
-                    <i className="bi bi-clipboard me-1"></i> Copy Meta WhatsApp JSON Component
-                  </button>
+                  <div className="d-flex align-items-center gap-1">
+                    <button
+                      className="ib-card-action-btn edit"
+                      onClick={(e) => handleOpenEditModal(btn, e)}
+                      title="Edit Button Set"
+                    >
+                      <i className="bi bi-pencil"></i> Edit
+                    </button>
+                    <button
+                      className="ib-card-action-btn delete"
+                      onClick={(e) => handleDeleteButtonSet(btn, e)}
+                      title="Delete Button Set"
+                    >
+                      <i className="bi bi-trash"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
+            );
+          })}
         </div>
-      </div>
+      )}
 
-      {/* 5. Create / Edit Modal */}
+      {/* =========================================================
+          5. Pixel-Perfect Modal Matching Reference Image
+          ========================================================= */}
       {showModal && (
         <div className="ib-modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="ib-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="ib-modal-box" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
             <div className="ib-modal-header">
-              <h3>{editingId ? 'Edit Interactive Button' : 'Create Interactive Button Preset'}</h3>
+              <h2>{editingId ? 'Edit button set' : 'Create button set'}</h2>
               <button className="ib-modal-close" onClick={() => setShowModal(false)}>
-                <i className="bi bi-x-lg"></i>
+                ✕
               </button>
             </div>
 
-            <form onSubmit={handleSaveButton}>
-              <div className="ib-modal-body">
-                {formError && (
-                  <div className="alert alert-danger py-2 small mb-3">
-                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                    {formError}
+            {/* Modal Body: Split 2-Column Grid */}
+            <form onSubmit={handleSaveButtonSet}>
+              <div className="ib-modal-body-split">
+                {/* Left Side: Form Controls */}
+                <div>
+                  {formError && (
+                    <div className="alert alert-danger py-2 small mb-3">
+                      <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                      {formError}
+                    </div>
+                  )}
+
+                  {/* 1. Name */}
+                  <div className="ib-field-group">
+                    <label className="ib-field-label">Name *</label>
+                    <input
+                      type="text"
+                      className="ib-input"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="feedback_btn"
+                      required
+                    />
+                    <div className="ib-field-help">
+                      Internal only — customers never see this.
+                    </div>
                   </div>
-                )}
 
-                <div className="ib-form-group">
-                  <label className="ib-form-label">Preset Title / Internal Name</label>
-                  <input
-                    type="text"
-                    className="ib-form-control"
-                    placeholder="e.g. Schedule Consultation Call"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="row">
-                  <div className="col-md-6 ib-form-group">
-                    <label className="ib-form-label">Button Action Type</label>
+                  {/* 2. Component type */}
+                  <div className="ib-field-group">
+                    <label className="ib-field-label">Component type</label>
                     <select
-                      className="ib-form-control"
-                      value={formData.button_type}
-                      onChange={(e) => setFormData({ ...formData, button_type: e.target.value })}
+                      className="ib-input"
+                      value={componentType}
+                      onChange={(e) => setComponentType(e.target.value)}
                     >
-                      <option value="URL">Website Link (URL)</option>
-                      <option value="PHONE_NUMBER">Phone Call (Click to Dial)</option>
-                      <option value="QUICK_REPLY">Quick Reply (Payload)</option>
-                      <option value="COPY_CODE">Coupon Code (Copy to Clipboard)</option>
+                      <option value="Feedback">Feedback</option>
+                      <option value="Call to action">Call to action</option>
+                      <option value="Custom interactive">Custom interactive</option>
+                      <option value="Quick reply">Quick reply</option>
+                      <option value="List menu">List menu</option>
                     </select>
+                    <div className="ib-field-help">
+                      {componentType === 'Feedback'
+                        ? 'Exactly two options — one positive, one negative — with an optional follow-up question.'
+                        : 'Interactive buttons for fast customer engagement and click-throughs.'}
+                    </div>
                   </div>
 
-                  <div className="col-md-6 ib-form-group">
-                    <label className="ib-form-label">Category</label>
-                    <select
-                      className="ib-form-control"
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  {/* 3. Delivery */}
+                  <div className="ib-field-group">
+                    <label className="ib-field-label">Delivery</label>
+                    <div className="ib-delivery-toggle">
+                      <button
+                        type="button"
+                        className={`ib-delivery-btn ${delivery === 'Buttons' ? 'active' : ''}`}
+                        onClick={() => setDelivery('Buttons')}
+                      >
+                        Buttons
+                      </button>
+                      <button
+                        type="button"
+                        className={`ib-delivery-btn ${delivery === 'Keyword list' ? 'active' : ''}`}
+                        onClick={() => setDelivery('Keyword list')}
+                      >
+                        Keyword list
+                      </button>
+                    </div>
+                    <div className="ib-field-help">
+                      Tappable buttons. WhatsApp allows 3 at most, and only inside the 24-hour window unless carried by an approved template.
+                    </div>
+                    <div className="ib-field-note">
+                      <strong>ⓘ WhatsApp leaves buttons tappable even after they are used.</strong> Only a recipient's <strong>first answer per message</strong> counts — later taps still show in the inbox but change nothing.
+                    </div>
+                  </div>
+
+                  {/* 4. Message text */}
+                  <div className="ib-field-group">
+                    <label className="ib-field-label">Message text</label>
+                    <textarea
+                      className="ib-input"
+                      rows={3}
+                      value={messageText}
+                      onChange={(e) => setMessageText(e.target.value)}
+                      placeholder="Are you interested in this property?"
+                    />
+                  </div>
+
+                  {/* 5. Buttons Section */}
+                  <div className="ib-buttons-section-header">
+                    <h3>Buttons</h3>
+                    <button
+                      type="button"
+                      className="ib-add-btn-pill"
+                      onClick={handleAddButton}
+                      disabled={buttonsList.length >= 3}
                     >
-                      <option value="MARKETING">Marketing</option>
-                      <option value="UTILITY">Utility</option>
-                      <option value="SUPPORT">Support</option>
-                    </select>
+                      + Add button
+                    </button>
                   </div>
-                </div>
 
-                <div className="ib-form-group">
-                  <label className="ib-form-label">
-                    Button Display Text (What Customer Sees)
-                  </label>
-                  <input
-                    type="text"
-                    className="ib-form-control"
-                    placeholder="e.g. Visit Website, Call Us, Book Now"
-                    maxLength={25}
-                    value={formData.button_text}
-                    onChange={(e) => setFormData({ ...formData, button_text: e.target.value })}
-                    required
-                  />
-                  <div className={`ib-char-count ${formData.button_text.length > 25 ? 'warn' : ''}`}>
-                    <span>Max 25 characters per Meta policy</span>
-                    <span>{formData.button_text.length} / 25</span>
+                  {/* Render each button box */}
+                  {buttonsList.map((btn, idx) => (
+                    <div key={idx} className="ib-button-box">
+                      <div className="ib-button-box-header">
+                        <span className="ib-button-box-title">Button {idx + 1}</span>
+                        <div className="ib-button-box-controls">
+                          <button
+                            type="button"
+                            className="ib-icon-btn"
+                            onClick={() => handleMoveButton(idx, -1)}
+                            disabled={idx === 0}
+                            title="Move Up"
+                          >
+                            ↑
+                          </button>
+                          <button
+                            type="button"
+                            className="ib-icon-btn"
+                            onClick={() => handleMoveButton(idx, 1)}
+                            disabled={idx === buttonsList.length - 1}
+                            title="Move Down"
+                          >
+                            ↓
+                          </button>
+                          <button
+                            type="button"
+                            className="ib-icon-btn delete"
+                            onClick={() => handleRemoveButton(idx)}
+                            disabled={buttonsList.length <= 1}
+                            title="Delete Button"
+                          >
+                            <i className="bi bi-trash"></i>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="ib-btn-two-col">
+                        {/* Label Column */}
+                        <div>
+                          <label className="ib-field-label">Label *</label>
+                          <input
+                            type="text"
+                            className="ib-input"
+                            maxLength={20}
+                            value={btn.label}
+                            onChange={(e) => handleUpdateButtonField(idx, 'label', e.target.value)}
+                            placeholder="Helpful"
+                            required
+                          />
+                          {/* Quick Emoji Bar */}
+                          <div className="ib-emoji-bar">
+                            {QUICK_EMOJIS.map((em) => (
+                              <button
+                                key={em}
+                                type="button"
+                                className="ib-emoji-chip"
+                                onClick={() => handleAppendEmoji(idx, em)}
+                                title={`Add ${em}`}
+                              >
+                                {em}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="ib-char-indicator">
+                            {btn.label?.length || 0}/20
+                          </div>
+                          <div className="ib-field-help" style={{ fontSize: '0.74rem' }}>
+                            An emoji on its own is a valid label — it shows as an icon.
+                          </div>
+                        </div>
+
+                        {/* Button ID Column */}
+                        <div>
+                          <label className="ib-field-label">Button ID</label>
+                          <input
+                            type="text"
+                            className="ib-input"
+                            value={btn.id}
+                            onChange={(e) => handleUpdateButtonField(idx, 'id', e.target.value)}
+                            placeholder="helpful"
+                            required
+                          />
+                          <div className="ib-field-help" style={{ marginTop: '0.65rem' }}>
+                            Tracking key. Stays stable when the label changes.
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* When Chosen */}
+                      <div className="ib-field-group">
+                        <label className="ib-field-label">When chosen</label>
+                        <select
+                          className="ib-input"
+                          value={btn.when_chosen || 'Record feedback'}
+                          onChange={(e) => handleUpdateButtonField(idx, 'when_chosen', e.target.value)}
+                        >
+                          <option value="Record feedback">Record feedback</option>
+                          <option value="Open URL">Open URL</option>
+                          <option value="Call phone number">Call phone number</option>
+                          <option value="Send auto-reply">Send auto-reply</option>
+                        </select>
+                      </div>
+
+                      {btn.when_chosen === 'Open URL' && (
+                        <div className="ib-field-group">
+                          <label className="ib-field-label">Destination URL</label>
+                          <input
+                            type="text"
+                            className="ib-input"
+                            value={btn.target || ''}
+                            onChange={(e) => handleUpdateButtonField(idx, 'target', e.target.value)}
+                            placeholder="https://example.com/promo"
+                            required
+                          />
+                        </div>
+                      )}
+
+                      {btn.when_chosen === 'Call phone number' && (
+                        <div className="ib-field-group">
+                          <label className="ib-field-label">Phone Number (E.164)</label>
+                          <input
+                            type="text"
+                            className="ib-input"
+                            value={btn.target || ''}
+                            onChange={(e) => handleUpdateButtonField(idx, 'target', e.target.value)}
+                            placeholder="+919876543210"
+                            required
+                          />
+                        </div>
+                      )}
+
+                      {/* Auto-reply */}
+                      <div className="ib-field-group mb-0">
+                        <label className="ib-field-label">Auto-reply (optional)</label>
+                        <textarea
+                          className="ib-input"
+                          rows={2}
+                          value={btn.auto_reply || ''}
+                          onChange={(e) => handleUpdateButtonField(idx, 'auto_reply', e.target.value)}
+                          placeholder="Thanks for your interest."
+                        />
+                        <div className="ib-field-help">
+                          Sent the moment this option is chosen, in addition to the action above. Use <code>{`{{name}}`}</code> for the contact's name. Leave empty to send nothing.
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* 6. Follow-up Toggle */}
+                  <div className="ib-followup-row">
+                    <label className="ib-switch">
+                      <input
+                        type="checkbox"
+                        checked={askFollowUp}
+                        onChange={(e) => setAskFollowUp(e.target.checked)}
+                      />
+                      <span className="ib-slider"></span>
+                    </label>
+                    <span className="ib-switch-label">
+                      Ask a follow-up after negative feedback
+                    </span>
                   </div>
-                </div>
 
-                <div className="ib-form-group">
-                  <label className="ib-form-label">
-                    {formData.button_type === 'URL' && 'Destination Website URL'}
-                    {formData.button_type === 'PHONE_NUMBER' && 'Phone Number (E.164 with Country Code)'}
-                    {formData.button_type === 'QUICK_REPLY' && 'Quick Reply Identifier / Payload'}
-                    {formData.button_type === 'COPY_CODE' && 'Coupon Code to Copy'}
-                  </label>
-                  <input
-                    type="text"
-                    className="ib-form-control"
-                    placeholder={
-                      formData.button_type === 'URL' ? 'https://example.com/promo or https://site.com/track?id={{1}}' :
-                        formData.button_type === 'PHONE_NUMBER' ? '+919876543210' :
-                          formData.button_type === 'QUICK_REPLY' ? 'YES_INTERESTED' :
-                            'FESTIVE20'
-                    }
-                    value={formData.value}
-                    onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-                    required
-                  />
-                  {formData.button_type === 'URL' && (
-                    <small className="text-muted d-block mt-1">
-                      Tip: You can include variable <code>{`{{1}}`}</code> for dynamic personalized links.
-                    </small>
+                  {askFollowUp && (
+                    <div className="mt-3">
+                      <input
+                        type="text"
+                        className="ib-input"
+                        placeholder="e.g. Could you tell us how we can improve?"
+                        value={followUpText}
+                        onChange={(e) => setFollowUpText(e.target.value)}
+                      />
+                    </div>
                   )}
                 </div>
 
-                {/* Live Preview within modal */}
-                <div className="p-3 bg-light rounded-3 mt-3 border">
-                  <div className="small text-muted fw-bold mb-2">LIVE BUTTON PREVIEW:</div>
-                  <div className="d-flex align-items-center justify-content-center p-2 bg-white rounded border text-primary fw-semibold gap-2">
-                    <i className={`bi ${getButtonIcon(formData.button_type)}`}></i>
-                    <span>{formData.button_text || 'Button Display Text'}</span>
+                {/* Right Side: Sticky Live Preview */}
+                <div className="ib-preview-panel">
+                  <div className="ib-preview-heading">Preview</div>
+                  <div className="ib-preview-card">
+                    {/* Message Bubble */}
+                    <div className="ib-preview-bubble">
+                      {messageText || 'Your message text appears here.'}
+                    </div>
+
+                    {/* Preview Buttons */}
+                    <div className="ib-preview-buttons-list">
+                      {buttonsList.map((btn, idx) => (
+                        <div key={idx} className="ib-preview-btn-pill">
+                          <span>{btn.label || `Button ${idx + 1}`}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
 
+              {/* Modal Footer */}
               <div className="ib-modal-footer">
                 <button
                   type="button"
-                  className="ib-btn-cancel"
+                  className="ib-btn-cancel-text"
                   onClick={() => setShowModal(false)}
                   disabled={submitting}
                 >
@@ -614,10 +811,11 @@ export default function InteractiveButtons() {
                 </button>
                 <button
                   type="submit"
-                  className="ib-btn-save"
+                  className="ib-btn-save-green"
                   disabled={submitting}
                 >
-                  {submitting ? 'Saving...' : editingId ? 'Update Button' : 'Create Button'}
+                  <i className="bi bi-check-lg"></i>
+                  <span>{submitting ? 'Saving...' : 'Save'}</span>
                 </button>
               </div>
             </form>

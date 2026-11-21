@@ -6,123 +6,117 @@ export async function migrateInteractiveButtons() {
       id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       business_id BIGINT UNSIGNED NOT NULL,
       title VARCHAR(150) NOT NULL,
-      button_type ENUM('URL', 'PHONE_NUMBER', 'QUICK_REPLY', 'COPY_CODE') NOT NULL DEFAULT 'URL',
-      button_text VARCHAR(50) NOT NULL,
-      value TEXT NOT NULL,
+      component_type VARCHAR(50) DEFAULT 'Feedback',
+      delivery_type VARCHAR(50) DEFAULT 'buttons',
+      message_text TEXT NULL,
+      buttons_data JSON NULL,
+      follow_up_enabled TINYINT(1) DEFAULT 0,
+      follow_up_text TEXT NULL,
+      button_type VARCHAR(50) DEFAULT 'QUICK_REPLY',
+      button_text VARCHAR(100) NULL,
+      value TEXT NULL,
       url_type ENUM('STATIC', 'DYNAMIC') DEFAULT 'STATIC',
       category VARCHAR(50) DEFAULT 'MARKETING',
-      icon VARCHAR(50) DEFAULT 'bi-link-45deg',
+      icon VARCHAR(50) DEFAULT 'bi-grid',
       click_count INT DEFAULT 0,
       is_active BOOLEAN NOT NULL DEFAULT TRUE,
       created_by BIGINT UNSIGNED NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      INDEX idx_btn_business (business_id),
-      INDEX idx_btn_type (button_type)
+      INDEX idx_btn_business (business_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `;
 
   try {
     await executeQuery(sql);
-    console.log('✅ [Migration] interactive_buttons table ready in MySQL.');
+    console.log('✅ [Migration] interactive_buttons table verified in MySQL.');
 
-    // Seed default baseline buttons for business 1 if empty
-    const existing = await executeQuery('SELECT COUNT(*) as count FROM interactive_buttons WHERE business_id = 1');
+    // Check if columns exist; if not, add them
+    const cols = await executeQuery('DESCRIBE interactive_buttons');
+    const colNames = cols.map(c => c.Field);
+
+    const alterStatements = [];
+    if (!colNames.includes('component_type')) alterStatements.push('ADD COLUMN component_type VARCHAR(50) DEFAULT "Feedback"');
+    if (!colNames.includes('delivery_type')) alterStatements.push('ADD COLUMN delivery_type VARCHAR(50) DEFAULT "buttons"');
+    if (!colNames.includes('message_text')) alterStatements.push('ADD COLUMN message_text TEXT NULL');
+    if (!colNames.includes('buttons_data')) alterStatements.push('ADD COLUMN buttons_data JSON NULL');
+    if (!colNames.includes('follow_up_enabled')) alterStatements.push('ADD COLUMN follow_up_enabled TINYINT(1) DEFAULT 0');
+    if (!colNames.includes('follow_up_text')) alterStatements.push('ADD COLUMN follow_up_text TEXT NULL');
+
+    if (alterStatements.length > 0) {
+      await executeQuery(`ALTER TABLE interactive_buttons ${alterStatements.join(', ')}`);
+      console.log('✅ [Migration] Added new button set columns:', alterStatements);
+    }
+
+    // Seed sample button set matching the screenshot if empty
+    const existing = await executeQuery('SELECT COUNT(*) as count FROM interactive_buttons WHERE business_id = 1 AND buttons_data IS NOT NULL');
     if (!existing || existing[0]?.count === 0) {
-      console.log('🌱 [Seed] Seeding sample baseline Call to Action buttons...');
-      const seedSql = `
+      console.log('🌱 [Seed] Seeding sample baseline Button Set (feedback_btn)...');
+      const sampleButtons = [
+        {
+          id: 'helpful',
+          label: '👍 Helpful',
+          when_chosen: 'Record feedback',
+          auto_reply: 'Thanks for your interest.'
+        },
+        {
+          id: 'not_helpful',
+          label: '👎 Not Helpful',
+          when_chosen: 'Record feedback',
+          auto_reply: 'Thanks {{name}}! An agent will contact you shortly.'
+        }
+      ];
+
+      await executeQuery(`
         INSERT INTO interactive_buttons 
-          (business_id, title, button_type, button_text, value, url_type, category, icon)
+          (business_id, title, component_type, delivery_type, message_text, buttons_data, follow_up_enabled, button_type, button_text, value, category)
         VALUES
-          (1, 'Visit Main Website', 'URL', 'Visit Website', 'https://aiveexa.com', 'STATIC', 'MARKETING', 'bi-globe'),
-          (1, 'Direct WhatsApp Support Call', 'PHONE_NUMBER', 'Call Support', '+919876543210', 'STATIC', 'SUPPORT', 'bi-telephone'),
-          (1, 'Claim 20% Festive Discount', 'COPY_CODE', 'FESTIVE20', 'FESTIVE20', 'STATIC', 'MARKETING', 'bi-tag'),
-          (1, 'Quick Reply: I Am Interested', 'QUICK_REPLY', 'Yes, I am interested', 'QUICK_YES_INTERESTED', 'STATIC', 'MARKETING', 'bi-reply'),
-          (1, 'Track Order Status Link', 'URL', 'Track Order', 'https://aiveexa.com/track?id={{1}}', 'DYNAMIC', 'UTILITY', 'bi-box-seam')
-      `;
-      await executeQuery(seedSql);
-      console.log('✅ [Seed] 5 baseline interactive buttons created.');
+          (1, 'feedback_btn', 'Feedback', 'buttons', 'Are you interested in this property?', ?, 1, 'QUICK_REPLY', '👍 Helpful', 'helpful', 'MARKETING')
+      `, [JSON.stringify(sampleButtons)]);
+      console.log('✅ [Seed] feedback_btn button set created.');
     }
   } catch (err) {
-    console.warn('⚠️ [Migration] Could not create table in MySQL, checking fallback:', err.message);
+    console.warn('⚠️ [Migration] Database migration notice:', err.message);
   }
 
   // Also support mock memory store
   const store = getMemoryStore();
-  if (store && !store.interactive_buttons) {
-    store.interactive_buttons = [
-      {
-        id: 1,
+  if (store) {
+    if (!store.interactive_buttons) store.interactive_buttons = [];
+    if (!store.interactive_buttons.some(b => b.title === 'feedback_btn')) {
+      store.interactive_buttons.unshift({
+        id: 101,
         business_id: 1,
-        title: 'Visit Main Website',
-        button_type: 'URL',
-        button_text: 'Visit Website',
-        value: 'https://aiveexa.com',
-        url_type: 'STATIC',
-        category: 'MARKETING',
-        icon: 'bi-globe',
-        click_count: 42,
-        is_active: 1,
-        created_at: new Date().toISOString()
-      },
-      {
-        id: 2,
-        business_id: 1,
-        title: 'Direct WhatsApp Support Call',
-        button_type: 'PHONE_NUMBER',
-        button_text: 'Call Support',
-        value: '+919876543210',
-        url_type: 'STATIC',
-        category: 'SUPPORT',
-        icon: 'bi-telephone',
-        click_count: 18,
-        is_active: 1,
-        created_at: new Date().toISOString()
-      },
-      {
-        id: 3,
-        business_id: 1,
-        title: 'Claim 20% Festive Discount',
-        button_type: 'COPY_CODE',
-        button_text: 'FESTIVE20',
-        value: 'FESTIVE20',
-        url_type: 'STATIC',
-        category: 'MARKETING',
-        icon: 'bi-tag',
-        click_count: 65,
-        is_active: 1,
-        created_at: new Date().toISOString()
-      },
-      {
-        id: 4,
-        business_id: 1,
-        title: 'Quick Reply: I Am Interested',
+        title: 'feedback_btn',
+        component_type: 'Feedback',
+        delivery_type: 'buttons',
+        message_text: 'Are you interested in this property?',
+        buttons_data: [
+          {
+            id: 'helpful',
+            label: '👍 Helpful',
+            when_chosen: 'Record feedback',
+            auto_reply: 'Thanks for your interest.'
+          },
+          {
+            id: 'not_helpful',
+            label: '👎 Not Helpful',
+            when_chosen: 'Record feedback',
+            auto_reply: 'Thanks {{name}}! An agent will contact you shortly.'
+          }
+        ],
+        follow_up_enabled: 1,
+        follow_up_text: 'How could we have done better?',
         button_type: 'QUICK_REPLY',
-        button_text: 'Yes, I am interested',
-        value: 'QUICK_YES_INTERESTED',
-        url_type: 'STATIC',
+        button_text: '👍 Helpful',
+        value: 'helpful',
         category: 'MARKETING',
-        icon: 'bi-reply',
-        click_count: 92,
+        click_count: 0,
         is_active: 1,
         created_at: new Date().toISOString()
-      },
-      {
-        id: 5,
-        business_id: 1,
-        title: 'Track Order Status Link',
-        button_type: 'URL',
-        button_text: 'Track Order',
-        value: 'https://aiveexa.com/track?id={{1}}',
-        url_type: 'DYNAMIC',
-        category: 'UTILITY',
-        icon: 'bi-box-seam',
-        click_count: 31,
-        is_active: 1,
-        created_at: new Date().toISOString()
-      }
-    ];
-    saveMemoryStore();
+      });
+      saveMemoryStore();
+    }
   }
 }
 
