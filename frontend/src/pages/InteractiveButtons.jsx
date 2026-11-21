@@ -19,6 +19,7 @@ export default function InteractiveButtons() {
   const [search, setSearch] = useState('');
   const [selectedType, setSelectedType] = useState('ALL');
   const [selectedButton, setSelectedButton] = useState(null);
+  const [viewMode, setViewMode] = useState('box'); // 'box' or 'table'
 
   // Modal State matching user reference screenshot
   const [showModal, setShowModal] = useState(false);
@@ -185,6 +186,25 @@ export default function InteractiveButtons() {
     } else {
       handleUpdateButtonField(btnIdx, 'label', `${emoji}`);
     }
+  };
+
+  const handleCopySnippet = (btn, e) => {
+    if (e) e.stopPropagation();
+    const cardButtons = Array.isArray(btn.buttons_data) && btn.buttons_data.length > 0
+      ? btn.buttons_data
+      : (btn.button_text ? [{ id: btn.value, label: btn.button_text }] : []);
+
+    const metaComponent = {
+      type: 'BUTTONS',
+      buttons: cardButtons.map((cb) => ({
+        type: cb.when_chosen === 'Open URL' ? 'URL' : (cb.when_chosen === 'Call phone number' ? 'PHONE_NUMBER' : 'QUICK_REPLY'),
+        text: cb.label,
+        ...(cb.when_chosen === 'Open URL' ? { url: cb.target } : {}),
+        ...(cb.when_chosen === 'Call phone number' ? { phone_number: cb.target } : {})
+      }))
+    };
+    navigator.clipboard.writeText(JSON.stringify(metaComponent, null, 2));
+    showToast('Meta WhatsApp JSON snippet copied!');
   };
 
   const handleSaveButtonSet = async (e) => {
@@ -378,35 +398,58 @@ export default function InteractiveButtons() {
           />
         </div>
 
-        <div className="ib-filter-tabs">
-          <button
-            className={`ib-tab-btn ${selectedType === 'ALL' ? 'active' : ''}`}
-            onClick={() => setSelectedType('ALL')}
-          >
-            All Types
-          </button>
-          <button
-            className={`ib-tab-btn ${selectedType === 'Feedback' ? 'active' : ''}`}
-            onClick={() => setSelectedType('Feedback')}
-          >
-            <i className="bi bi-hand-thumbs-up"></i> Feedback Sets
-          </button>
-          <button
-            className={`ib-tab-btn ${selectedType === 'Call to action' ? 'active' : ''}`}
-            onClick={() => setSelectedType('Call to action')}
-          >
-            <i className="bi bi-link-45deg"></i> Call To Action
-          </button>
-          <button
-            className={`ib-tab-btn ${selectedType === 'Quick reply' ? 'active' : ''}`}
-            onClick={() => setSelectedType('Quick reply')}
-          >
-            <i className="bi bi-reply"></i> Quick Reply
-          </button>
+        <div className="ib-filter-controls-right">
+          <div className="ib-filter-tabs">
+            <button
+              className={`ib-tab-btn ${selectedType === 'ALL' ? 'active' : ''}`}
+              onClick={() => setSelectedType('ALL')}
+            >
+              All Types
+            </button>
+            <button
+              className={`ib-tab-btn ${selectedType === 'Feedback' ? 'active' : ''}`}
+              onClick={() => setSelectedType('Feedback')}
+            >
+              <i className="bi bi-hand-thumbs-up"></i> Feedback Sets
+            </button>
+            <button
+              className={`ib-tab-btn ${selectedType === 'Call to action' ? 'active' : ''}`}
+              onClick={() => setSelectedType('Call to action')}
+            >
+              <i className="bi bi-link-45deg"></i> Call To Action
+            </button>
+            <button
+              className={`ib-tab-btn ${selectedType === 'Quick reply' ? 'active' : ''}`}
+              onClick={() => setSelectedType('Quick reply')}
+            >
+              <i className="bi bi-reply"></i> Quick Reply
+            </button>
+          </div>
+
+          <div className="ib-view-switcher">
+            <button
+              type="button"
+              className={`ib-view-btn ${viewMode === 'box' ? 'active' : ''}`}
+              onClick={() => setViewMode('box')}
+              title="Box / Cards View"
+            >
+              <i className="bi bi-grid-fill"></i>
+              <span>Box</span>
+            </button>
+            <button
+              type="button"
+              className={`ib-view-btn ${viewMode === 'table' ? 'active' : ''}`}
+              onClick={() => setViewMode('table')}
+              title="Table View"
+            >
+              <i className="bi bi-table"></i>
+              <span>Table</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* 4. Button Cards Grid */}
+      {/* 4. Button Sets Content (Box or Table View) */}
       {loading ? (
         <div className="d-flex justify-content-center p-5">
           <div className="spinner-border text-primary" role="status"></div>
@@ -422,7 +465,7 @@ export default function InteractiveButtons() {
             <i className="bi bi-plus-lg"></i> + Create Button Set
           </button>
         </div>
-      ) : (
+      ) : viewMode === 'box' ? (
         <div className="ib-cards-grid">
           {buttons.map((btn) => {
             const isSelected = selectedButton?.id === btn.id;
@@ -466,6 +509,13 @@ export default function InteractiveButtons() {
                   </span>
                   <div className="d-flex align-items-center gap-1">
                     <button
+                      className="ib-card-action-btn"
+                      onClick={(e) => handleCopySnippet(btn, e)}
+                      title="Copy Meta JSON Snippet"
+                    >
+                      <i className="bi bi-code-slash"></i>
+                    </button>
+                    <button
                       className="ib-card-action-btn edit"
                       onClick={(e) => handleOpenEditModal(btn, e)}
                       title="Edit Button Set"
@@ -484,6 +534,96 @@ export default function InteractiveButtons() {
               </div>
             );
           })}
+        </div>
+      ) : (
+        <div className="ib-table-wrap">
+          <table className="ib-data-table">
+            <thead>
+              <tr>
+                <th>Name / ID</th>
+                <th>Component Type</th>
+                <th>Delivery</th>
+                <th>Message Text</th>
+                <th>Buttons Configured</th>
+                <th>Follow-up</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {buttons.map((btn) => {
+                const cardButtons = Array.isArray(btn.buttons_data) && btn.buttons_data.length > 0
+                  ? btn.buttons_data
+                  : (btn.button_text ? [{ id: btn.value, label: btn.button_text }] : []);
+
+                return (
+                  <tr key={btn.id}>
+                    <td>
+                      <span className="ib-table-name">{btn.title}</span>
+                      <span className="ib-table-sub">ID: #{btn.id}</span>
+                    </td>
+                    <td>
+                      <span className={`ib-table-badge ${btn.component_type ? btn.component_type.replace(/\s+/g, '_') : 'Feedback'}`}>
+                        {btn.component_type || 'Feedback'}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="badge bg-light text-dark border">
+                        {btn.delivery_type === 'keyword_list' ? 'Keyword list' : 'Buttons'}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="ib-table-msg" title={btn.message_text}>
+                        {btn.message_text ? `"${btn.message_text}"` : <span className="text-muted italic">No message text</span>}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="ib-table-btns-wrap">
+                        {cardButtons.map((cb, idx) => (
+                          <span key={idx} className="ib-table-btn-chip">
+                            {cb.label}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td>
+                      {btn.follow_up_enabled ? (
+                        <span className="badge bg-success-subtle text-success border border-success-subtle">
+                          <i className="bi bi-check-circle me-1"></i> Enabled
+                        </span>
+                      ) : (
+                        <span className="text-muted small">None</span>
+                      )}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div className="ib-table-actions justify-content-end">
+                        <button
+                          className="btn btn-sm btn-outline-secondary"
+                          onClick={(e) => handleCopySnippet(btn, e)}
+                          title="Copy Meta JSON Snippet"
+                        >
+                          <i className="bi bi-code-slash"></i>
+                        </button>
+                        <button
+                          className="btn btn-sm btn-outline-success"
+                          onClick={(e) => handleOpenEditModal(btn, e)}
+                          title="Edit"
+                        >
+                          <i className="bi bi-pencil"></i>
+                        </button>
+                        <button
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={(e) => handleDeleteButtonSet(btn, e)}
+                          title="Delete"
+                        >
+                          <i className="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
