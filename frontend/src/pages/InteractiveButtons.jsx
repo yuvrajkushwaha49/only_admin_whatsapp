@@ -195,9 +195,9 @@ export default function InteractiveButtons() {
   const getButtonIcon = (type) => {
     switch (type) {
       case 'PHONE_NUMBER': return 'bi-telephone-fill';
-      case 'QUICK_REPLY':  return 'bi-reply-fill';
-      case 'COPY_CODE':    return 'bi-clipboard-check-fill';
-      default:             return 'bi-box-arrow-up-right';
+      case 'QUICK_REPLY': return 'bi-reply-fill';
+      case 'COPY_CODE': return 'bi-clipboard-check-fill';
+      default: return 'bi-box-arrow-up-right';
     }
   };
 
@@ -231,7 +231,6 @@ export default function InteractiveButtons() {
         <div className="ib-title-wrap">
           <h1>
             Interactive Buttons Library
-            <span className="ib-role-badge">Super Admin & Owner & Admin</span>
           </h1>
           <p>
             Create, store, and reuse verified WhatsApp Call-to-Action (CTA) and Quick Reply buttons across templates and broadcasts.
@@ -239,7 +238,6 @@ export default function InteractiveButtons() {
         </div>
         <div>
           <button className="ib-create-btn" onClick={handleOpenCreateModal}>
-            <i className="bi bi-plus-lg"></i>
             <span>+ Create Interactive Button</span>
           </button>
         </div>
@@ -372,11 +370,10 @@ export default function InteractiveButtons() {
                       </div>
 
                       {/* WhatsApp Simulated Button */}
-                      <div className={`ib-wa-btn-preview ${
-                        btn.button_type === 'PHONE_NUMBER' ? 'phone' :
+                      <div className={`ib-wa-btn-preview ${btn.button_type === 'PHONE_NUMBER' ? 'phone' :
                         btn.button_type === 'QUICK_REPLY' ? 'reply' :
-                        btn.button_type === 'COPY_CODE' ? 'code' : ''
-                      }`}>
+                          btn.button_type === 'COPY_CODE' ? 'code' : ''
+                        }`}>
                         <i className={`bi ${getButtonIcon(btn.button_type)}`}></i>
                         <span>{btn.button_text}</span>
                       </div>
@@ -581,9 +578,9 @@ export default function InteractiveButtons() {
                     className="ib-form-control"
                     placeholder={
                       formData.button_type === 'URL' ? 'https://example.com/promo or https://site.com/track?id={{1}}' :
-                      formData.button_type === 'PHONE_NUMBER' ? '+919876543210' :
-                      formData.button_type === 'QUICK_REPLY' ? 'YES_INTERESTED' :
-                      'FESTIVE20'
+                        formData.button_type === 'PHONE_NUMBER' ? '+919876543210' :
+                          formData.button_type === 'QUICK_REPLY' ? 'YES_INTERESTED' :
+                            'FESTIVE20'
                     }
                     value={formData.value}
                     onChange={(e) => setFormData({ ...formData, value: e.target.value })}
