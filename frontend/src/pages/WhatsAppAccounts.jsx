@@ -356,7 +356,8 @@ export default function WhatsAppAccounts() {
           </div>
         )}
 
-        {/* SuperAdmin Number Allocation Warning Banner */}
+        {/* SuperAdmin Number Allocation Warning Banner (Commented out per request) */}
+        {/*
         {readiness && readiness.hasAllocatedNumbers === false && (
           <div className="alert alert-warning border border-warning-subtle shadow-sm rounded-3 p-3 mb-4 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3" style={{ backgroundColor: '#fffbeb' }}>
             <div className="d-flex align-items-center gap-3">
@@ -377,6 +378,7 @@ export default function WhatsAppAccounts() {
             )}
           </div>
         )}
+        */}
 
         {/* Page Title & Action Bar (Matching Reference Image) */}
         <div className="wa-page-title-bar">
@@ -801,12 +803,31 @@ export default function WhatsAppAccounts() {
               )}
             </>
           ) : (
-            <div className="card border-0 shadow-sm mb-4 text-center py-5 px-4" style={{ borderRadius: '14px', background: '#f8fafc' }}>
-              <div className="rounded-circle d-inline-flex p-3 bg-primary bg-opacity-10 text-primary mb-3">
-                <i className="bi bi-shield-lock-fill" style={{ fontSize: '2.5rem', color: '#1877F2' }}></i>
+            <div
+              className="card border-0 shadow-sm mb-4 text-center py-5 px-4 d-flex flex-column align-items-center justify-content-center"
+              style={{
+                borderRadius: '16px',
+                background: '#ffffff',
+                border: '1px solid #edf2f7'
+              }}
+            >
+              <div
+                className="d-flex align-items-center justify-content-center mb-3 shadow-xs"
+                style={{
+                  width: '68px',
+                  height: '68px',
+                  minWidth: '68px',
+                  minHeight: '68px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(99, 102, 241, 0.15) 100%)',
+                  border: '1px solid rgba(124, 58, 237, 0.2)',
+                  color: '#7c3aed'
+                }}
+              >
+                <i className="bi bi-shield-lock-fill" style={{ fontSize: '1.9rem', color: '#7c3aed' }}></i>
               </div>
-              <h4 className="fw-bold mb-2 text-dark">WhatsApp Channel Managed by Administrator</h4>
-              <p className="text-secondary mx-auto mb-0" style={{ maxWidth: '540px' }}>
+              <h4 className="fw-bold mb-2 text-dark" style={{ fontSize: '1.25rem' }}>WhatsApp Channel Managed by Administrator</h4>
+              <p className="text-secondary mx-auto mb-0" style={{ maxWidth: '540px', fontSize: '0.92rem', lineHeight: '1.55' }}>
                 WhatsApp accounts and phone numbers for your workspace are managed by the Platform Administrator. As soon as the Administrator allocates a number to your business, it will appear here automatically.
               </p>
             </div>
