@@ -89,12 +89,14 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
         }
       ]
     },
+    /*
     {
       heading: 'LEADS',
       items: [
         { to: '/contacts?view=leads', label: 'Lead Manager', icon: 'bi-briefcase' }
       ]
     },
+    */
     {
       heading: 'CONTACTS',
       items: [
