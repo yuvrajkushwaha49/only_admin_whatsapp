@@ -184,18 +184,9 @@ export default function ContactReports() {
 
           <div className="cg-hero-actions">
             <select
-              className="form-select form-select-sm"
+              className="cg-hero-select"
               value={optInFilter}
               onChange={(e) => setOptInFilter(e.target.value)}
-              style={{
-                borderRadius: '10px',
-                fontWeight: 600,
-                border: '1px solid #E5EAF2',
-                padding: '0.6rem 1.15rem',
-                minWidth: '150px',
-                color: '#172033',
-                background: '#ffffff'
-              }}
             >
               <option value="all">All Consent</option>
               <option value="opted_in">WhatsApp Opted-In</option>
@@ -218,7 +209,6 @@ export default function ContactReports() {
               onClick={handleExportCsv}
               disabled={exporting || stats.total === 0}
               className="cg-hero-btn-create"
-              style={{ background: '#00a884', borderColor: '#00a884' }}
               title="Export Contacts Report as CSV"
             >
               {exporting ? (
@@ -269,98 +259,99 @@ export default function ContactReports() {
         </div>
 
         {/* Graph & Pie Chart Row */}
-        {stats.total > 0 && (
-          <div className="row g-4 mb-4">
-            <div className="col-12 col-lg-8">
-              <div className="cg-card h-100 mb-0">
-                <div className="cg-card-header pb-2">
-                  <h3 className="cg-card-title d-flex align-items-center gap-2" style={{ fontSize: '1.05rem' }}>
-                    <i className="bi bi-graph-up text-primary"></i>
-                    <span>Audience Growth & Acquisition Trend</span>
-                  </h3>
-                  <div className="small text-secondary">
-                    Total Contacts: <strong>{stats.total.toLocaleString()}</strong>
-                  </div>
-                </div>
-                <div style={{ width: '100%', height: 260 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
-                      data={growthData.length > 0 ? growthData : [{ date: 'Active Contacts', contacts: stats.total }]}
-                      margin={{ top: 10, right: 10, left: -20, bottom: 20 }}
-                    >
-                      <defs>
-                        <linearGradient id="contactGrowthGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.4} />
-                          <stop offset="95%" stopColor="#7c3aed" stopOpacity={0.0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 11 }} />
-                      <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                      <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0' }} />
-                      <Area
-                        type="monotone"
-                        dataKey="contacts"
-                        stroke="#7c3aed"
-                        strokeWidth={2.5}
-                        fillOpacity={1}
-                        fill="url(#contactGrowthGrad)"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+        <div className="row g-4 cg-chart-row">
+          <div className="col-12 col-lg-8">
+            <div className="cg-chart-card">
+              <div className="cg-chart-card-header">
+                <h3 className="cg-chart-card-title">
+                  <i className="bi bi-graph-up"></i>
+                  <span>Audience Growth & Acquisition Trend</span>
+                </h3>
+                <div className="cg-chart-legend">
+                  <span className="cg-chart-legend-item">
+                    <span className="cg-chart-legend-dot" style={{ background: '#7c3aed' }}></span>
+                    <span>Total Contacts: <strong>{stats.total.toLocaleString()}</strong></span>
+                  </span>
                 </div>
               </div>
-            </div>
-
-            <div className="col-12 col-lg-4">
-              <div className="cg-card h-100 mb-0">
-                <div className="cg-card-header pb-2">
-                  <h3 className="cg-card-title d-flex align-items-center gap-2" style={{ fontSize: '1.05rem' }}>
-                    <i className="bi bi-pie-chart-fill text-primary"></i>
-                    <span>Consent & Reachability Breakdown</span>
-                  </h3>
-                </div>
-                {pieData.length === 0 ? (
-                  <div className="text-center py-4 text-muted my-auto">
-                    <i className="bi bi-pie-chart fs-1 text-secondary d-block mb-1"></i>
-                    <div className="small">No contact consent records to display.</div>
-                  </div>
-                ) : (
-                  <>
-                    <div style={{ width: '100%', height: 190 }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={pieData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={50}
-                            outerRadius={75}
-                            paddingAngle={4}
-                            dataKey="value"
-                          >
-                            {pieData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0' }} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="d-flex justify-content-center flex-wrap gap-2 small text-secondary mt-1">
-                      {pieData.map((item) => (
-                        <span key={item.name} className="d-flex align-items-center gap-1">
-                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: item.color }}></span>
-                          <span>{item.name}: <strong>{item.value.toLocaleString()}</strong></span>
-                        </span>
-                      ))}
-                    </div>
-                  </>
-                )}
+              <div style={{ width: '100%', height: 260 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={growthData.length > 0 ? growthData : [{ date: 'Active Contacts', contacts: stats.total }]}
+                    margin={{ top: 10, right: 10, left: -20, bottom: 20 }}
+                  >
+                    <defs>
+                      <linearGradient id="contactGrowthGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#7c3aed" stopOpacity={0.0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 11 }} />
+                    <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
+                    <Area
+                      type="monotone"
+                      dataKey="contacts"
+                      stroke="#7c3aed"
+                      strokeWidth={2.5}
+                      fillOpacity={1}
+                      fill="url(#contactGrowthGrad)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </div>
           </div>
-        )}
+
+          <div className="col-12 col-lg-4">
+            <div className="cg-chart-card">
+              <div className="cg-chart-card-header">
+                <h3 className="cg-chart-card-title">
+                  <i className="bi bi-pie-chart-fill"></i>
+                  <span>Consent & Reachability Breakdown</span>
+                </h3>
+              </div>
+              {pieData.length === 0 ? (
+                <div className="text-center py-5 text-muted my-auto">
+                  <i className="bi bi-pie-chart fs-1 text-secondary d-block mb-1"></i>
+                  <div className="small">No contact consent records to display.</div>
+                </div>
+              ) : (
+                <>
+                  <div style={{ width: '100%', height: 190 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={pieData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={75}
+                          paddingAngle={4}
+                          dataKey="value"
+                        >
+                          {pieData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="d-flex justify-content-center flex-wrap gap-2 small text-secondary mt-1">
+                    {pieData.map((item) => (
+                      <span key={item.name} className="d-flex align-items-center gap-1">
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: item.color }}></span>
+                        <span>{item.name}: <strong>{item.value.toLocaleString()}</strong></span>
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* Main Content Card Container (Exact match with Organize Your Contacts) */}
         <div className="cg-card">
@@ -388,10 +379,12 @@ export default function ContactReports() {
                 <div className="text-secondary small mt-2">Loading contact reports from database...</div>
               </div>
             ) : contacts.length === 0 ? (
-              <div className="text-center py-5 text-muted">
-                <i className="bi bi-person-x fs-1 text-secondary d-block mb-2"></i>
-                <h5 className="fw-bold text-dark">No Contact Records Found</h5>
-                <p className="small text-secondary mb-3">
+              <div className="cg-empty-state-box">
+                <div className="cg-empty-icon-wrap">
+                  <i className="bi bi-people"></i>
+                </div>
+                <h5 className="cg-empty-title">No Contact Records Found</h5>
+                <p className="cg-empty-desc">
                   {searchTerm || optInFilter !== 'all'
                     ? 'No contacts matched your search or consent filter.'
                     : 'Add contacts or import a CSV file to generate subscriber audience reports.'}
@@ -402,8 +395,8 @@ export default function ContactReports() {
               </div>
             ) : (
               <>
-                <div className="table-responsive">
-                  <table className="table analytics-table align-middle mb-0">
+                <div className="cg-report-table-container">
+                  <table className="cg-report-table">
                     <thead>
                       <tr>
                         <th>Contact Name & Phone</th>

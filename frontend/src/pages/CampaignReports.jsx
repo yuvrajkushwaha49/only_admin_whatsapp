@@ -178,18 +178,9 @@ export default function CampaignReports() {
 
           <div className="cg-hero-actions">
             <select
-              className="form-select form-select-sm"
+              className="cg-hero-select"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              style={{
-                borderRadius: '10px',
-                fontWeight: 600,
-                border: '1px solid #E5EAF2',
-                padding: '0.6rem 1.15rem',
-                minWidth: '150px',
-                color: '#172033',
-                background: '#ffffff'
-              }}
             >
               <option value="all">All Statuses</option>
               <option value="completed">Completed</option>
@@ -215,7 +206,6 @@ export default function CampaignReports() {
               onClick={handleExportAll}
               disabled={exporting || campaigns.length === 0}
               className="cg-hero-btn-create"
-              style={{ background: '#00a884', borderColor: '#00a884' }}
               title="Export All Reports as CSV"
             >
               {exporting ? (
@@ -266,90 +256,95 @@ export default function CampaignReports() {
         </div>
 
         {/* Graph & Pie Chart Row */}
-        {campaigns.length > 0 && (
-          <div className="row g-4 mb-4">
-            <div className="col-12 col-lg-8">
-              <div className="cg-card h-100 mb-0">
-                <div className="cg-card-header pb-2">
-                  <h3 className="cg-card-title d-flex align-items-center gap-2" style={{ fontSize: '1.05rem' }}>
-                    <i className="bi bi-bar-chart-fill text-primary"></i>
-                    <span>Campaign Delivery Performance</span>
-                  </h3>
-                  <div className="d-flex align-items-center gap-3 small text-secondary">
-                    <span className="d-flex align-items-center gap-1">
-                      <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#7c3aed', display: 'inline-block' }}></span>
-                      <span>Sent</span>
-                    </span>
-                    <span className="d-flex align-items-center gap-1">
-                      <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981', display: 'inline-block' }}></span>
-                      <span>Delivered</span>
-                    </span>
-                  </div>
+        <div className="row g-4 cg-chart-row">
+          <div className="col-12 col-lg-8">
+            <div className="cg-chart-card">
+              <div className="cg-chart-card-header">
+                <h3 className="cg-chart-card-title">
+                  <i className="bi bi-bar-chart-fill"></i>
+                  <span>Campaign Delivery Performance</span>
+                </h3>
+                <div className="cg-chart-legend">
+                  <span className="cg-chart-legend-item">
+                    <span className="cg-chart-legend-dot" style={{ background: '#7c3aed' }}></span>
+                    <span>Sent</span>
+                  </span>
+                  <span className="cg-chart-legend-item">
+                    <span className="cg-chart-legend-dot" style={{ background: '#10b981' }}></span>
+                    <span>Delivered</span>
+                  </span>
                 </div>
+              </div>
+              {barChartData.length === 0 ? (
+                <div className="text-center py-5 text-muted my-auto">
+                  <i className="bi bi-bar-chart fs-1 text-secondary d-block mb-1"></i>
+                  <div className="small">No campaign transmission data yet.</div>
+                </div>
+              ) : (
                 <div style={{ width: '100%', height: 260 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={barChartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                       <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 11 }} interval={0} angle={-15} textAnchor="end" />
                       <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                      <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0' }} />
+                      <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
                       <Bar dataKey="sent" fill="#7c3aed" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="delivered" fill="#10b981" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-              </div>
-            </div>
-
-            <div className="col-12 col-lg-4">
-              <div className="cg-card h-100 mb-0">
-                <div className="cg-card-header pb-2">
-                  <h3 className="cg-card-title d-flex align-items-center gap-2" style={{ fontSize: '1.05rem' }}>
-                    <i className="bi bi-pie-chart-fill text-primary"></i>
-                    <span>Delivery Status Breakdown</span>
-                  </h3>
-                </div>
-                {pieData.length === 0 ? (
-                  <div className="text-center py-4 text-muted my-auto">
-                    <i className="bi bi-pie-chart fs-1 text-secondary d-block mb-1"></i>
-                    <div className="small">No delivery records to display.</div>
-                  </div>
-                ) : (
-                  <>
-                    <div style={{ width: '100%', height: 190 }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={pieData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={50}
-                            outerRadius={75}
-                            paddingAngle={4}
-                            dataKey="value"
-                          >
-                            {pieData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color || PIE_COLORS[index % PIE_COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0' }} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="d-flex justify-content-center flex-wrap gap-2 small text-secondary mt-1">
-                      {pieData.map((item, idx) => (
-                        <span key={item.name} className="d-flex align-items-center gap-1">
-                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: item.color || PIE_COLORS[idx % PIE_COLORS.length] }}></span>
-                          <span>{item.name}: <strong>{item.value.toLocaleString()}</strong></span>
-                        </span>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
+              )}
             </div>
           </div>
-        )}
+
+          <div className="col-12 col-lg-4">
+            <div className="cg-chart-card">
+              <div className="cg-chart-card-header">
+                <h3 className="cg-chart-card-title">
+                  <i className="bi bi-pie-chart-fill"></i>
+                  <span>Delivery Status Breakdown</span>
+                </h3>
+              </div>
+              {pieData.length === 0 ? (
+                <div className="text-center py-5 text-muted my-auto">
+                  <i className="bi bi-pie-chart fs-1 text-secondary d-block mb-1"></i>
+                  <div className="small">No delivery records to display.</div>
+                </div>
+              ) : (
+                <>
+                  <div style={{ width: '100%', height: 190 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={pieData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={75}
+                          paddingAngle={4}
+                          dataKey="value"
+                        >
+                          {pieData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color || PIE_COLORS[index % PIE_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="d-flex justify-content-center flex-wrap gap-2 small text-secondary mt-1">
+                    {pieData.map((item, idx) => (
+                      <span key={item.name} className="d-flex align-items-center gap-1">
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: item.color || PIE_COLORS[idx % PIE_COLORS.length] }}></span>
+                        <span>{item.name}: <strong>{item.value.toLocaleString()}</strong></span>
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* Main Content Card Container (Exact match with Organize Your Contacts) */}
         <div className="cg-card">
@@ -377,10 +372,12 @@ export default function CampaignReports() {
                 <div className="text-secondary small mt-2">Loading campaign reports from database...</div>
               </div>
             ) : filteredCampaigns.length === 0 ? (
-              <div className="text-center py-5 text-muted">
-                <i className="bi bi-send fs-1 text-secondary d-block mb-2"></i>
-                <h5 className="fw-bold text-dark">No Campaign Reports Found</h5>
-                <p className="small text-secondary mb-3">
+              <div className="cg-empty-state-box">
+                <div className="cg-empty-icon-wrap">
+                  <i className="bi bi-send"></i>
+                </div>
+                <h5 className="cg-empty-title">No Campaign Reports Found</h5>
+                <p className="cg-empty-desc">
                   {searchTerm || statusFilter !== 'all'
                     ? 'No campaigns matched your search or status filter.'
                     : 'Launch a WhatsApp broadcast to view live delivery and engagement reports.'}
@@ -390,8 +387,8 @@ export default function CampaignReports() {
                 </Link>
               </div>
             ) : (
-              <div className="table-responsive">
-                <table className="table analytics-table align-middle mb-0">
+              <div className="cg-report-table-container">
+                <table className="cg-report-table">
                   <thead>
                     <tr>
                       <th>Campaign</th>

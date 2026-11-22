@@ -3839,6 +3839,166 @@
 }
 
 /* =========================================================
+   Unified Reports Section & Charts Design System
+   ========================================================= */
+
+.cg-hero-select {
+  background: #ffffff;
+  border: 1px solid #E5EAF2;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  padding: 0.6rem 1.15rem;
+  color: #172033;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.cg-hero-select:focus {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+.cg-chart-row {
+  margin-bottom: 2rem;
+}
+
+.cg-chart-card {
+  background: #ffffff;
+  border: 1px solid #E5EAF2;
+  border-radius: 14px;
+  padding: 1.5rem 1.75rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.cg-chart-card:hover {
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.06);
+}
+
+.cg-chart-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.cg-chart-card-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #172033;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cg-chart-card-title i {
+  color: #7c3aed;
+  font-size: 1.15rem;
+}
+
+.cg-chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  font-size: 0.82rem;
+  color: #64748B;
+  font-weight: 500;
+}
+
+.cg-chart-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.cg-chart-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.cg-report-table-container {
+  overflow-x: auto;
+}
+
+.cg-report-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.cg-report-table th {
+  background: #f8fafc;
+  color: #64748B;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.85rem 1.15rem;
+  border-bottom: 1px solid #E5EAF2;
+  white-space: nowrap;
+}
+
+.cg-report-table td {
+  padding: 0.95rem 1.15rem;
+  font-size: 0.88rem;
+  color: #1e293b;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.cg-report-table tbody tr:hover td {
+  background-color: #fafbfc;
+}
+
+.cg-empty-state-box {
+  text-align: center;
+  padding: 3.5rem 1.5rem;
+  color: #64748b;
+}
+
+.cg-empty-icon-wrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: #f1f5f9;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.85rem;
+  margin: 0 auto 1.25rem auto;
+}
+
+.cg-empty-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #172033;
+  margin-bottom: 0.4rem;
+}
+
+.cg-empty-desc {
+  font-size: 0.88rem;
+  color: #64748b;
+  max-width: 480px;
+  margin: 0 auto 1.25rem auto;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
    Marketing Campaigns Redesign (Pixel-Perfect Match to Screenshot)
    ========================================================= */
 

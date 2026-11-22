@@ -167,11 +167,11 @@ export default function MessageReports() {
         <div className="cg-hero-banner">
           <div className="cg-hero-left">
             <div className="cg-hero-icon">
-              <i className="bi bi-chat-square-dots"></i>
+              <i className="bi bi-chat-square-dots-fill"></i>
             </div>
             <div>
               <h1 className="cg-hero-title">Message Reports</h1>
-              <p className="cg-hero-desc">
+              <p className="cg-hero-subtitle">
                 Real-time WhatsApp transmission logs, 24-hour peak activity telemetry, and delivery status breakdown.
               </p>
             </div>
@@ -179,15 +179,7 @@ export default function MessageReports() {
 
           <div className="cg-hero-actions">
             <select
-              className="form-select form-select-sm"
-              style={{
-                width: 'auto',
-                minWidth: '135px',
-                borderRadius: '8px',
-                borderColor: '#e2e8f0',
-                fontWeight: 500,
-                color: '#334155'
-              }}
+              className="cg-hero-select"
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value)}
             >
@@ -213,7 +205,6 @@ export default function MessageReports() {
               onClick={handleExportCsv}
               disabled={exporting || filteredMessages.length === 0}
               className="cg-hero-btn-create"
-              style={{ background: '#00a884', borderColor: '#00a884' }}
               title="Export Message Reports as CSV"
             >
               {exporting ? (
@@ -264,21 +255,21 @@ export default function MessageReports() {
         </div>
 
         {/* Graph & Pie Chart Row */}
-        <div className="row g-4 mb-4">
+        <div className="row g-4 cg-chart-row">
           <div className="col-12 col-lg-8">
-            <div className="cg-card h-100 mb-0">
-              <div className="cg-card-header pb-2">
-                <h3 className="cg-card-title d-flex align-items-center gap-2" style={{ fontSize: '1.05rem' }}>
-                  <i className="bi bi-bar-chart-fill text-primary"></i>
+            <div className="cg-chart-card">
+              <div className="cg-chart-card-header">
+                <h3 className="cg-chart-card-title">
+                  <i className="bi bi-bar-chart-fill"></i>
                   <span>24-Hour Transmission Telemetry</span>
                 </h3>
-                <div className="d-flex align-items-center gap-3 small text-secondary">
-                  <span className="d-flex align-items-center gap-1">
-                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#7c3aed', display: 'inline-block' }}></span>
+                <div className="cg-chart-legend">
+                  <span className="cg-chart-legend-item">
+                    <span className="cg-chart-legend-dot" style={{ background: '#7c3aed' }}></span>
                     <span>Outbound</span>
                   </span>
-                  <span className="d-flex align-items-center gap-1">
-                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#06b6d4', display: 'inline-block' }}></span>
+                  <span className="cg-chart-legend-item">
+                    <span className="cg-chart-legend-dot" style={{ background: '#06b6d4' }}></span>
                     <span>Inbound</span>
                   </span>
                 </div>
@@ -289,7 +280,7 @@ export default function MessageReports() {
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis dataKey="hour" tick={{ fill: '#64748b', fontSize: 10 }} interval={2} />
                     <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0' }} />
+                    <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
                     <Bar dataKey="Outbound" fill="#7c3aed" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="Inbound" fill="#06b6d4" radius={[4, 4, 0, 0]} />
                   </BarChart>
@@ -299,15 +290,15 @@ export default function MessageReports() {
           </div>
 
           <div className="col-12 col-lg-4">
-            <div className="cg-card h-100 mb-0">
-              <div className="cg-card-header pb-2">
-                <h3 className="cg-card-title d-flex align-items-center gap-2" style={{ fontSize: '1.05rem' }}>
-                  <i className="bi bi-pie-chart-fill text-primary"></i>
+            <div className="cg-chart-card">
+              <div className="cg-chart-card-header">
+                <h3 className="cg-chart-card-title">
+                  <i className="bi bi-pie-chart-fill"></i>
                   <span>Message Status Breakdown</span>
                 </h3>
               </div>
               {pieData.length === 0 ? (
-                <div className="text-center py-4 text-muted my-auto">
+                <div className="text-center py-5 text-muted my-auto">
                   <i className="bi bi-pie-chart fs-1 text-secondary d-block mb-1"></i>
                   <div className="small">No message telemetry records for this period.</div>
                 </div>
@@ -329,7 +320,7 @@ export default function MessageReports() {
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
                         </Pie>
-                        <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0' }} />
+                        <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
@@ -430,8 +421,8 @@ export default function MessageReports() {
               <div className="text-muted mt-2 small">Loading live message records from MySQL...</div>
             </div>
           ) : paginatedMessages.length === 0 ? (
-            <div className="cg-empty-state">
-              <div className="cg-empty-icon">
+            <div className="cg-empty-state-box">
+              <div className="cg-empty-icon-wrap">
                 <i className="bi bi-chat-left-dots"></i>
               </div>
               <h3 className="cg-empty-title">No Message Records Found</h3>
@@ -455,8 +446,8 @@ export default function MessageReports() {
               )}
             </div>
           ) : (
-            <div className="table-responsive">
-              <table className="table cg-table mb-0">
+            <div className="cg-report-table-container">
+              <table className="cg-report-table">
                 <thead>
                   <tr>
                     <th style={{ width: '70px' }}>ID</th>
