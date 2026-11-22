@@ -9,7 +9,7 @@ import api from '../services/api';
  * 1. Tareeqa 2 (Recommended): "Log in with Facebook" (0% Token - No copy-paste, 1-click popup OAuth)
  * 2. Tareeqa 1: "Permanent System User Token" (Direct paste for custom/manual tokens)
  */
-export default function SystemUserBulkConnectModal({ isOpen, onClose, onSuccess, detectedToken }) {
+export default function SystemUserBulkConnectModal({ isOpen, onClose, onSuccess, detectedToken, readiness: propReadiness }) {
   const [step, setStep] = useState(1); // 1: Connect / Scan, 2: Select Numbers, 3: Connecting / Results
   const [activeTab, setActiveTab] = useState('facebook'); // 'facebook' | 'token'
   const [token, setToken] = useState(detectedToken || '');
@@ -18,6 +18,7 @@ export default function SystemUserBulkConnectModal({ isOpen, onClose, onSuccess,
   const [connecting, setConnecting] = useState(false);
   const [scanError, setScanError] = useState(null);
   const [connectError, setConnectError] = useState(null);
+  const [readiness, setReadiness] = useState(propReadiness || null);
 
   // Discovered WABAs & Numbers
   const [discoveryData, setDiscoveryData] = useState(null);
@@ -33,6 +34,12 @@ export default function SystemUserBulkConnectModal({ isOpen, onClose, onSuccess,
   const popupRef = useRef(null);
 
   useEffect(() => {
+    if (propReadiness) {
+      setReadiness(propReadiness);
+    }
+  }, [propReadiness]);
+
+  useEffect(() => {
     if (isOpen) {
       setStep(1);
       setActiveTab('facebook');
@@ -43,8 +50,15 @@ export default function SystemUserBulkConnectModal({ isOpen, onClose, onSuccess,
       if (detectedToken) {
         setToken(detectedToken);
       }
+      if (!readiness) {
+        api.get('/meta/setup/client-readiness')
+          .then(res => {
+            if (res.data?.success) setReadiness(res.data.data);
+          })
+          .catch(() => {});
+      }
     }
-  }, [isOpen, detectedToken]);
+  }, [isOpen, detectedToken, readiness]);
 
   // Cleanup listener on unmount
   useEffect(() => {

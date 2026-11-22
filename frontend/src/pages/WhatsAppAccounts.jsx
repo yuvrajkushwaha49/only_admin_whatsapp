@@ -1491,6 +1491,7 @@ export default function WhatsAppAccounts() {
             checkDetectedMeta();
           }}
           detectedToken={detectedMeta?.accessToken}
+          readiness={readiness}
         />
       </div>
     </div>
