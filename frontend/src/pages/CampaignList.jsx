@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useOutletContext } from 'react-router-dom';
+import { Link, useOutletContext, useLocation, Navigate } from 'react-router-dom';
 import api from '../services/api';
 import AiwavoHeader from '../components/AiwavoHeader';
 import ResendCampaignModal from '../components/ResendCampaignModal';
@@ -8,6 +8,11 @@ import '../styles/dashboard.css';
 import '../styles/campaigns.css';
 
 export default function CampaignList() {
+  const location = useLocation();
+  if (location.search.includes('view=reports')) {
+    return <Navigate to="/campaign-reports" replace />;
+  }
+
   const { user, isSuperAdmin } = useAuth();
   const canDelete = Boolean((isSuperAdmin && isSuperAdmin()) || user?.role === 'superadmin' || user?.role === 'owner');
   const outletContext = useOutletContext();

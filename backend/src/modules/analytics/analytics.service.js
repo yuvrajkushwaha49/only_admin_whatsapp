@@ -272,7 +272,7 @@ export async function getDashboardStats(businessId, timeRange = 'Last 7 Days', u
           trendMap[dStr].failed += Number(r.failed || 0);
         }
       }
-    } catch (_) {}
+    } catch (_) { }
 
     dateLabels.sort();
     deliveryTrend = dateLabels.map(key => trendMap[key]);

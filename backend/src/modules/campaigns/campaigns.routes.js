@@ -8,6 +8,7 @@ const router = Router();
 router.use(authenticate, requireTenant);
 
 router.get('/', campaignsController.list);
+router.get('/reports', campaignsController.list);
 router.post('/', requireRole(['owner', 'admin', 'marketer']), campaignsController.create);
 router.post('/preview', campaignsController.preview);
 router.post('/preflight', campaignsController.preflight);
