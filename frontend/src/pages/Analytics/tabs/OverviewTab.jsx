@@ -31,18 +31,26 @@ export default function OverviewTab({ data, loading }) {
   const numberPerformance = data?.numberPerformance || [];
   const recentMessages = data?.recentMessages || [];
 
+  const getMetricVal = (item, fallback = 0) => {
+    if (item === null || item === undefined) return fallback;
+    if (typeof item === 'object') {
+      return item.value !== undefined ? item.value : fallback;
+    }
+    return item;
+  };
+
   // Direction pie chart data
   const directionData = [
-    { name: 'Outgoing (Broadcast / Direct)', value: kpis.outgoing?.value || 0, color: '#7c3aed' },
-    { name: 'Incoming (Customer Replies)', value: kpis.incoming?.value || 0, color: '#0284c7' }
+    { name: 'Outgoing (Broadcast / Direct)', value: getMetricVal(kpis.outgoing ?? kpis.outbound, 0), color: '#7c3aed' },
+    { name: 'Incoming (Customer Replies)', value: getMetricVal(kpis.incoming ?? kpis.inbound, 0), color: '#0284c7' }
   ];
 
   // Status breakdown data
   const statusData = [
-    { name: 'Delivered', value: kpis.delivered?.value || 0, color: '#10b981' },
-    { name: 'Read', value: kpis.read?.value || 0, color: '#0284c7' },
-    { name: 'Failed', value: kpis.failed?.value || 0, color: '#ef4444' },
-    { name: 'Pending / Queued', value: kpis.pending?.value || 0, color: '#f59e0b' }
+    { name: 'Delivered', value: getMetricVal(kpis.delivered, 0), color: '#10b981' },
+    { name: 'Read', value: getMetricVal(kpis.read, 0), color: '#0284c7' },
+    { name: 'Failed', value: getMetricVal(kpis.failed, 0), color: '#ef4444' },
+    { name: 'Pending / Queued', value: getMetricVal(kpis.pending, 0), color: '#f59e0b' }
   ];
 
   const renderDelta = (kpi) => {
@@ -71,8 +79,8 @@ export default function OverviewTab({ data, loading }) {
             <div className="cg-stat-label" title="Total unique messages inbound and outbound">
               Total Messages <i className="bi bi-info-circle ms-1 small text-muted"></i>
             </div>
-            <div className="cg-stat-value">{kpis.totalMessages?.value?.toLocaleString() || 0}</div>
-            {renderDelta(kpis.totalMessages)}
+            <div className="cg-stat-value">{getMetricVal(kpis.totalMessages ?? kpis.total, 0).toLocaleString()}</div>
+            {renderDelta(kpis.totalMessages ?? kpis.total)}
           </div>
         </div>
 
@@ -85,7 +93,7 @@ export default function OverviewTab({ data, loading }) {
             <div className="cg-stat-label" title="Messages successfully dispatched to Meta WhatsApp Cloud API">
               Sent Messages <i className="bi bi-info-circle ms-1 small text-muted"></i>
             </div>
-            <div className="cg-stat-value">{kpis.sent?.value?.toLocaleString() || 0}</div>
+            <div className="cg-stat-value">{getMetricVal(kpis.sent, 0).toLocaleString()}</div>
             {renderDelta(kpis.sent)}
           </div>
         </div>
@@ -99,7 +107,7 @@ export default function OverviewTab({ data, loading }) {
             <div className="cg-stat-label" title="Confirmed delivered to customer devices by Meta webhook">
               Delivered Messages <i className="bi bi-info-circle ms-1 small text-muted"></i>
             </div>
-            <div className="cg-stat-value text-green">{kpis.delivered?.value?.toLocaleString() || 0}</div>
+            <div className="cg-stat-value text-green">{getMetricVal(kpis.delivered, 0).toLocaleString()}</div>
             {renderDelta(kpis.delivered)}
           </div>
         </div>
@@ -113,7 +121,7 @@ export default function OverviewTab({ data, loading }) {
             <div className="cg-stat-label" title="Messages opened and read by recipient">
               Read Messages <i className="bi bi-info-circle ms-1 small text-muted"></i>
             </div>
-            <div className="cg-stat-value" style={{ color: '#0284c7' }}>{kpis.read?.value?.toLocaleString() || 0}</div>
+            <div className="cg-stat-value" style={{ color: '#0284c7' }}>{getMetricVal(kpis.read, 0).toLocaleString()}</div>
             {renderDelta(kpis.read)}
           </div>
         </div>
@@ -127,7 +135,7 @@ export default function OverviewTab({ data, loading }) {
             <div className="cg-stat-label" title="Messages rejected or undeliverable">
               Failed Messages <i className="bi bi-info-circle ms-1 small text-muted"></i>
             </div>
-            <div className="cg-stat-value" style={{ color: '#dc2626' }}>{kpis.failed?.value?.toLocaleString() || 0}</div>
+            <div className="cg-stat-value" style={{ color: '#dc2626' }}>{getMetricVal(kpis.failed, 0).toLocaleString()}</div>
             {renderDelta(kpis.failed)}
           </div>
         </div>
@@ -141,7 +149,7 @@ export default function OverviewTab({ data, loading }) {
             <div className="cg-stat-label" title="Messages queued in streaming batch worker">
               Pending Messages <i className="bi bi-info-circle ms-1 small text-muted"></i>
             </div>
-            <div className="cg-stat-value" style={{ color: '#d97706' }}>{kpis.pending?.value?.toLocaleString() || 0}</div>
+            <div className="cg-stat-value" style={{ color: '#d97706' }}>{getMetricVal(kpis.pending, 0).toLocaleString()}</div>
             {renderDelta(kpis.pending)}
           </div>
         </div>
@@ -153,8 +161,8 @@ export default function OverviewTab({ data, loading }) {
           </div>
           <div>
             <div className="cg-stat-label">Outgoing Messages</div>
-            <div className="cg-stat-value">{kpis.outgoing?.value?.toLocaleString() || 0}</div>
-            {renderDelta(kpis.outgoing)}
+            <div className="cg-stat-value">{getMetricVal(kpis.outgoing ?? kpis.outbound, 0).toLocaleString()}</div>
+            {renderDelta(kpis.outgoing ?? kpis.outbound)}
           </div>
         </div>
 
@@ -165,8 +173,8 @@ export default function OverviewTab({ data, loading }) {
           </div>
           <div>
             <div className="cg-stat-label">Incoming Messages</div>
-            <div className="cg-stat-value" style={{ color: '#0284c7' }}>{kpis.incoming?.value?.toLocaleString() || 0}</div>
-            {renderDelta(kpis.incoming)}
+            <div className="cg-stat-value" style={{ color: '#0284c7' }}>{getMetricVal(kpis.incoming ?? kpis.inbound, 0).toLocaleString()}</div>
+            {renderDelta(kpis.incoming ?? kpis.inbound)}
           </div>
         </div>
       </div>
@@ -187,7 +195,7 @@ export default function OverviewTab({ data, loading }) {
                 <span className="fw-semibold text-secondary small">Delivery Rate (Delivered / Sent)</span>
                 <i className="bi bi-check-circle-fill text-success fs-5"></i>
               </div>
-              <div className="fs-2 fw-bold text-success mt-2">{kpis.deliveryRate?.value || 0}%</div>
+              <div className="fs-2 fw-bold text-success mt-2">{getMetricVal(kpis.deliveryRate, 0)}%</div>
               <div className="small text-muted mt-1">Target benchmark: &gt; 95%</div>
             </div>
           </div>
@@ -198,7 +206,7 @@ export default function OverviewTab({ data, loading }) {
                 <span className="fw-semibold text-secondary small">Read Rate (Read / Delivered)</span>
                 <i className="bi bi-eye-fill text-primary fs-5"></i>
               </div>
-              <div className="fs-2 fw-bold text-primary mt-2">{kpis.readRate?.value || 0}%</div>
+              <div className="fs-2 fw-bold text-primary mt-2">{getMetricVal(kpis.readRate, 0)}%</div>
               <div className="small text-muted mt-1">Average WhatsApp engagement: ~60-80%</div>
             </div>
           </div>
@@ -209,7 +217,7 @@ export default function OverviewTab({ data, loading }) {
                 <span className="fw-semibold text-secondary small">Failure Rate (Failed / Sent)</span>
                 <i className="bi bi-x-circle-fill text-danger fs-5"></i>
               </div>
-              <div className="fs-2 fw-bold text-danger mt-2">{kpis.failureRate?.value || 0}%</div>
+              <div className="fs-2 fw-bold text-danger mt-2">{getMetricVal(kpis.failureRate, 0)}%</div>
               <div className="small text-muted mt-1">Healthy threshold: &lt; 3%</div>
             </div>
           </div>
