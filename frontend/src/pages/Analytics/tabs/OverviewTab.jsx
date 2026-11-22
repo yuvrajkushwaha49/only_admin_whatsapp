@@ -1,492 +1,224 @@
 import React from 'react';
 import {
   ResponsiveContainer,
+  LineChart,
+  Line,
   AreaChart,
   Area,
-  BarChart,
-  Bar,
   PieChart,
   Pie,
   Cell,
   XAxis,
   YAxis,
   Tooltip,
-  CartesianGrid,
-  Legend
+  CartesianGrid
 } from 'recharts';
 
-export default function OverviewTab({ data, loading }) {
+const STATUS_COLORS = ['#6366f1', '#10b981', '#06b6d4', '#ef4444'];
+
+export default function OverviewTab({ stats, loading }) {
   if (loading) {
     return (
-      <div className="py-5 text-center">
+      <div className="text-center py-5">
         <div className="spinner-border text-primary" role="status"></div>
-        <div className="text-secondary small mt-2">Loading overview analytics...</div>
+        <div className="text-secondary small mt-2">Loading analytics overview from database...</div>
       </div>
     );
   }
 
-  const kpis = data?.kpis || {};
-  const timeline = data?.activityTimeline || [];
-  const topCampaigns = data?.topCampaigns || [];
-  const numberPerformance = data?.numberPerformance || [];
-  const recentMessages = data?.recentMessages || [];
+  const deliveryTrend = stats?.deliveryTrend || [];
+  const statusDist = (stats?.statusDistribution || []).filter(item => item.value > 0);
+  const contactGrowth = stats?.contactGrowth || [];
 
-  const getMetricVal = (item, fallback = 0) => {
-    if (item === null || item === undefined) return fallback;
-    if (typeof item === 'object') {
-      return item.value !== undefined ? item.value : fallback;
-    }
-    return item;
+  const summary = stats?.deliverySummary || {
+    sent: 0,
+    sentPct: 100,
+    delivered: 0,
+    deliveredPct: 0,
+    read: 0,
+    readPct: 0,
+    failed: 0,
+    failedPct: 0
   };
 
-  // Direction pie chart data
-  const directionData = [
-    { name: 'Outgoing (Broadcast / Direct)', value: getMetricVal(kpis.outgoing ?? kpis.outbound, 0), color: '#7c3aed' },
-    { name: 'Incoming (Customer Replies)', value: getMetricVal(kpis.incoming ?? kpis.inbound, 0), color: '#0284c7' }
-  ];
-
-  // Status breakdown data
-  const statusData = [
-    { name: 'Delivered', value: getMetricVal(kpis.delivered, 0), color: '#10b981' },
-    { name: 'Read', value: getMetricVal(kpis.read, 0), color: '#0284c7' },
-    { name: 'Failed', value: getMetricVal(kpis.failed, 0), color: '#ef4444' },
-    { name: 'Pending / Queued', value: getMetricVal(kpis.pending, 0), color: '#f59e0b' }
-  ];
-
-  const renderDelta = (kpi) => {
-    if (!kpi || kpi.delta === undefined) return null;
-    const dir = kpi.direction || 'neutral';
-    return (
-      <div className={`an-delta-pill ${dir}`}>
-        {dir === 'up' && <i className="bi bi-arrow-up-short"></i>}
-        {dir === 'down' && <i className="bi bi-arrow-down-short"></i>}
-        {dir === 'neutral' && <i className="bi bi-dash"></i>}
-        <span>{kpi.delta}% vs prev</span>
-      </div>
-    );
-  };
+  const hasAnyData = summary.sent > 0 || (stats?.kpis?.totalContacts || 0) > 0;
 
   return (
     <div>
-      {/* 8 KPIs Grid (2 rows of 4 cards) */}
-      <div className="an-kpi-grid-4">
-        {/* Total Messages */}
-        <div className="cg-stat-card">
-          <div className="cg-stat-icon-wrap cg-stat-icon-blue">
-            <i className="bi bi-chat-left-dots-fill"></i>
-          </div>
-          <div>
-            <div className="cg-stat-label" title="Total unique messages inbound and outbound">
-              Total Messages <i className="bi bi-info-circle ms-1 small text-muted"></i>
-            </div>
-            <div className="cg-stat-value">{getMetricVal(kpis.totalMessages ?? kpis.total, 0).toLocaleString()}</div>
-            {renderDelta(kpis.totalMessages ?? kpis.total)}
-          </div>
-        </div>
-
-        {/* Sent Messages */}
-        <div className="cg-stat-card">
-          <div className="cg-stat-icon-wrap cg-stat-icon-blue">
-            <i className="bi bi-send-fill"></i>
-          </div>
-          <div>
-            <div className="cg-stat-label" title="Messages successfully dispatched to Meta WhatsApp Cloud API">
-              Sent Messages <i className="bi bi-info-circle ms-1 small text-muted"></i>
-            </div>
-            <div className="cg-stat-value">{getMetricVal(kpis.sent, 0).toLocaleString()}</div>
-            {renderDelta(kpis.sent)}
-          </div>
-        </div>
-
-        {/* Delivered Messages */}
-        <div className="cg-stat-card">
-          <div className="cg-stat-icon-wrap cg-stat-icon-green">
-            <i className="bi bi-check2-all"></i>
-          </div>
-          <div>
-            <div className="cg-stat-label" title="Confirmed delivered to customer devices by Meta webhook">
-              Delivered Messages <i className="bi bi-info-circle ms-1 small text-muted"></i>
-            </div>
-            <div className="cg-stat-value text-green">{getMetricVal(kpis.delivered, 0).toLocaleString()}</div>
-            {renderDelta(kpis.delivered)}
-          </div>
-        </div>
-
-        {/* Read Messages */}
-        <div className="cg-stat-card">
-          <div className="cg-stat-icon-wrap cg-stat-icon-cyan">
-            <i className="bi bi-eye-fill"></i>
-          </div>
-          <div>
-            <div className="cg-stat-label" title="Messages opened and read by recipient">
-              Read Messages <i className="bi bi-info-circle ms-1 small text-muted"></i>
-            </div>
-            <div className="cg-stat-value" style={{ color: '#0284c7' }}>{getMetricVal(kpis.read, 0).toLocaleString()}</div>
-            {renderDelta(kpis.read)}
-          </div>
-        </div>
-
-        {/* Failed Messages */}
-        <div className="cg-stat-card">
-          <div className="cg-stat-icon-wrap" style={{ background: '#fee2e2', color: '#dc2626' }}>
-            <i className="bi bi-exclamation-triangle-fill"></i>
-          </div>
-          <div>
-            <div className="cg-stat-label" title="Messages rejected or undeliverable">
-              Failed Messages <i className="bi bi-info-circle ms-1 small text-muted"></i>
-            </div>
-            <div className="cg-stat-value" style={{ color: '#dc2626' }}>{getMetricVal(kpis.failed, 0).toLocaleString()}</div>
-            {renderDelta(kpis.failed)}
-          </div>
-        </div>
-
-        {/* Pending / Queued Messages */}
-        <div className="cg-stat-card">
-          <div className="cg-stat-icon-wrap" style={{ background: '#fef3c7', color: '#d97706' }}>
-            <i className="bi bi-hourglass-split"></i>
-          </div>
-          <div>
-            <div className="cg-stat-label" title="Messages queued in streaming batch worker">
-              Pending Messages <i className="bi bi-info-circle ms-1 small text-muted"></i>
-            </div>
-            <div className="cg-stat-value" style={{ color: '#d97706' }}>{getMetricVal(kpis.pending, 0).toLocaleString()}</div>
-            {renderDelta(kpis.pending)}
-          </div>
-        </div>
-
-        {/* Outgoing Messages */}
-        <div className="cg-stat-card">
-          <div className="cg-stat-icon-wrap cg-stat-icon-blue">
-            <i className="bi bi-arrow-up-right-circle-fill"></i>
-          </div>
-          <div>
-            <div className="cg-stat-label">Outgoing Messages</div>
-            <div className="cg-stat-value">{getMetricVal(kpis.outgoing ?? kpis.outbound, 0).toLocaleString()}</div>
-            {renderDelta(kpis.outgoing ?? kpis.outbound)}
-          </div>
-        </div>
-
-        {/* Incoming Messages */}
-        <div className="cg-stat-card">
-          <div className="cg-stat-icon-wrap cg-stat-icon-cyan">
-            <i className="bi bi-arrow-down-left-circle-fill"></i>
-          </div>
-          <div>
-            <div className="cg-stat-label">Incoming Messages</div>
-            <div className="cg-stat-value" style={{ color: '#0284c7' }}>{getMetricVal(kpis.incoming ?? kpis.inbound, 0).toLocaleString()}</div>
-            {renderDelta(kpis.incoming ?? kpis.inbound)}
-          </div>
-        </div>
-      </div>
-
-      {/* Conversion & Success Rates Row */}
-      <div className="cg-card mb-4">
-        <div className="cg-card-header">
-          <h3 className="cg-card-title">
-            <i className="bi bi-shield-check text-primary me-2"></i>
-            Message Delivery & Engagement Rates
-          </h3>
-          <span className="text-secondary small">Calculated from verified Meta webhook delivery receipts</span>
-        </div>
-        <div className="row g-4 pt-2">
-          <div className="col-12 col-md-4">
-            <div className="p-3 rounded-3" style={{ background: '#ecfdf5', border: '1px solid #a7f3d0' }}>
-              <div className="d-flex align-items-center justify-content-between">
-                <span className="fw-semibold text-secondary small">Delivery Rate (Delivered / Sent)</span>
-                <i className="bi bi-check-circle-fill text-success fs-5"></i>
-              </div>
-              <div className="fs-2 fw-bold text-success mt-2">{getMetricVal(kpis.deliveryRate, 0)}%</div>
-              <div className="small text-muted mt-1">Target benchmark: &gt; 95%</div>
-            </div>
-          </div>
-
-          <div className="col-12 col-md-4">
-            <div className="p-3 rounded-3" style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}>
-              <div className="d-flex align-items-center justify-content-between">
-                <span className="fw-semibold text-secondary small">Read Rate (Read / Delivered)</span>
-                <i className="bi bi-eye-fill text-primary fs-5"></i>
-              </div>
-              <div className="fs-2 fw-bold text-primary mt-2">{getMetricVal(kpis.readRate, 0)}%</div>
-              <div className="small text-muted mt-1">Average WhatsApp engagement: ~60-80%</div>
-            </div>
-          </div>
-
-          <div className="col-12 col-md-4">
-            <div className="p-3 rounded-3" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
-              <div className="d-flex align-items-center justify-content-between">
-                <span className="fw-semibold text-secondary small">Failure Rate (Failed / Sent)</span>
-                <i className="bi bi-x-circle-fill text-danger fs-5"></i>
-              </div>
-              <div className="fs-2 fw-bold text-danger mt-2">{getMetricVal(kpis.failureRate, 0)}%</div>
-              <div className="small text-muted mt-1">Healthy threshold: &lt; 3%</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Charts Row: Daily Message Timeline + Incoming vs Outgoing */}
+      {/* Top Row: Delivery Trend Chart + Funnel Breakdown */}
       <div className="row g-4 mb-4">
-        {/* Main Timeline Chart */}
         <div className="col-12 col-lg-8">
-          <div className="an-chart-card">
-            <div className="an-chart-header">
-              <div>
-                <h4 className="an-chart-title">
-                  <i className="bi bi-graph-up text-primary"></i>
-                  Daily Message Activity
-                </h4>
-                <div className="an-chart-subtitle">Sent, Delivered, Read, and Inbound messages volume over selected date range</div>
+          <div className="analytics-chart-box">
+            <div className="analytics-chart-header">
+              <h3 className="analytics-chart-title">
+                <i className="bi bi-graph-up text-primary"></i>
+                <span>Message Delivery Trend</span>
+              </h3>
+              <div className="d-flex align-items-center gap-3 small text-secondary">
+                <span className="d-flex align-items-center gap-1">
+                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#6366f1', display: 'inline-block' }}></span>
+                  <span>Sent</span>
+                </span>
+                <span className="d-flex align-items-center gap-1">
+                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981', display: 'inline-block' }}></span>
+                  <span>Delivered</span>
+                </span>
               </div>
             </div>
-            <div style={{ width: '100%', height: 320 }}>
+
+            <div style={{ width: '100%', height: 280 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={timeline} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
+                <LineChart data={deliveryTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={{ stroke: '#e2e8f0' }} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+                  />
+                  <Line type="monotone" dataKey="sent" stroke="#6366f1" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                  <Line type="monotone" dataKey="delivered" stroke="#10b981" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        {/* Funnel Rates Card */}
+        <div className="col-12 col-lg-4">
+          <div className="analytics-chart-box">
+            <div className="analytics-chart-header">
+              <h3 className="analytics-chart-title">
+                <i className="bi bi-funnel-fill text-primary"></i>
+                <span>Delivery Funnel</span>
+              </h3>
+            </div>
+
+            <div className="d-flex flex-column justify-content-around flex-grow-1">
+              <div className="analytics-rate-item">
+                <div className="analytics-rate-label text-dark">
+                  <span>Total Sent</span>
+                  <span>{summary.sent.toLocaleString()} (100%)</span>
+                </div>
+                <div className="analytics-rate-bar-bg">
+                  <div className="analytics-rate-bar-fill" style={{ width: '100%', background: '#6366f1' }}></div>
+                </div>
+              </div>
+
+              <div className="analytics-rate-item">
+                <div className="analytics-rate-label text-dark">
+                  <span>Delivered</span>
+                  <span>{summary.delivered.toLocaleString()} ({summary.deliveredPct}%)</span>
+                </div>
+                <div className="analytics-rate-bar-bg">
+                  <div className="analytics-rate-bar-fill" style={{ width: `${Math.min(100, summary.deliveredPct)}%`, background: '#10b981' }}></div>
+                </div>
+              </div>
+
+              <div className="analytics-rate-item">
+                <div className="analytics-rate-label text-dark">
+                  <span>Read / Opened</span>
+                  <span>{summary.read.toLocaleString()} ({summary.readPct}%)</span>
+                </div>
+                <div className="analytics-rate-bar-bg">
+                  <div className="analytics-rate-bar-fill" style={{ width: `${Math.min(100, summary.readPct)}%`, background: '#06b6d4' }}></div>
+                </div>
+              </div>
+
+              <div className="analytics-rate-item">
+                <div className="analytics-rate-label text-dark">
+                  <span>Failed</span>
+                  <span>{summary.failed.toLocaleString()} ({summary.failedPct}%)</span>
+                </div>
+                <div className="analytics-rate-bar-bg">
+                  <div className="analytics-rate-bar-fill" style={{ width: `${Math.min(100, summary.failedPct)}%`, background: '#ef4444' }}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Row: Status Donut + Contact Growth */}
+      <div className="row g-4">
+        <div className="col-12 col-lg-5">
+          <div className="analytics-chart-box">
+            <div className="analytics-chart-header">
+              <h3 className="analytics-chart-title">
+                <i className="bi bi-pie-chart-fill text-primary"></i>
+                <span>Status Distribution</span>
+              </h3>
+            </div>
+            {statusDist.length === 0 ? (
+              <div className="text-center py-5 text-muted my-auto">
+                <i className="bi bi-pie-chart fs-1 text-secondary d-block mb-2"></i>
+                <div className="small">No message dispatches recorded yet in database.</div>
+              </div>
+            ) : (
+              <>
+                <div style={{ width: '100%', height: 240 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={statusDist}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={90}
+                        paddingAngle={4}
+                        dataKey="value"
+                      >
+                        {statusDist.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color || STATUS_COLORS[index % STATUS_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0' }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="d-flex justify-content-center flex-wrap gap-3 small text-secondary mt-2">
+                  {statusDist.map((item, idx) => (
+                    <span key={item.name} className="d-flex align-items-center gap-1">
+                      <span style={{ width: 10, height: 10, borderRadius: '50%', background: item.color || STATUS_COLORS[idx % STATUS_COLORS.length] }}></span>
+                      <span>{item.name}: <strong>{item.value}</strong></span>
+                    </span>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="col-12 col-lg-7">
+          <div className="analytics-chart-box">
+            <div className="analytics-chart-header">
+              <h3 className="analytics-chart-title">
+                <i className="bi bi-people-fill text-primary"></i>
+                <span>Audience & Contact Growth</span>
+              </h3>
+              <span className="badge bg-light text-dark border">
+                Total Contacts: {stats?.kpis?.totalContacts || 0}
+              </span>
+            </div>
+            <div style={{ width: '100%', height: 240 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={contactGrowth} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="colorDelivered" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="colorRead" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#0284c7" stopOpacity={0.25} />
-                      <stop offset="95%" stopColor="#0284c7" stopOpacity={0} />
+                    <linearGradient id="contactGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#7c3aed" stopOpacity={0.0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickFormatter={(val) => val.slice(5)} />
-                  <YAxis stroke="#94a3b8" fontSize={11} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', color: '#fff', fontSize: '12px' }}
-                  />
-                  <Legend verticalAlign="top" height={36} iconType="circle" />
-                  <Area type="monotone" dataKey="delivered" name="Delivered" stroke="#10b981" fillOpacity={1} fill="url(#colorDelivered)" strokeWidth={2} />
-                  <Area type="monotone" dataKey="read" name="Read" stroke="#0284c7" fillOpacity={1} fill="url(#colorRead)" strokeWidth={2} />
-                  <Area type="monotone" dataKey="failed" name="Failed" stroke="#ef4444" fill="none" strokeWidth={2} />
-                  <Area type="monotone" dataKey="inbound" name="Incoming" stroke="#f59e0b" fill="none" strokeWidth={2} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={{ stroke: '#e2e8f0' }} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0' }} />
+                  <Area type="monotone" dataKey="contacts" stroke="#7c3aed" strokeWidth={3} fillOpacity={1} fill="url(#contactGrad)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
-        </div>
-
-        {/* Incoming vs Outgoing Breakdown Pie Chart */}
-        <div className="col-12 col-lg-4">
-          <div className="an-chart-card">
-            <div className="an-chart-header">
-              <div>
-                <h4 className="an-chart-title">
-                  <i className="bi bi-pie-chart text-primary"></i>
-                  Message Direction
-                </h4>
-                <div className="an-chart-subtitle">Incoming customer replies vs Outgoing broadcasts</div>
-              </div>
-            </div>
-            <div style={{ width: '100%', height: 240 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={directionData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={85}
-                    paddingAngle={4}
-                    dataKey="value"
-                  >
-                    {directionData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', color: '#fff', fontSize: '12px' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="d-flex flex-column gap-2 mt-2">
-              {directionData.map((d, i) => (
-                <div key={i} className="d-flex align-items-center justify-content-between small">
-                  <div className="d-flex align-items-center gap-2">
-                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: d.color }}></span>
-                    <span className="text-secondary">{d.name}</span>
-                  </div>
-                  <span className="fw-bold text-dark">{d.value.toLocaleString()}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Top Performing Campaigns Table */}
-      <div className="cg-card mb-4">
-        <div className="cg-card-header">
-          <h3 className="cg-card-title">
-            <i className="bi bi-trophy-fill text-warning me-2"></i>
-            Top Performing Campaigns
-          </h3>
-          <span className="text-secondary small">Ranked by verified delivery volume and engagement</span>
-        </div>
-        <div className="table-responsive">
-          <table className="table cf-table mb-0 align-middle">
-            <thead>
-              <tr>
-                <th>Campaign</th>
-                <th>Status</th>
-                <th>Recipients</th>
-                <th>Sent</th>
-                <th>Delivered</th>
-                <th>Read</th>
-                <th>Delivery Rate</th>
-                <th>Read Rate</th>
-              </tr>
-            </thead>
-            <tbody>
-              {topCampaigns.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="text-center py-4 text-muted">
-                    No campaign records found in this date range.
-                  </td>
-                </tr>
-              ) : (
-                topCampaigns.map((c) => (
-                  <tr key={c.id}>
-                    <td>
-                      <div className="fw-bold text-dark">{c.name}</div>
-                      <div className="small text-muted">ID: #{c.id}</div>
-                    </td>
-                    <td>
-                      <span className={`badge ${c.status === 'completed' ? 'bg-success' : 'bg-primary'}`}>
-                        {c.status}
-                      </span>
-                    </td>
-                    <td>{c.total_recipients?.toLocaleString()}</td>
-                    <td>{c.sent_count?.toLocaleString()}</td>
-                    <td className="text-success fw-semibold">{c.delivered_count?.toLocaleString()}</td>
-                    <td className="text-primary fw-semibold">{c.read_count?.toLocaleString()}</td>
-                    <td>
-                      <span className="an-rate-badge green">{c.delivery_rate || 0}%</span>
-                    </td>
-                    <td>
-                      <span className="an-rate-badge blue">{c.read_rate || 0}%</span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* WhatsApp Numbers Performance Summary */}
-      <div className="cg-card mb-4">
-        <div className="cg-card-header">
-          <h3 className="cg-card-title">
-            <i className="bi bi-telephone-fill text-primary me-2"></i>
-            WhatsApp Number Performance
-          </h3>
-          <span className="text-secondary small">Connected lines delivery metrics and status</span>
-        </div>
-        <div className="table-responsive">
-          <table className="table cf-table mb-0 align-middle">
-            <thead>
-              <tr>
-                <th>Line Name</th>
-                <th>Phone Number</th>
-                <th>Status</th>
-                <th>Quality Rating</th>
-                <th>Messages</th>
-                <th>Delivered</th>
-                <th>Delivery Rate</th>
-              </tr>
-            </thead>
-            <tbody>
-              {numberPerformance.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="text-center py-4 text-muted">
-                    No WhatsApp numbers allocated to this account.
-                  </td>
-                </tr>
-              ) : (
-                numberPerformance.map((num) => (
-                  <tr key={num.id}>
-                    <td className="fw-bold text-dark">{num.displayName}</td>
-                    <td><code>{num.phoneNumber}</code></td>
-                    <td>
-                      <span className={`badge ${num.status === 'Connected' ? 'bg-success' : 'bg-danger'}`}>
-                        {num.status}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="badge bg-light text-dark border">
-                        <i className="bi bi-circle-fill text-success me-1 small"></i>
-                        {num.qualityRating}
-                      </span>
-                    </td>
-                    <td>{num.totalMessages.toLocaleString()}</td>
-                    <td className="text-success fw-semibold">{num.delivered.toLocaleString()}</td>
-                    <td>
-                      <span className="an-rate-badge green">{num.deliveryRate}%</span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Recent Message Activity (Latest 10) */}
-      <div className="cg-card">
-        <div className="cg-card-header">
-          <h3 className="cg-card-title">
-            <i className="bi bi-clock-history text-primary me-2"></i>
-            Recent Message Activity
-          </h3>
-          <span className="text-secondary small">Real-time log of latest dispatched and received messages</span>
-        </div>
-        <div className="table-responsive">
-          <table className="table cf-table mb-0 align-middle">
-            <thead>
-              <tr>
-                <th>Contact</th>
-                <th>Phone</th>
-                <th>Direction</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Line</th>
-                <th>Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentMessages.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="text-center py-4 text-muted">
-                    No recent message activities.
-                  </td>
-                </tr>
-              ) : (
-                recentMessages.map((m) => (
-                  <tr key={m.id}>
-                    <td className="fw-bold text-dark">{m.contact_name || 'Anonymous Contact'}</td>
-                    <td><code>{m.contact_phone || 'N/A'}</code></td>
-                    <td>
-                      <span className={`badge ${m.direction === 'OUTBOUND' ? 'bg-primary' : 'bg-info'}`}>
-                        {m.direction}
-                      </span>
-                    </td>
-                    <td><span className="badge bg-light text-secondary border">{m.message_type || 'text'}</span></td>
-                    <td>
-                      <span className={`badge ${m.message_status === 'delivered' || m.message_status === 'read' ? 'bg-success' : (m.message_status === 'failed' ? 'bg-danger' : 'bg-secondary')}`}>
-                        {m.message_status}
-                      </span>
-                    </td>
-                    <td className="small text-secondary">{m.account_name || m.account_phone || 'Default'}</td>
-                    <td className="small text-muted">{new Date(m.created_at).toLocaleString()}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>

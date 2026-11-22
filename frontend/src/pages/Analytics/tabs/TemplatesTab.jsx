@@ -1,142 +1,119 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-export default function TemplatesTab({ data, loading }) {
-  const kpis = data?.kpis || {};
-  const templates = data?.templates || [];
+export default function TemplatesTab({ templatesData, loading }) {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  if (loading) {
+    return (
+      <div className="text-center py-5">
+        <div className="spinner-border text-primary" role="status"></div>
+        <div className="text-secondary small mt-2">Loading template analytics from database...</div>
+      </div>
+    );
+  }
+
+  const templates = templatesData?.templates || [];
+
+  const filtered = templates.filter(t =>
+    t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (templates.length === 0) {
+    return (
+      <div className="text-center py-5 text-muted">
+        <i className="bi bi-file-earmark-text fs-1 text-secondary d-block mb-2"></i>
+        <h5 className="fw-bold text-dark">No Templates Recorded in Database</h5>
+        <p className="small text-secondary mb-3">Create and sync WhatsApp templates with Meta to view usage and delivery performance.</p>
+        <Link to="/templates" className="cg-hero-btn-create text-decoration-none">
+          <i className="bi bi-plus-lg me-1"></i> Manage Templates
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      {/* KPI Cards (4 cards) */}
-      <div className="an-kpi-grid-4 mb-4">
-        <div className="cg-stat-card">
-          <div className="cg-stat-icon-wrap cg-stat-icon-blue">
-            <i className="bi bi-file-earmark-text-fill"></i>
-          </div>
-          <div>
-            <div className="cg-stat-label">Total Templates</div>
-            <div className="cg-stat-value">{kpis.totalTemplates || 0}</div>
-            <div className="small text-muted mt-1">Submitted to Meta Cloud API</div>
-          </div>
+    <div className="analytics-chart-box">
+      <div className="analytics-chart-header flex-wrap gap-2">
+        <div>
+          <h3 className="analytics-chart-title">
+            <i className="bi bi-file-earmark-text text-primary"></i>
+            <span>Template Performance & Delivery Conversion</span>
+          </h3>
+          <p className="text-muted small m-0 mt-1">Compare which WhatsApp message templates have the highest delivery and open rates.</p>
         </div>
-
-        <div className="cg-stat-card">
-          <div className="cg-stat-icon-wrap cg-stat-icon-green">
-            <i className="bi bi-patch-check-fill"></i>
-          </div>
-          <div>
-            <div className="cg-stat-label">Approved by Meta</div>
-            <div className="cg-stat-value text-green">{kpis.approved || 0}</div>
-            <div className="small text-muted mt-1">Active for bulk broadcasts</div>
-          </div>
-        </div>
-
-        <div className="cg-stat-card">
-          <div className="cg-stat-icon-wrap" style={{ background: '#fef3c7', color: '#d97706' }}>
-            <i className="bi bi-hourglass-split"></i>
-          </div>
-          <div>
-            <div className="cg-stat-label">Pending Approval</div>
-            <div className="cg-stat-value" style={{ color: '#d97706' }}>{kpis.pending || 0}</div>
-            <div className="small text-muted mt-1">Under review by Meta</div>
-          </div>
-        </div>
-
-        <div className="cg-stat-card">
-          <div className="cg-stat-icon-wrap" style={{ background: '#ede9fe', color: '#7c3aed' }}>
-            <i className="bi bi-send-check-fill"></i>
-          </div>
-          <div>
-            <div className="cg-stat-label">Total Template Dispatches</div>
-            <div className="cg-stat-value" style={{ color: '#7c3aed' }}>{kpis.totalSent?.toLocaleString() || 0}</div>
-            <div className="small text-muted mt-1">Sent across all campaigns</div>
-          </div>
+        <div style={{ minWidth: 240 }}>
+          <input
+            type="text"
+            className="form-control form-control-sm"
+            placeholder="Search templates..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ borderRadius: 8 }}
+          />
         </div>
       </div>
 
-      {/* Templates Performance Table */}
-      <div className="cg-card">
-        <div className="cg-card-header">
-          <div className="d-flex align-items-center gap-3">
-            <h3 className="cg-card-title mb-0">
-              <i className="bi bi-layout-text-window text-primary me-2"></i>
-              Meta Approved WhatsApp Templates
-            </h3>
-            <span className="badge bg-light text-secondary border px-2 py-1">
-              {templates.length} Templates
-            </span>
-          </div>
-
-          <Link to="/templates" className="btn btn-outline-primary btn-sm rounded-3 d-inline-flex align-items-center gap-1">
-            <i className="bi bi-plus-lg"></i>
-            <span>Create New Template</span>
-          </Link>
-        </div>
-
-        <div className="table-responsive">
-          <table className="table cf-table mb-0 align-middle">
-            <thead>
+      <div className="table-responsive">
+        <table className="table analytics-table align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Template Name</th>
+              <th>Category</th>
+              <th>Usage Count</th>
+              <th>Total Dispatches</th>
+              <th>Delivered</th>
+              <th>Delivery Rate</th>
+              <th>Read Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
               <tr>
-                <th>Template Name</th>
-                <th>Category</th>
-                <th>Language</th>
-                <th>Approval Status</th>
-                <th>Campaigns</th>
-                <th>Total Sent</th>
-                <th>Delivered</th>
-                <th>Delivery %</th>
-                <th>Read %</th>
+                <td colSpan="7" className="text-center py-4 text-muted">
+                  No templates matching search.
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan="9" className="text-center py-4">
-                    <div className="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
-                    <span className="text-secondary small">Loading template performance...</span>
+            ) : (
+              filtered.map((t) => (
+                <tr key={t.id}>
+                  <td>
+                    <div className="fw-bold text-dark">{t.name}</div>
+                    <div className="text-muted small">{t.language?.toUpperCase() || 'EN'}</div>
+                  </td>
+                  <td>
+                    <span className="badge bg-light text-dark border">
+                      {t.category}
+                    </span>
+                  </td>
+                  <td className="fw-semibold">
+                    <i className="bi bi-broadcast me-1 text-primary"></i>
+                    {t.usageCount} campaigns
+                  </td>
+                  <td className="fw-semibold">{t.totalSent}</td>
+                  <td className="text-success fw-semibold">{t.totalDelivered}</td>
+                  <td>
+                    <div className="d-flex align-items-center gap-2">
+                      <span className="fw-bold">{t.deliveryRate}%</span>
+                      <div style={{ width: 45, height: 6, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
+                        <div style={{ width: `${t.deliveryRate}%`, height: '100%', background: '#10b981' }}></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="d-flex align-items-center gap-2">
+                      <span className="fw-bold">{t.readRate}%</span>
+                      <div style={{ width: 45, height: 6, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
+                        <div style={{ width: `${t.readRate}%`, height: '100%', background: '#06b6d4' }}></div>
+                      </div>
+                    </div>
                   </td>
                 </tr>
-              ) : templates.length === 0 ? (
-                <tr>
-                  <td colSpan="9" className="text-center py-4 text-muted">
-                    No template records found.
-                  </td>
-                </tr>
-              ) : (
-                templates.map((t) => (
-                  <tr key={t.id}>
-                    <td>
-                      <div className="fw-bold text-dark">{t.name}</div>
-                      <div className="small text-muted">ID: #{t.id}</div>
-                    </td>
-                    <td>
-                      <span className="badge bg-light text-dark border">{t.category || 'MARKETING'}</span>
-                    </td>
-                    <td><code>{t.language || 'en_US'}</code></td>
-                    <td>
-                      <span className={`badge ${
-                        t.status === 'APPROVED' ? 'bg-success' :
-                        t.status === 'PENDING' ? 'bg-warning' :
-                        'bg-danger'
-                      }`}>
-                        {t.status}
-                      </span>
-                    </td>
-                    <td>{t.campaigns_count || 0}</td>
-                    <td>{Number(t.total_sent || 0).toLocaleString()}</td>
-                    <td className="text-success fw-semibold">{Number(t.total_delivered || 0).toLocaleString()}</td>
-                    <td>
-                      <span className="an-rate-badge green">{t.delivery_rate || 0}%</span>
-                    </td>
-                    <td>
-                      <span className="an-rate-badge blue">{t.read_rate || 0}%</span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

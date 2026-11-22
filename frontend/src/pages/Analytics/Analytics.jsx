@@ -1,186 +1,76 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../../services/api';
-
 import OverviewTab from './tabs/OverviewTab';
-import MessagesTab from './tabs/MessagesTab';
 import CampaignsTab from './tabs/CampaignsTab';
-import NumbersTab from './tabs/NumbersTab';
-import ContactsTab from './tabs/ContactsTab';
-import ConversationsTab from './tabs/ConversationsTab';
+import MessagesTab from './tabs/MessagesTab';
 import TemplatesTab from './tabs/TemplatesTab';
-import RevenueTab from './tabs/RevenueTab';
-
 import '../../styles/analytics.css';
 
 export default function Analytics() {
-  const { user, isSuperAdmin } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
-
-  const isSuper = isSuperAdmin ? (typeof isSuperAdmin === 'function' ? isSuperAdmin() : isSuperAdmin) : (user?.role === 'superadmin');
-
-  // URL / Tab state
-  const currentTab = searchParams.get('tab') || 'overview';
-
-  // Global Filter State
-  const [period, setPeriod] = useState(searchParams.get('period') || 'last_7_days');
-  const [startDate, setStartDate] = useState(searchParams.get('startDate') || '');
-  const [endDate, setEndDate] = useState(searchParams.get('endDate') || '');
-  const [numberId, setNumberId] = useState(searchParams.get('numberId') || 'all');
-  const [status, setStatus] = useState(searchParams.get('status') || 'all');
-  const [search, setSearch] = useState(searchParams.get('search') || '');
-  const [page, setPage] = useState(1);
-
-  // Available Numbers for Filter
-  const [numbersList, setNumbersList] = useState([]);
-
-  // Data & Loading States
-  const [tabData, setTabData] = useState(null);
-  const [overviewKpis, setOverviewKpis] = useState(null);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [timeRange, setTimeRange] = useState('Last 7 Days');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [toastMsg, setToastMsg] = useState(null);
+
+  const [dashboardStats, setDashboardStats] = useState(null);
+  const [campaignsData, setCampaignsData] = useState(null);
+  const [messagesData, setMessagesData] = useState(null);
+  const [templatesData, setTemplatesData] = useState(null);
 
   const showToast = (type, text) => {
     setToastMsg({ type, text });
     setTimeout(() => setToastMsg(null), 4000);
   };
 
-  // Pre-fetch top summary KPIs so stats row is always populated
-  useEffect(() => {
-    let isMounted = true;
-    const fetchTopKpis = async () => {
-      try {
-        const res = await api.get('/analytics/overview', { params: { period } });
-        if (isMounted && res.data?.success && res.data.data?.kpis) {
-          setOverviewKpis(res.data.data.kpis);
-        }
-      } catch (_) {}
-    };
-    fetchTopKpis();
-    return () => { isMounted = false; };
-  }, [period]);
-
-  // Fetch Numbers for Dropdown Filter
-  useEffect(() => {
-    const fetchNumbers = async () => {
-      try {
-        const res = await api.get('/whatsapp/accounts');
-        if (res.data?.success && Array.isArray(res.data.data)) {
-          setNumbersList(res.data.data);
-        }
-      } catch (_) {}
-    };
-    fetchNumbers();
-  }, []);
-
-  // Fetch Analytics Data based on active tab and filters
-  const fetchAnalyticsData = useCallback(async (isManualRefresh = false) => {
+  const loadAllData = async (isManual = false) => {
     try {
-      if (isManualRefresh) setRefreshing(true);
+      if (isManual) setRefreshing(true);
       setLoading(true);
 
-      const params = {
-        period,
-        numberId: numberId !== 'all' ? numberId : undefined,
-        status: status !== 'all' ? status : undefined,
-        search: search.trim() || undefined,
-        page,
-        limit: 20
-      };
+      const [dashRes, campRes, msgRes, tplRes] = await Promise.allSettled([
+        api.get('/analytics/dashboard', { params: { timeRange } }),
+        api.get('/analytics/campaigns', { params: { timeRange } }),
+        api.get('/analytics/messages', { params: { timeRange } }),
+        api.get('/analytics/templates')
+      ]);
 
-      if (period === 'custom') {
-        if (startDate) params.startDate = startDate;
-        if (endDate) params.endDate = endDate;
+      if (dashRes.status === 'fulfilled' && dashRes.value.data?.success) {
+        setDashboardStats(dashRes.value.data.data);
+      }
+      if (campRes.status === 'fulfilled' && campRes.value.data?.success) {
+        setCampaignsData(campRes.value.data.data);
+      }
+      if (msgRes.status === 'fulfilled' && msgRes.value.data?.success) {
+        setMessagesData(msgRes.value.data.data);
+      }
+      if (tplRes.status === 'fulfilled' && tplRes.value.data?.success) {
+        setTemplatesData(tplRes.value.data.data);
       }
 
-      let endpoint = `/analytics/${currentTab}`;
-      if (currentTab === 'revenue' && !isSuper) {
-        endpoint = '/analytics/overview';
-      }
-
-      const res = await api.get(endpoint, { params });
-      if (res.data?.success) {
-        setTabData(res.data.data);
+      if (isManual) {
+        showToast('success', 'Analytics data refreshed from database.');
       }
     } catch (err) {
-      console.error('[Analytics] Failed to fetch data:', err);
-      showToast('danger', err.response?.data?.message || 'Failed to load analytics data.');
+      console.error('[Analytics] Error fetching analytics data:', err);
+      showToast('danger', 'Failed to fetch analytics from database.');
     } finally {
       setLoading(false);
-      if (isManualRefresh) {
-        setTimeout(() => {
-          setRefreshing(false);
-          showToast('success', 'Analytics data refreshed.');
-        }, 500);
-      }
+      setRefreshing(false);
     }
-  }, [currentTab, period, startDate, endDate, numberId, status, search, page, isSuper]);
+  };
 
   useEffect(() => {
-    fetchAnalyticsData();
-  }, [fetchAnalyticsData]);
+    loadAllData();
+  }, [timeRange]);
 
-  // Handle Tab Switch
-  const handleTabChange = (tabKey) => {
-    if (tabKey === currentTab) return;
-    setTabData(null);
-    setSearchParams(prev => {
-      const p = new URLSearchParams(prev);
-      p.set('tab', tabKey);
-      return p;
-    });
-    setPage(1);
-  };
-
-  // Handle Period Preset Change
-  const handlePeriodChange = (newPeriod) => {
-    setPeriod(newPeriod);
-    setPage(1);
-    setSearchParams(prev => {
-      const p = new URLSearchParams(prev);
-      p.set('period', newPeriod);
-      if (newPeriod !== 'custom') {
-        p.delete('startDate');
-        p.delete('endDate');
-      }
-      return p;
-    });
-  };
-
-  // Reset Filters
-  const handleResetFilters = () => {
-    setPeriod('last_7_days');
-    setStartDate('');
-    setEndDate('');
-    setNumberId('all');
-    setStatus('all');
-    setSearch('');
-    setPage(1);
-    setSearchParams({ tab: currentTab, period: 'last_7_days' });
-    showToast('info', 'Filters reset to default (Last 7 Days).');
-  };
-
-  // Export Trigger
-  const handleExport = async (type = 'messages', format = 'csv') => {
+  const handleExportCsv = async () => {
     try {
-      const params = {
-        type,
-        format,
-        period,
-        numberId: numberId !== 'all' ? numberId : undefined,
-        status: status !== 'all' ? status : undefined,
-        search: search.trim() || undefined
-      };
-      if (period === 'custom') {
-        if (startDate) params.startDate = startDate;
-        if (endDate) params.endDate = endDate;
-      }
-
+      setExporting(true);
       const res = await api.get('/analytics/export', {
-        params,
+        params: { timeRange },
         responseType: 'blob'
       });
 
@@ -188,44 +78,25 @@ export default function Analytics() {
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.setAttribute('download', `analytics_${type}_${new Date().toISOString().slice(0, 10)}.csv`);
+      const dateStr = new Date().toISOString().slice(0, 10);
+      link.setAttribute('download', `analytics_report_${dateStr}.csv`);
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
       window.URL.revokeObjectURL(downloadUrl);
 
-      showToast('success', `Exported ${type} analytics as CSV.`);
+      showToast('success', 'Analytics report exported successfully.');
     } catch (err) {
       console.error('[Analytics] Export failed:', err);
-      showToast('danger', 'Failed to generate export file.');
+      showToast('danger', 'Failed to export analytics report.');
+    } finally {
+      setExporting(false);
     }
   };
 
-  // Tabs definitions
-  const tabs = [
-    { key: 'overview', label: 'Overview', icon: 'bi-speedometer2' },
-    { key: 'messages', label: 'Messages', icon: 'bi-chat-left-dots' },
-    { key: 'campaigns', label: 'Campaigns', icon: 'bi-send' },
-    { key: 'numbers', label: 'Numbers', icon: 'bi-telephone' },
-    { key: 'contacts', label: 'Contacts', icon: 'bi-people' },
-    { key: 'conversations', label: 'Conversations', icon: 'bi-chat-dots' },
-    { key: 'templates', label: 'Templates', icon: 'bi-file-earmark-text' },
-    ...(isSuper ? [{ key: 'revenue', label: 'Revenue', icon: 'bi-currency-dollar', superAdminOnly: true }] : [])
-  ];
-
-  const currentKpis = (currentTab === 'overview' && tabData?.kpis) ? tabData.kpis : (overviewKpis || tabData?.kpis || {});
-
-  const getMetricVal = (item, fallback = 0) => {
-    if (item === null || item === undefined) return fallback;
-    if (typeof item === 'object') return item.value !== undefined ? item.value : fallback;
-    return item;
-  };
-
-  const sentCount = Number(getMetricVal(currentKpis.sent, getMetricVal(currentKpis.outgoing ?? currentKpis.outbound, 0)));
-  const deliveredCount = Number(getMetricVal(currentKpis.delivered, 0));
-  const readCount = Number(currentKpis.read !== undefined ? getMetricVal(currentKpis.read, 0) : 0);
-  const deliveryRate = Number(getMetricVal(currentKpis.deliveryRate, sentCount > 0 ? ((deliveredCount / sentCount) * 100).toFixed(1) : (deliveredCount > 0 ? 100 : 0)));
-  const readRate = Number(getMetricVal(currentKpis.readRate, deliveredCount > 0 ? ((readCount / deliveredCount) * 100).toFixed(1) : (readCount > 0 ? 100 : 0)));
+  const totalSent = Number(dashboardStats?.kpis?.messagesSent || 0);
+  const deliveryRate = Number(dashboardStats?.kpis?.deliveryRate || 0);
+  const readRate = Number(dashboardStats?.kpis?.readRate || 0);
 
   return (
     <div className="contact-groups-page pb-5">
@@ -245,26 +116,47 @@ export default function Analytics() {
       )}
 
       <div className="cg-page-container">
-        {/* Top Hero Banner (Matching Organize Your Contacts design system) */}
+        {/* Top Hero Banner (Exact match with Organize Your Contacts) */}
         <div className="cg-hero-banner">
           <div className="cg-hero-left">
             <div className="cg-hero-icon">
               <i className="bi bi-graph-up-arrow"></i>
             </div>
             <div>
-              <h1 className="cg-hero-title">Analytics & Intelligence</h1>
+              <h1 className="cg-hero-title">Analytics & Performance</h1>
               <p className="cg-hero-subtitle">
-                Real-time WhatsApp marketing, delivery metrics, campaign performance, and revenue intelligence.
+                Track real-time delivery rates, message volume, and WhatsApp campaign performance.
               </p>
             </div>
           </div>
+
           <div className="cg-hero-actions">
+            <select
+              className="form-select form-select-sm"
+              value={timeRange}
+              onChange={(e) => setTimeRange(e.target.value)}
+              style={{
+                borderRadius: '10px',
+                fontWeight: 600,
+                border: '1px solid #E5EAF2',
+                padding: '0.6rem 1.15rem',
+                minWidth: '150px',
+                color: '#172033',
+                background: '#ffffff'
+              }}
+            >
+              <option value="Today">Today</option>
+              <option value="Last 7 Days">Last 7 Days</option>
+              <option value="Last 30 Days">Last 30 Days</option>
+              <option value="This Month">This Month</option>
+            </select>
+
             <button
               type="button"
-              onClick={() => fetchAnalyticsData(true)}
-              className="cg-hero-btn-refresh"
-              title="Refresh Analytics Data"
+              onClick={() => loadAllData(true)}
               disabled={refreshing}
+              className="cg-hero-btn-refresh"
+              title="Refresh analytics from database"
             >
               <i className={`bi bi-arrow-clockwise ${refreshing ? 'spin' : ''}`}></i>
               <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
@@ -272,17 +164,23 @@ export default function Analytics() {
 
             <button
               type="button"
-              onClick={() => handleExport(currentTab === 'campaigns' ? 'campaigns' : (currentTab === 'numbers' ? 'numbers' : 'messages'), 'csv')}
+              onClick={handleExportCsv}
+              disabled={exporting}
               className="cg-hero-btn-create"
-              title="Export Current View Data"
+              style={{ background: '#00a884', borderColor: '#00a884' }}
+              title="Export CSV Report"
             >
-              <i className="bi bi-download"></i>
-              <span>Export CSV</span>
+              {exporting ? (
+                <span className="spinner-border spinner-border-sm me-1" role="status"></span>
+              ) : (
+                <i className="bi bi-download"></i>
+              )}
+              <span>Export Report</span>
             </button>
           </div>
         </div>
 
-        {/* 3 Stats Cards Row (Matching Organize Your Contacts design system) */}
+        {/* 3 Stats Cards Row (Exact match with Organize Your Contacts) */}
         <div className="cg-stats-grid">
           <div className="cg-stat-card">
             <div className="cg-stat-icon-wrap cg-stat-icon-blue">
@@ -290,7 +188,7 @@ export default function Analytics() {
             </div>
             <div>
               <div className="cg-stat-label">Total Messages Sent</div>
-              <div className="cg-stat-value">{sentCount.toLocaleString()}</div>
+              <div className="cg-stat-value">{totalSent.toLocaleString()}</div>
             </div>
           </div>
 
@@ -315,162 +213,77 @@ export default function Analytics() {
           </div>
         </div>
 
-        {/* Global Filter Bar */}
-        <div className="an-filter-bar">
-          <div className="an-filter-left">
-            {/* Period Preset Pills */}
-            <div className="an-period-presets">
-              {[
-                { id: 'today', label: 'Today' },
-                { id: 'yesterday', label: 'Yesterday' },
-                { id: 'last_7_days', label: 'Last 7 Days' },
-                { id: 'last_30_days', label: 'Last 30 Days' },
-                { id: 'this_month', label: 'This Month' },
-                { id: 'last_month', label: 'Last Month' },
-                { id: 'this_year', label: 'This Year' },
-                { id: 'custom', label: 'Custom' }
-              ].map(p => (
-                <button
-                  key={p.id}
-                  type="button"
-                  className={`an-preset-btn ${period === p.id ? 'active' : ''}`}
-                  onClick={() => handlePeriodChange(p.id)}
-                >
-                  {p.label}
-                </button>
-              ))}
+        {/* Main Content Card Container (Exact match with Organize Your Contacts) */}
+        <div className="cg-card">
+          <div className="cg-card-header pb-3 border-bottom mb-4">
+            <h2 className="cg-card-title">
+              {activeTab === 'overview' && 'Performance Overview'}
+              {activeTab === 'campaigns' && `Campaign Analytics (${campaignsData?.campaigns?.length || 0})`}
+              {activeTab === 'messages' && '24-Hour Message Volume & Peak Hours'}
+              {activeTab === 'templates' && `Template Performance (${templatesData?.templates?.length || 0})`}
+            </h2>
+
+            {/* Pill Tab Switcher */}
+            <div className="analytics-nav-tabs m-0 border-0 p-0">
+              <button
+                type="button"
+                className={`analytics-tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
+                onClick={() => setActiveTab('overview')}
+              >
+                <i className="bi bi-speedometer2"></i>
+                <span>Overview</span>
+              </button>
+
+              <button
+                type="button"
+                className={`analytics-tab-btn ${activeTab === 'campaigns' ? 'active' : ''}`}
+                onClick={() => setActiveTab('campaigns')}
+              >
+                <i className="bi bi-send"></i>
+                <span>Campaigns</span>
+              </button>
+
+              <button
+                type="button"
+                className={`analytics-tab-btn ${activeTab === 'messages' ? 'active' : ''}`}
+                onClick={() => setActiveTab('messages')}
+              >
+                <i className="bi bi-clock-history"></i>
+                <span>Activity</span>
+              </button>
+
+              <button
+                type="button"
+                className={`analytics-tab-btn ${activeTab === 'templates' ? 'active' : ''}`}
+                onClick={() => setActiveTab('templates')}
+              >
+                <i className="bi bi-file-earmark-text"></i>
+                <span>Templates</span>
+              </button>
             </div>
-
-            {/* Custom Date Pickers */}
-            {period === 'custom' && (
-              <div className="an-date-inputs">
-                <input
-                  type="date"
-                  className="an-date-input"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  placeholder="Start Date"
-                />
-                <span className="text-secondary small">to</span>
-                <input
-                  type="date"
-                  className="an-date-input"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  placeholder="End Date"
-                />
-              </div>
-            )}
-
-            {/* WhatsApp Line Selector */}
-            <select
-              className="an-filter-select"
-              value={numberId}
-              onChange={(e) => {
-                setNumberId(e.target.value);
-                setPage(1);
-              }}
-              title="Filter by WhatsApp Line"
-            >
-              <option value="all">All WhatsApp Lines</option>
-              {numbersList.map(num => (
-                <option key={num.id} value={num.id}>
-                  {num.display_name || num.phone_number} ({num.phone_number})
-                </option>
-              ))}
-            </select>
           </div>
 
-          {/* Reset Filters CTA */}
-          <button
-            type="button"
-            className="btn btn-sm btn-link text-secondary text-decoration-none d-flex align-items-center gap-1"
-            onClick={handleResetFilters}
-            title="Reset to default date range"
-          >
-            <i className="bi bi-arrow-counterclockwise"></i>
-            <span>Reset Filters</span>
-          </button>
+          {/* Tab Content Display */}
+          <div className="cg-card-body">
+            {activeTab === 'overview' && (
+              <OverviewTab stats={dashboardStats} loading={loading} />
+            )}
+
+            {activeTab === 'campaigns' && (
+              <CampaignsTab campaignsData={campaignsData} loading={loading} />
+            )}
+
+            {activeTab === 'messages' && (
+              <MessagesTab messagesData={messagesData} loading={loading} />
+            )}
+
+            {activeTab === 'templates' && (
+              <TemplatesTab templatesData={templatesData} loading={loading} />
+            )}
+          </div>
         </div>
 
-        {/* Main Content Card Container (Matching Organize Your Contacts design system) */}
-        <div className="cg-card">
-          {/* Tab Navigation */}
-          <div className="an-tabs-nav">
-          {tabs.map(t => (
-            <button
-              key={t.key}
-              type="button"
-              className={`an-tab-item ${currentTab === t.key ? 'active' : ''}`}
-              onClick={() => handleTabChange(t.key)}
-            >
-              <i className={`bi ${t.icon}`}></i>
-              <span>{t.label}</span>
-              {t.superAdminOnly && (
-                <span className="an-tab-badge">Admin</span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* Tab Content Display */}
-        <div>
-          {loading && !tabData ? (
-            <div className="cg-card p-5 text-center my-4">
-              <div className="spinner-border text-primary mb-3" role="status" style={{ width: '2.5rem', height: '2.5rem' }}>
-                <span className="visually-hidden">Loading...</span>
-              </div>
-              <h5 className="fw-bold mb-1">Loading Analytics Data...</h5>
-              <p className="text-muted small mb-0">Crunching real-time WhatsApp marketing and communication metrics...</p>
-            </div>
-          ) : (
-            <>
-              {currentTab === 'overview' && (
-                <OverviewTab data={tabData} loading={loading} />
-              )}
-
-              {currentTab === 'messages' && (
-                <MessagesTab
-                  data={tabData}
-                  loading={loading}
-                  filters={{ search, status, page }}
-                  onFilterChange={(newFilters) => {
-                    if (newFilters.search !== undefined) setSearch(newFilters.search);
-                    if (newFilters.status !== undefined) setStatus(newFilters.status);
-                    if (newFilters.page !== undefined) setPage(newFilters.page);
-                  }}
-                  onExport={handleExport}
-                />
-              )}
-
-              {currentTab === 'campaigns' && (
-                <CampaignsTab data={tabData} loading={loading} onExport={handleExport} />
-              )}
-
-              {currentTab === 'numbers' && (
-                <NumbersTab data={tabData} loading={loading} onExport={handleExport} />
-              )}
-
-              {currentTab === 'contacts' && (
-                <ContactsTab data={tabData} loading={loading} />
-              )}
-
-              {currentTab === 'conversations' && (
-                <ConversationsTab data={tabData} loading={loading} />
-              )}
-
-              {currentTab === 'templates' && (
-                <TemplatesTab data={tabData} loading={loading} />
-              )}
-
-              {currentTab === 'revenue' && isSuper && (
-                <RevenueTab data={tabData} loading={loading} />
-              )}
-            </>
-          )}
-        </div>
       </div>
     </div>
-  </div>
   );
 }
