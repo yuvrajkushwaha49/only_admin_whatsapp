@@ -109,6 +109,8 @@ export default function Analytics() {
 
   // Handle Tab Switch
   const handleTabChange = (tabKey) => {
+    if (tabKey === currentTab) return;
+    setTabData(null);
     setSearchParams(prev => {
       const p = new URLSearchParams(prev);
       p.set('tab', tabKey);
@@ -348,46 +350,58 @@ export default function Analytics() {
 
         {/* Tab Content Display */}
         <div>
-          {currentTab === 'overview' && (
-            <OverviewTab data={tabData} loading={loading} />
-          )}
+          {loading && !tabData ? (
+            <div className="cg-card p-5 text-center my-4">
+              <div className="spinner-border text-primary mb-3" role="status" style={{ width: '2.5rem', height: '2.5rem' }}>
+                <span className="visually-hidden">Loading...</span>
+              </div>
+              <h5 className="fw-bold mb-1">Loading Analytics Data...</h5>
+              <p className="text-muted small mb-0">Crunching real-time WhatsApp marketing and communication metrics...</p>
+            </div>
+          ) : (
+            <>
+              {currentTab === 'overview' && (
+                <OverviewTab data={tabData} loading={loading} />
+              )}
 
-          {currentTab === 'messages' && (
-            <MessagesTab
-              data={tabData}
-              loading={loading}
-              filters={{ search, status, page }}
-              onFilterChange={(newFilters) => {
-                if (newFilters.search !== undefined) setSearch(newFilters.search);
-                if (newFilters.status !== undefined) setStatus(newFilters.status);
-                if (newFilters.page !== undefined) setPage(newFilters.page);
-              }}
-              onExport={handleExport}
-            />
-          )}
+              {currentTab === 'messages' && (
+                <MessagesTab
+                  data={tabData}
+                  loading={loading}
+                  filters={{ search, status, page }}
+                  onFilterChange={(newFilters) => {
+                    if (newFilters.search !== undefined) setSearch(newFilters.search);
+                    if (newFilters.status !== undefined) setStatus(newFilters.status);
+                    if (newFilters.page !== undefined) setPage(newFilters.page);
+                  }}
+                  onExport={handleExport}
+                />
+              )}
 
-          {currentTab === 'campaigns' && (
-            <CampaignsTab data={tabData} loading={loading} onExport={handleExport} />
-          )}
+              {currentTab === 'campaigns' && (
+                <CampaignsTab data={tabData} loading={loading} onExport={handleExport} />
+              )}
 
-          {currentTab === 'numbers' && (
-            <NumbersTab data={tabData} loading={loading} onExport={handleExport} />
-          )}
+              {currentTab === 'numbers' && (
+                <NumbersTab data={tabData} loading={loading} onExport={handleExport} />
+              )}
 
-          {currentTab === 'contacts' && (
-            <ContactsTab data={tabData} loading={loading} />
-          )}
+              {currentTab === 'contacts' && (
+                <ContactsTab data={tabData} loading={loading} />
+              )}
 
-          {currentTab === 'conversations' && (
-            <ConversationsTab data={tabData} loading={loading} />
-          )}
+              {currentTab === 'conversations' && (
+                <ConversationsTab data={tabData} loading={loading} />
+              )}
 
-          {currentTab === 'templates' && (
-            <TemplatesTab data={tabData} loading={loading} />
-          )}
+              {currentTab === 'templates' && (
+                <TemplatesTab data={tabData} loading={loading} />
+              )}
 
-          {currentTab === 'revenue' && isSuper && (
-            <RevenueTab data={tabData} loading={loading} />
+              {currentTab === 'revenue' && isSuper && (
+                <RevenueTab data={tabData} loading={loading} />
+              )}
+            </>
           )}
         </div>
       </div>

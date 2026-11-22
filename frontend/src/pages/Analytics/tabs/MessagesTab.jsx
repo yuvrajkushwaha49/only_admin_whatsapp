@@ -22,6 +22,14 @@ export default function MessagesTab({
   const [searchTerm, setSearchTerm] = useState(filters.search || '');
   const [statusFilter, setStatusFilter] = useState(filters.status || 'all');
 
+  const getMetricVal = (val, fallback = 0) => {
+    if (val === null || val === undefined) return fallback;
+    if (typeof val === 'object') {
+      return val.value !== undefined ? val.value : fallback;
+    }
+    return val;
+  };
+
   const kpis = data?.kpis || {};
   const rateTrends = data?.rateTrends || [];
   const messages = data?.messages || [];
@@ -54,7 +62,7 @@ export default function MessagesTab({
           </div>
           <div>
             <div className="cg-stat-label">Total Messages</div>
-            <div className="cg-stat-value">{kpis.total?.toLocaleString() || 0}</div>
+            <div className="cg-stat-value">{getMetricVal(kpis.total)?.toLocaleString() || 0}</div>
           </div>
         </div>
 
@@ -65,7 +73,7 @@ export default function MessagesTab({
           </div>
           <div>
             <div className="cg-stat-label">Sent</div>
-            <div className="cg-stat-value">{kpis.sent?.toLocaleString() || 0}</div>
+            <div className="cg-stat-value">{getMetricVal(kpis.sent)?.toLocaleString() || 0}</div>
           </div>
         </div>
 
@@ -76,7 +84,7 @@ export default function MessagesTab({
           </div>
           <div>
             <div className="cg-stat-label">Delivered</div>
-            <div className="cg-stat-value text-green">{kpis.delivered?.toLocaleString() || 0}</div>
+            <div className="cg-stat-value text-green">{getMetricVal(kpis.delivered)?.toLocaleString() || 0}</div>
           </div>
         </div>
 
@@ -87,7 +95,7 @@ export default function MessagesTab({
           </div>
           <div>
             <div className="cg-stat-label">Read</div>
-            <div className="cg-stat-value" style={{ color: '#0284c7' }}>{kpis.read?.toLocaleString() || 0}</div>
+            <div className="cg-stat-value" style={{ color: '#0284c7' }}>{getMetricVal(kpis.read)?.toLocaleString() || 0}</div>
           </div>
         </div>
 
@@ -98,7 +106,7 @@ export default function MessagesTab({
           </div>
           <div>
             <div className="cg-stat-label">Failed</div>
-            <div className="cg-stat-value" style={{ color: '#dc2626' }}>{kpis.failed?.toLocaleString() || 0}</div>
+            <div className="cg-stat-value" style={{ color: '#dc2626' }}>{getMetricVal(kpis.failed)?.toLocaleString() || 0}</div>
           </div>
         </div>
 
@@ -109,7 +117,7 @@ export default function MessagesTab({
           </div>
           <div>
             <div className="cg-stat-label">Pending / Sending</div>
-            <div className="cg-stat-value" style={{ color: '#d97706' }}>{kpis.pending?.toLocaleString() || 0}</div>
+            <div className="cg-stat-value" style={{ color: '#d97706' }}>{getMetricVal(kpis.pending)?.toLocaleString() || 0}</div>
           </div>
         </div>
       </div>
@@ -130,7 +138,7 @@ export default function MessagesTab({
                 <span className="fw-semibold text-secondary small">Delivery Rate (Delivered / Sent)</span>
                 <i className="bi bi-check-circle-fill text-success fs-5"></i>
               </div>
-              <div className="fs-2 fw-bold text-success mt-2">{kpis.deliveryRate ?? 0}%</div>
+              <div className="fs-2 fw-bold text-success mt-2">{getMetricVal(kpis.deliveryRate, 0)}%</div>
               <div className="small text-muted mt-1">Confirmed delivered to recipient phones</div>
             </div>
           </div>
@@ -141,7 +149,7 @@ export default function MessagesTab({
                 <span className="fw-semibold text-secondary small">Read Rate (Read / Delivered)</span>
                 <i className="bi bi-eye-fill text-primary fs-5"></i>
               </div>
-              <div className="fs-2 fw-bold text-primary mt-2">{kpis.readRate ?? 0}%</div>
+              <div className="fs-2 fw-bold text-primary mt-2">{getMetricVal(kpis.readRate, 0)}%</div>
               <div className="small text-muted mt-1">Opened and read by recipients</div>
             </div>
           </div>
@@ -152,7 +160,7 @@ export default function MessagesTab({
                 <span className="fw-semibold text-secondary small">Failure Rate (Failed / Sent)</span>
                 <i className="bi bi-x-circle-fill text-danger fs-5"></i>
               </div>
-              <div className="fs-2 fw-bold text-danger mt-2">{kpis.failureRate ?? 0}%</div>
+              <div className="fs-2 fw-bold text-danger mt-2">{getMetricVal(kpis.failureRate, 0)}%</div>
               <div className="small text-muted mt-1">Undelivered or invalid numbers</div>
             </div>
           </div>
