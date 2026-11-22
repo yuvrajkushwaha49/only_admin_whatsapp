@@ -12,6 +12,7 @@ router.post('/', requireRole(['owner', 'admin', 'marketer']), campaignsControlle
 router.post('/preview', campaignsController.preview);
 router.post('/preflight', campaignsController.preflight);
 router.get('/:id', campaignsController.details);
+router.get('/:id/export', campaignsController.exportCsv);
 router.post('/:id/start', requireRole(['owner', 'admin', 'marketer']), campaignsController.start);
 router.post('/:id/resend', requireRole(['owner', 'admin', 'marketer']), campaignsController.resend);
 router.post('/:id/pause', requireRole(['owner', 'admin', 'marketer']), campaignsController.pause);

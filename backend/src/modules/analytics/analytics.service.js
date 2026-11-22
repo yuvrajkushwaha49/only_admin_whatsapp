@@ -324,7 +324,7 @@ export async function getDashboardStats(businessId, timeRange = 'Last 7 Days', u
     });
 
     contactGrowth = sortedKeys.map(k => cgMap[k]);
-  } catch (_) {}
+  } catch (_) { }
 
   // 9. Campaign Performance Bar Chart data
   const campaignPerformance = recentCampaignsList.slice(0, 8).map(c => ({

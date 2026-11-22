@@ -722,6 +722,30 @@ export async function resendCampaign(businessId, campaignId, { target = 'all', m
   }
 }
 
+export async function exportCampaignCsv(businessId, campaignId) {
+  const { campaign, recipients } = await getCampaignDetails(businessId, campaignId);
+  let csv = `Campaign ID,${campaign.id}\n`;
+  csv += `Campaign Name,${(campaign.name || '').replace(/,/g, ' ')}\n`;
+  csv += `Template,${(campaign.template_name || '').replace(/,/g, ' ')}\n`;
+  csv += `Account,${(campaign.account_name || '').replace(/,/g, ' ')}\n`;
+  csv += `Status,${campaign.status}\n`;
+  csv += `Recipients,${campaign.total_recipients || 0}\n`;
+  csv += `Sent,${campaign.sent_count || 0}\n`;
+  csv += `Delivered,${campaign.delivered_count || 0}\n`;
+  csv += `Read,${campaign.read_count || 0}\n`;
+  csv += `Failed,${campaign.failed_count || 0}\n\n`;
+
+  csv += 'Recipient Phone,Contact Name,Status,Error Reason,Dispatched At\n';
+  (recipients || []).forEach(r => {
+    csv += `"${r.phone_number || r.phone || ''}","${(r.contact_name || '').replace(/"/g, '""')}","${r.status || ''}","${(r.error_message || '').replace(/"/g, '""')}","${r.sent_at || ''}"\n`;
+  });
+
+  return {
+    content: csv,
+    filename: `campaign_${campaignId}_report_${new Date().toISOString().slice(0, 10)}.csv`
+  };
+}
+
 export default {
   listCampaigns,
   getCampaignDetails,

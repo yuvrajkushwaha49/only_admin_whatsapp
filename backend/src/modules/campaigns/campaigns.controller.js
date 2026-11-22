@@ -81,6 +81,17 @@ export async function resend(req, res, next) {
   }
 }
 
+export async function exportCsv(req, res, next) {
+  try {
+    const result = await campaignsService.exportCampaignCsv(req.businessId, req.params.id);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+    res.send(result.content);
+  } catch (error) {
+    next(error);
+  }
+}
+
 export default {
   list,
   details,
@@ -90,5 +101,6 @@ export default {
   start,
   pause,
   cancel,
-  resend
+  resend,
+  exportCsv
 };
