@@ -1,5 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid
+} from 'recharts';
 import api from '../services/api';
 import '../styles/dashboard.css';
 import '../styles/analytics.css';
@@ -12,6 +24,7 @@ export default function ContactReports() {
     unsubscribed: 0,
     suppressed: 0
   });
+  const [growthData, setGrowthData] = useState([]);
   const [pagination, setPagination] = useState({
     total: 0,
     page: 1,
@@ -60,6 +73,14 @@ export default function ContactReports() {
           setPagination(res.data.pagination);
         }
       }
+
+      // Fetch audience growth trend from DB analytics
+      try {
+        const dashRes = await api.get('/analytics/dashboard', { params: { timeRange: 'Last 30 Days' } });
+        if (dashRes.data?.success && Array.isArray(dashRes.data.data?.contactGrowth)) {
+          setGrowthData(dashRes.data.data.contactGrowth);
+        }
+      } catch (_) {}
 
       if (isManual) {
         showToast('success', 'Contact reports refreshed from database.');
@@ -121,6 +142,13 @@ export default function ContactReports() {
   const optInRate = stats.total > 0 ? Number(((stats.optedIn / stats.total) * 100).toFixed(1)) : 0;
   const reachableCount = Math.max(0, stats.optedIn - (stats.suppressed - stats.unsubscribed));
   const reachableRate = stats.total > 0 ? Number(((reachableCount / stats.total) * 100).toFixed(1)) : 0;
+
+  const pendingCount = Math.max(0, stats.total - stats.optedIn - stats.unsubscribed);
+  const pieData = [
+    { name: 'WhatsApp Opted-In', value: stats.optedIn, color: '#10b981' },
+    { name: 'Opted-Out', value: stats.unsubscribed, color: '#ef4444' },
+    { name: 'Pending / Inactive', value: pendingCount, color: '#f59e0b' }
+  ].filter(item => item.value > 0);
 
   return (
     <div className="contact-groups-page pb-5">
@@ -239,6 +267,100 @@ export default function ContactReports() {
             </div>
           </div>
         </div>
+
+        {/* Graph & Pie Chart Row */}
+        {stats.total > 0 && (
+          <div className="row g-4 mb-4">
+            <div className="col-12 col-lg-8">
+              <div className="cg-card h-100 mb-0">
+                <div className="cg-card-header pb-2">
+                  <h3 className="cg-card-title d-flex align-items-center gap-2" style={{ fontSize: '1.05rem' }}>
+                    <i className="bi bi-graph-up text-primary"></i>
+                    <span>Audience Growth & Acquisition Trend</span>
+                  </h3>
+                  <div className="small text-secondary">
+                    Total Contacts: <strong>{stats.total.toLocaleString()}</strong>
+                  </div>
+                </div>
+                <div style={{ width: '100%', height: 260 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={growthData.length > 0 ? growthData : [{ date: 'Active Contacts', contacts: stats.total }]}
+                      margin={{ top: 10, right: 10, left: -20, bottom: 20 }}
+                    >
+                      <defs>
+                        <linearGradient id="contactGrowthGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.4} />
+                          <stop offset="95%" stopColor="#7c3aed" stopOpacity={0.0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 11 }} />
+                      <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                      <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0' }} />
+                      <Area
+                        type="monotone"
+                        dataKey="contacts"
+                        stroke="#7c3aed"
+                        strokeWidth={2.5}
+                        fillOpacity={1}
+                        fill="url(#contactGrowthGrad)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-12 col-lg-4">
+              <div className="cg-card h-100 mb-0">
+                <div className="cg-card-header pb-2">
+                  <h3 className="cg-card-title d-flex align-items-center gap-2" style={{ fontSize: '1.05rem' }}>
+                    <i className="bi bi-pie-chart-fill text-primary"></i>
+                    <span>Consent & Reachability Breakdown</span>
+                  </h3>
+                </div>
+                {pieData.length === 0 ? (
+                  <div className="text-center py-4 text-muted my-auto">
+                    <i className="bi bi-pie-chart fs-1 text-secondary d-block mb-1"></i>
+                    <div className="small">No contact consent records to display.</div>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ width: '100%', height: 190 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={pieData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={50}
+                            outerRadius={75}
+                            paddingAngle={4}
+                            dataKey="value"
+                          >
+                            {pieData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="d-flex justify-content-center flex-wrap gap-2 small text-secondary mt-1">
+                      {pieData.map((item) => (
+                        <span key={item.name} className="d-flex align-items-center gap-1">
+                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: item.color }}></span>
+                          <span>{item.name}: <strong>{item.value.toLocaleString()}</strong></span>
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Main Content Card Container (Exact match with Organize Your Contacts) */}
         <div className="cg-card">

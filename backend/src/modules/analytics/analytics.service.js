@@ -517,13 +517,28 @@ export async function getMessageAnalytics(businessId, query = {}) {
 
     const counts = typeRows?.[0] || {};
 
+    let messagesList = [];
+    try {
+      const msgListRows = await executeQuery(
+        `SELECT id, customer_phone, direction, message_type, message_body, message_status, created_at
+         FROM whatsapp_messages
+         WHERE business_id = ? ${dateFilter}
+         ORDER BY id DESC LIMIT 50`,
+        [numBusinessId]
+      );
+      if (Array.isArray(msgListRows)) {
+        messagesList = msgListRows;
+      }
+    } catch (_) {}
+
     return {
       hourlyActivity: Object.values(hourlyMap),
       inboundCount: Number(counts.totalInbound || 0),
       outboundCount: Number(counts.totalOutbound || 0),
       deliveredCount: Number(counts.delivered || 0),
       readCount: Number(counts.read || 0),
-      failedCount: Number(counts.failed || 0)
+      failedCount: Number(counts.failed || 0),
+      messages: messagesList
     };
   } catch (err) {
     console.error('[Analytics] Error in getMessageAnalytics:', err);

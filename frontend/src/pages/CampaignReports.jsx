@@ -1,8 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid
+} from 'recharts';
 import api from '../services/api';
 import '../styles/dashboard.css';
 import '../styles/analytics.css';
+
+const PIE_COLORS = ['#10b981', '#06b6d4', '#ef4444', '#f59e0b'];
 
 export default function CampaignReports() {
   const [campaigns, setCampaigns] = useState([]);
@@ -114,8 +128,21 @@ export default function CampaignReports() {
   const totalSent = campaigns.reduce((acc, c) => acc + Number(c.sent_count || 0), 0);
   const totalDelivered = campaigns.reduce((acc, c) => acc + Number(c.delivered_count || 0), 0);
   const totalRead = campaigns.reduce((acc, c) => acc + Number(c.read_count || 0), 0);
+  const totalFailed = campaigns.reduce((acc, c) => acc + Number(c.failed_count || 0), 0);
   const avgDeliveryRate = totalSent > 0 ? Number(((totalDelivered / totalSent) * 100).toFixed(1)) : 0;
   const avgReadRate = totalDelivered > 0 ? Number(((totalRead / totalDelivered) * 100).toFixed(1)) : 0;
+
+  const pieData = [
+    { name: 'Delivered', value: totalDelivered, color: '#10b981' },
+    { name: 'Read', value: totalRead, color: '#06b6d4' },
+    { name: 'Failed', value: totalFailed, color: '#ef4444' }
+  ].filter(p => p.value > 0);
+
+  const barChartData = campaigns.slice(0, 7).map(c => ({
+    name: (c.name || `Campaign #${c.id}`).length > 12 ? (c.name || `Campaign #${c.id}`).slice(0, 12) + '...' : (c.name || `Campaign #${c.id}`),
+    sent: Number(c.sent_count || 0),
+    delivered: Number(c.delivered_count || 0)
+  }));
 
   return (
     <div className="contact-groups-page pb-5">
@@ -237,6 +264,92 @@ export default function CampaignReports() {
             </div>
           </div>
         </div>
+
+        {/* Graph & Pie Chart Row */}
+        {campaigns.length > 0 && (
+          <div className="row g-4 mb-4">
+            <div className="col-12 col-lg-8">
+              <div className="cg-card h-100 mb-0">
+                <div className="cg-card-header pb-2">
+                  <h3 className="cg-card-title d-flex align-items-center gap-2" style={{ fontSize: '1.05rem' }}>
+                    <i className="bi bi-bar-chart-fill text-primary"></i>
+                    <span>Campaign Delivery Performance</span>
+                  </h3>
+                  <div className="d-flex align-items-center gap-3 small text-secondary">
+                    <span className="d-flex align-items-center gap-1">
+                      <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#7c3aed', display: 'inline-block' }}></span>
+                      <span>Sent</span>
+                    </span>
+                    <span className="d-flex align-items-center gap-1">
+                      <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981', display: 'inline-block' }}></span>
+                      <span>Delivered</span>
+                    </span>
+                  </div>
+                </div>
+                <div style={{ width: '100%', height: 260 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={barChartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 11 }} interval={0} angle={-15} textAnchor="end" />
+                      <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                      <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0' }} />
+                      <Bar dataKey="sent" fill="#7c3aed" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="delivered" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-12 col-lg-4">
+              <div className="cg-card h-100 mb-0">
+                <div className="cg-card-header pb-2">
+                  <h3 className="cg-card-title d-flex align-items-center gap-2" style={{ fontSize: '1.05rem' }}>
+                    <i className="bi bi-pie-chart-fill text-primary"></i>
+                    <span>Delivery Status Breakdown</span>
+                  </h3>
+                </div>
+                {pieData.length === 0 ? (
+                  <div className="text-center py-4 text-muted my-auto">
+                    <i className="bi bi-pie-chart fs-1 text-secondary d-block mb-1"></i>
+                    <div className="small">No delivery records to display.</div>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ width: '100%', height: 190 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={pieData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={50}
+                            outerRadius={75}
+                            paddingAngle={4}
+                            dataKey="value"
+                          >
+                            {pieData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color || PIE_COLORS[index % PIE_COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="d-flex justify-content-center flex-wrap gap-2 small text-secondary mt-1">
+                      {pieData.map((item, idx) => (
+                        <span key={item.name} className="d-flex align-items-center gap-1">
+                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: item.color || PIE_COLORS[idx % PIE_COLORS.length] }}></span>
+                          <span>{item.name}: <strong>{item.value.toLocaleString()}</strong></span>
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Main Content Card Container (Exact match with Organize Your Contacts) */}
         <div className="cg-card">
