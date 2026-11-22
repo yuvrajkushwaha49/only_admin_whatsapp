@@ -481,55 +481,92 @@ export async function getMessageAnalytics(businessId, query = {}) {
       hourlyMap[h] = { hour: label, outbound: 0, inbound: 0, total: 0 };
     }
 
-    const hourlyRows = await executeQuery(
-      `SELECT 
-        HOUR(created_at) as hr,
-        COUNT(CASE WHEN direction = 'OUTBOUND' THEN 1 END) as outbound,
-        COUNT(CASE WHEN direction = 'INBOUND' THEN 1 END) as inbound
-       FROM whatsapp_messages 
-       WHERE business_id = ? ${dateFilter}
-       GROUP BY hr`,
-      [numBusinessId]
-    );
+    try {
+      const hourlyRows = await executeQuery(
+        `SELECT 
+          HOUR(created_at) as hr,
+          COUNT(CASE WHEN direction = 'OUTBOUND' THEN 1 END) as outbound,
+          COUNT(CASE WHEN direction = 'INBOUND' THEN 1 END) as inbound
+         FROM (
+           SELECT created_at, direction FROM whatsapp_messages WHERE business_id = ? ${dateFilter}
+           UNION ALL
+           SELECT created_at, COALESCE(direction, 'OUTBOUND') as direction FROM messages WHERE business_id = ? ${dateFilter}
+         ) combined
+         GROUP BY hr`,
+        [numBusinessId, numBusinessId]
+      );
 
-    if (Array.isArray(hourlyRows)) {
-      for (const r of hourlyRows) {
-        const h = Number(r.hr);
-        if (hourlyMap[h]) {
-          hourlyMap[h].outbound = Number(r.outbound || 0);
-          hourlyMap[h].inbound = Number(r.inbound || 0);
-          hourlyMap[h].total = hourlyMap[h].outbound + hourlyMap[h].inbound;
+      if (Array.isArray(hourlyRows)) {
+        for (const r of hourlyRows) {
+          const h = Number(r.hr);
+          if (hourlyMap[h]) {
+            hourlyMap[h].outbound = Number(r.outbound || 0);
+            hourlyMap[h].inbound = Number(r.inbound || 0);
+            hourlyMap[h].total = hourlyMap[h].outbound + hourlyMap[h].inbound;
+          }
         }
       }
-    }
+    } catch (_) {}
 
-    const typeRows = await executeQuery(
-      `SELECT 
-        COUNT(CASE WHEN direction = 'OUTBOUND' THEN 1 END) as totalOutbound,
-        COUNT(CASE WHEN direction = 'INBOUND' THEN 1 END) as totalInbound,
-        COUNT(CASE WHEN message_status = 'delivered' THEN 1 END) as delivered,
-        COUNT(CASE WHEN message_status = 'read' THEN 1 END) as \`read\`,
-        COUNT(CASE WHEN message_status = 'failed' THEN 1 END) as failed
-       FROM whatsapp_messages
-       WHERE business_id = ? ${dateFilter}`,
-      [numBusinessId]
-    );
-
-    const counts = typeRows?.[0] || {};
+    let counts = {};
+    try {
+      const typeRows = await executeQuery(
+        `SELECT 
+          COUNT(CASE WHEN direction = 'OUTBOUND' THEN 1 END) as totalOutbound,
+          COUNT(CASE WHEN direction = 'INBOUND' THEN 1 END) as totalInbound,
+          COUNT(CASE WHEN status IN ('delivered', 'DELIVERED') THEN 1 END) as delivered,
+          COUNT(CASE WHEN status IN ('read', 'READ') THEN 1 END) as \`read\`,
+          COUNT(CASE WHEN status IN ('failed', 'FAILED') THEN 1 END) as failed
+         FROM (
+           SELECT direction, message_status as status FROM whatsapp_messages WHERE business_id = ? ${dateFilter}
+           UNION ALL
+           SELECT COALESCE(direction, 'OUTBOUND') as direction, status FROM messages WHERE business_id = ? ${dateFilter}
+         ) combined`,
+        [numBusinessId, numBusinessId]
+      );
+      counts = typeRows?.[0] || {};
+    } catch (_) {}
 
     let messagesList = [];
     try {
       const msgListRows = await executeQuery(
-        `SELECT id, customer_phone, direction, message_type, message_body, message_status, created_at
-         FROM whatsapp_messages
-         WHERE business_id = ? ${dateFilter}
-         ORDER BY id DESC LIMIT 50`,
-        [numBusinessId]
+        `SELECT * FROM (
+           SELECT 
+             m.id, 
+             COALESCE(c.phone, conv.customer_phone, '') as customer_phone, 
+             COALESCE(m.direction, 'OUTBOUND') as direction, 
+             COALESCE(m.message_type, 'text') as message_type, 
+             COALESCE(m.message_body, '') as message_body, 
+             COALESCE(m.message_status, 'sent') as message_status, 
+             m.created_at
+           FROM whatsapp_messages m
+           LEFT JOIN contacts c ON m.contact_id = c.id
+           LEFT JOIN whatsapp_conversations conv ON m.conversation_id = conv.id
+           WHERE m.business_id = ? ${dateFilter}
+
+           UNION ALL
+
+           SELECT 
+             msg.id, 
+             COALESCE(msg.phone, c2.phone, '') as customer_phone, 
+             COALESCE(msg.direction, 'OUTBOUND') as direction, 
+             COALESCE(msg.message_type, 'template') as message_type, 
+             COALESCE(msg.content, '') as message_body, 
+             COALESCE(msg.status, 'sent') as message_status, 
+             msg.created_at
+           FROM messages msg
+           LEFT JOIN contacts c2 ON msg.contact_id = c2.id
+           WHERE msg.business_id = ? ${dateFilter}
+         ) combined_messages
+         ORDER BY created_at DESC LIMIT 50`,
+        [numBusinessId, numBusinessId]
       );
       if (Array.isArray(msgListRows)) {
         messagesList = msgListRows;
       }
-    } catch (_) {}
+    } catch (err) {
+      console.error('[Analytics] Error in msgListRows query:', err.message);
+    }
 
     return {
       hourlyActivity: Object.values(hourlyMap),
