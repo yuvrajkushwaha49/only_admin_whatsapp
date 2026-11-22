@@ -49,6 +49,7 @@ export default function Contacts() {
     name: '',
     phone: '',
     email: '',
+    tag: '',
     consentProof: 'Explicit opt-in received from customer'
   });
   const [submitting, setSubmitting] = useState(false);
@@ -158,9 +159,10 @@ export default function Contacts() {
     try {
       await api.post('/contacts', newContact);
       setShowAddModal(false);
-      setNewContact({ name: '', phone: '', email: '', consentProof: 'Explicit opt-in received from customer' });
+      setNewContact({ name: '', phone: '', email: '', tag: '', consentProof: 'Explicit opt-in received from customer' });
       setFeedbackMsg({ type: 'success', text: 'Contact created and verifiable consent recorded!' });
       fetchContacts();
+      fetchTags();
     } catch (err) {
       setFeedbackMsg({ type: 'danger', text: err.response?.data?.error?.message || 'Failed to create contact' });
     } finally {
@@ -1155,6 +1157,35 @@ export default function Contacts() {
                         value={newContact.email}
                         onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
                       />
+                    </div>
+
+                    <div className="mb-3">
+                      <div className="d-flex align-items-center justify-content-between mb-1">
+                        <label className="form-label small fw-semibold mb-0">Contact Tag (Optional)</label>
+                        <span className="badge bg-light text-secondary border" style={{ fontSize: '0.72rem', fontWeight: 500 }}>Optional</span>
+                      </div>
+                      <div className="input-group">
+                        <span className="input-group-text bg-light text-muted border-end-0">
+                          <i className="bi bi-tag-fill text-primary"></i>
+                        </span>
+                        <input
+                          type="text"
+                          className="form-control border-start-0"
+                          placeholder="e.g. VIP, Wholesale, Lead, Referral"
+                          value={newContact.tag}
+                          onChange={(e) => setNewContact({ ...newContact, tag: e.target.value })}
+                          list="available-contact-tags-list"
+                        />
+                      </div>
+                      <datalist id="available-contact-tags-list">
+                        {tags.map((t, idx) => {
+                          const tagName = typeof t === 'string' ? t : (t?.name || '');
+                          return tagName ? <option key={t.id || idx} value={tagName} /> : null;
+                        })}
+                      </datalist>
+                      <div className="form-text small text-muted">
+                        Select an existing tag or type a new tag to organize this contact.
+                      </div>
                     </div>
 
                     <div className="mb-3">

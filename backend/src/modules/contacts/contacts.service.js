@@ -181,7 +181,7 @@ export async function listContacts(businessId, { page = 1, limit = 20, search = 
   };
 }
 
-export async function createContact(businessId, { phone, name, email, countryCode = '91', tags = [], customFields = {}, consentProof = 'Manual creation by staff' }, user = null) {
+export async function createContact(businessId, { phone, name, email, countryCode = '91', tags = [], tag = '', customFields = {}, consentProof = 'Manual creation by staff' }, user = null) {
   const norm = normalizePhone(phone, countryCode);
   if (!norm.isValid) {
     const error = new Error(`Invalid phone number format: ${norm.error}`);
@@ -201,6 +201,12 @@ export async function createContact(businessId, { phone, name, email, countryCod
   }
 
   const assignedUserId = user?.role === 'agent' ? user.id : null;
+
+  // Normalize incoming tags (array of strings, single tag, or comma-separated string)
+  const rawTags = tags && (Array.isArray(tags) ? tags.length > 0 : Boolean(tags)) ? tags : (tag || []);
+  const tagList = (Array.isArray(rawTags) ? rawTags : String(rawTags).split(','))
+    .map(t => String(typeof t === 'object' ? t.name : t).trim())
+    .filter(Boolean);
 
   if (isUsingFallback()) {
     const store = getMemoryStore();
@@ -232,6 +238,20 @@ export async function createContact(businessId, { phone, name, email, countryCod
       created_at: new Date()
     });
 
+    // Record tags if any
+    if (tagList.length > 0) {
+      if (!store.contact_tags) store.contact_tags = [];
+      if (!store.tags) store.tags = [];
+      for (const tagName of tagList) {
+        let existingTag = store.tags.find(t => t.business_id === Number(businessId) && t.name.toLowerCase() === tagName.toLowerCase());
+        if (!existingTag) {
+          existingTag = { id: store.tags.length + 1, business_id: Number(businessId), name: tagName, color: '#7c3aed' };
+          store.tags.push(existingTag);
+        }
+        store.contact_tags.push({ contact_id: newId, tag_id: existingTag.id });
+      }
+    }
+
     return newContact;
   }
 
@@ -248,6 +268,27 @@ export async function createContact(businessId, { phone, name, email, countryCod
      VALUES (?, ?, 'opted_in', 'manual_entry', 'promotional', ?)`,
     [businessId, contactId, consentProof]
   );
+
+  // Attach tags if provided
+  if (tagList.length > 0) {
+    for (const tagName of tagList) {
+      try {
+        let tagRows = await executeQuery('SELECT id FROM tags WHERE business_id = ? AND name = ? LIMIT 1', [businessId, tagName]);
+        let tagId;
+        if (tagRows && tagRows.length > 0) {
+          tagId = tagRows[0].id;
+        } else {
+          const ins = await executeQuery('INSERT INTO tags (business_id, name, color) VALUES (?, ?, ?)', [businessId, tagName, '#7c3aed']);
+          tagId = ins.insertId;
+        }
+        if (tagId) {
+          await executeQuery('INSERT IGNORE INTO contact_tags (contact_id, tag_id) VALUES (?, ?)', [contactId, tagId]);
+        }
+      } catch (tErr) {
+        console.error('[Contacts] Error attaching tag on create:', tErr.message);
+      }
+    }
+  }
 
   return { id: contactId, phone: cleanPhone, name, email };
 }
