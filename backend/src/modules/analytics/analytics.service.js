@@ -514,7 +514,7 @@ export async function getMessageAnalytics(businessId, query = {}, user = null) {
     });
 
     // 3. Paginated Message Table Rows
-    const messageRows = await executeQuery(`
+    let messageRows = await executeQuery(`
       SELECT 
         wm.id, wm.meta_message_id, wm.direction, wm.message_type, wm.message_body,
         wm.message_status, wm.failure_reason, wm.sent_at, wm.delivered_at, wm.read_at, wm.created_at,
@@ -529,6 +529,46 @@ export async function getMessageAnalytics(businessId, query = {}, user = null) {
       ORDER BY wm.created_at DESC, wm.id DESC
       LIMIT ? OFFSET ?
     `, [...params, limit, offset]);
+
+    // If whatsapp_messages is empty, fallback to campaign_recipients for broadcast records
+    if (!messageRows || messageRows.length === 0) {
+      const crWhereClauses = ['cr.business_id = ?', 'cr.created_at >= ?', 'cr.created_at <= ?'];
+      const crParams = [businessId, startDateSql, endDateSql];
+      if (statusFilter && statusFilter !== 'all') {
+        crWhereClauses.push('cr.status = ?');
+        crParams.push(statusFilter);
+      }
+      if (campaignId) {
+        crWhereClauses.push('cr.campaign_id = ?');
+        crParams.push(campaignId);
+      }
+      if (search) {
+        crWhereClauses.push('(c.name LIKE ? OR c.phone LIKE ? OR cr.provider_message_id LIKE ?)');
+        const s = `%${search}%`;
+        crParams.push(s, s, s);
+      }
+      const crWhereSql = crWhereClauses.join(' AND ');
+
+      const crRows = await executeQuery(`
+        SELECT 
+          cr.id, cr.provider_message_id as meta_message_id, 'OUTBOUND' as direction, 'template' as message_type,
+          cr.status as message_status, cr.error_message as failure_reason, cr.sent_at, cr.delivered_at, cr.read_at, cr.created_at,
+          c.id as contact_id, c.name as contact_name, c.phone as contact_phone,
+          wa.id as account_id, wa.display_name as account_name, wa.phone_number as account_phone,
+          cmp.id as campaign_id, cmp.name as campaign_name
+        FROM campaign_recipients cr
+        LEFT JOIN contacts c ON cr.contact_id = c.id
+        LEFT JOIN campaigns cmp ON cr.campaign_id = cmp.id
+        LEFT JOIN whatsapp_accounts wa ON cmp.whatsapp_account_id = wa.id
+        WHERE ${crWhereSql}
+        ORDER BY cr.created_at DESC, cr.id DESC
+        LIMIT ? OFFSET ?
+      `, [...crParams, limit, offset]);
+
+      if (crRows && crRows.length > 0) {
+        messageRows = crRows;
+      }
+    }
 
     return {
       kpis: {
@@ -1176,12 +1216,48 @@ function getFallbackOverviewAnalytics(businessId, range, query) {
       failed: 20,
       deliveryRate: 97.6
     })),
-    recentMessages: []
+    recentMessages: (store.contacts || []).slice(0, 8).map((c, i) => ({
+      id: 500 + i,
+      contact_name: c.name || 'Valued Customer',
+      contact_phone: c.phone,
+      direction: i % 3 === 0 ? 'INBOUND' : 'OUTBOUND',
+      message_type: i % 3 === 0 ? 'text' : 'template',
+      message_status: i % 2 === 0 ? 'delivered' : 'read',
+      account_name: 'Primary Line',
+      account_phone: '+919876543210',
+      created_at: new Date(Date.now() - i * 1800000).toISOString()
+    }))
   };
 }
 
 function getFallbackMessageAnalytics(businessId, range, query) {
+  const store = getMemoryStore();
+  const bId = Number(businessId);
+  const contacts = (store.contacts || []).filter(c => c.business_id === bId);
   const dateSeries = generateDateSeries(range.startDate, range.endDate);
+
+  const sampleMessages = contacts.slice(0, 15).map((c, i) => ({
+    id: 1000 + i,
+    meta_message_id: `wamid.HBgMOTE5${8000000000 + i}`,
+    direction: i % 4 === 0 ? 'INBOUND' : 'OUTBOUND',
+    message_type: i % 4 === 0 ? 'text' : 'template',
+    message_body: i % 4 === 0 ? 'Hi, I would like more information.' : 'Hello! Welcome to our special promotion.',
+    message_status: i % 7 === 0 ? 'failed' : (i % 2 === 0 ? 'read' : 'delivered'),
+    failure_reason: i % 7 === 0 ? 'Recipient phone number not on WhatsApp' : null,
+    sent_at: new Date(Date.now() - i * 3600000).toISOString(),
+    delivered_at: new Date(Date.now() - i * 3500000).toISOString(),
+    read_at: i % 2 === 0 ? new Date(Date.now() - i * 3400000).toISOString() : null,
+    created_at: new Date(Date.now() - i * 3600000).toISOString(),
+    contact_id: c.id,
+    contact_name: c.name || 'Valued Customer',
+    contact_phone: c.phone,
+    account_id: 1,
+    account_name: 'Primary Support',
+    account_phone: '+919876543210',
+    campaign_id: i % 4 === 0 ? null : 1,
+    campaign_name: i % 4 === 0 ? 'Direct / Inbox' : 'Diwali Flash Sale'
+  }));
+
   return {
     kpis: {
       total: 1605,
@@ -1207,8 +1283,8 @@ function getFallbackMessageAnalytics(businessId, range, query) {
       readRate: 76.9,
       failureRate: 2.5
     })),
-    pagination: { page: 1, limit: 20, total: 0, totalPages: 1 },
-    messages: []
+    pagination: { page: 1, limit: 20, total: sampleMessages.length, totalPages: 1 },
+    messages: sampleMessages
   };
 }
 
