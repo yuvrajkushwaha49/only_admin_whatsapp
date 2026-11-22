@@ -195,14 +195,14 @@ export async function getOverviewAnalytics(businessId, query = {}, user = null) 
   }
 
   try {
-    // 1. Current Period Message Status Aggregations
+    // 1. Current Period Message Status Aggregations (Accurate WhatsApp Delivery Funnel)
     const [currMsgStats] = await executeQuery(`
       SELECT 
         COUNT(*) as total_messages,
         COUNT(CASE WHEN direction = 'OUTBOUND' OR direction = 'outbound' THEN 1 END) as outbound_count,
         COUNT(CASE WHEN direction = 'INBOUND' OR direction = 'inbound' THEN 1 END) as inbound_count,
-        COUNT(CASE WHEN message_status = 'sent' THEN 1 END) as sent_count,
-        COUNT(CASE WHEN message_status = 'delivered' THEN 1 END) as delivered_count,
+        COUNT(CASE WHEN message_status IN ('sent', 'delivered', 'read') THEN 1 END) as sent_count,
+        COUNT(CASE WHEN message_status IN ('delivered', 'read') THEN 1 END) as delivered_count,
         COUNT(CASE WHEN message_status = 'read' THEN 1 END) as read_count,
         COUNT(CASE WHEN message_status = 'failed' THEN 1 END) as failed_count,
         COUNT(CASE WHEN message_status IN ('sending', 'queued') THEN 1 END) as pending_count
@@ -212,12 +212,16 @@ export async function getOverviewAnalytics(businessId, query = {}, user = null) 
         ${numberFilterSql}
     `, [businessId, startDateSql, endDateSql, ...numberFilterParams]);
 
-    // If whatsapp_messages is sparse, aggregate also from campaign_recipients for high accuracy
+    if (!currMsgStats || currMsgStats.sent_count === undefined) {
+      return getFallbackOverviewAnalytics(businessId, range, query);
+    }
+
+    // Aggregate also from campaign_recipients for high accuracy across bulk broadcasts
     const [currRecipientStats] = await executeQuery(`
       SELECT 
         COUNT(*) as total_recipients,
-        COUNT(CASE WHEN status = 'sent' THEN 1 END) as rec_sent,
-        COUNT(CASE WHEN status = 'delivered' THEN 1 END) as rec_delivered,
+        COUNT(CASE WHEN status IN ('sent', 'delivered', 'read') THEN 1 END) as rec_sent,
+        COUNT(CASE WHEN status IN ('delivered', 'read') THEN 1 END) as rec_delivered,
         COUNT(CASE WHEN status = 'read' THEN 1 END) as rec_read,
         COUNT(CASE WHEN status = 'failed' THEN 1 END) as rec_failed,
         COUNT(CASE WHEN status IN ('pending', 'queued') THEN 1 END) as rec_pending
@@ -231,7 +235,7 @@ export async function getOverviewAnalytics(businessId, query = {}, user = null) 
     const [prevMsgStats] = await executeQuery(`
       SELECT 
         COUNT(*) as total_messages,
-        COUNT(CASE WHEN message_status = 'delivered' THEN 1 END) as delivered_count,
+        COUNT(CASE WHEN message_status IN ('delivered', 'read') THEN 1 END) as delivered_count,
         COUNT(CASE WHEN message_status = 'read' THEN 1 END) as read_count,
         COUNT(CASE WHEN message_status = 'failed' THEN 1 END) as failed_count
       FROM whatsapp_messages
@@ -247,17 +251,17 @@ export async function getOverviewAnalytics(businessId, query = {}, user = null) 
     const failed = Math.max(Number(currMsgStats?.failed_count || 0), Number(currRecipientStats?.rec_failed || 0));
     const pending = Math.max(Number(currMsgStats?.pending_count || 0), Number(currRecipientStats?.rec_pending || 0));
     const inbound = Number(currMsgStats?.inbound_count || 0);
-    const outbound = Math.max(Number(currMsgStats?.outbound_count || 0), sent + delivered + read + failed);
+    const outbound = Math.max(Number(currMsgStats?.outbound_count || 0), sent);
     const total = outbound + inbound;
 
     const prevDelivered = Number(prevMsgStats?.delivered_count || 0);
     const prevTotal = Number(prevMsgStats?.total_messages || 0);
 
-    // Accurate rate calculations
-    // Delivery Rate = Delivered / Sent * 100
-    // Read Rate = Read / Delivered * 100
+    // Accurate rate calculations:
+    // Delivery Rate = Delivered / Sent * 100 (Delivered <= Sent always)
+    // Read Rate = Read / Delivered * 100 (Read <= Delivered always)
     // Failure Rate = Failed / Sent * 100
-    const deliveryRate = sent > 0 ? Number(((delivered / sent) * 100).toFixed(1)) : (delivered > 0 ? 100 : 0);
+    const deliveryRate = sent > 0 ? Number(((delivered / sent) * 100).toFixed(1)) : 0;
     const readRate = delivered > 0 ? Number(((read / delivered) * 100).toFixed(1)) : 0;
     const failureRate = sent > 0 ? Number(((failed / sent) * 100).toFixed(1)) : 0;
 
@@ -265,8 +269,8 @@ export async function getOverviewAnalytics(businessId, query = {}, user = null) 
     const timelineRows = await executeQuery(`
       SELECT 
         DATE(created_at) as date_str,
-        COUNT(CASE WHEN message_status = 'sent' THEN 1 END) as sent,
-        COUNT(CASE WHEN message_status = 'delivered' THEN 1 END) as delivered,
+        COUNT(CASE WHEN message_status IN ('sent', 'delivered', 'read') THEN 1 END) as sent,
+        COUNT(CASE WHEN message_status IN ('delivered', 'read') THEN 1 END) as delivered,
         COUNT(CASE WHEN message_status = 'read' THEN 1 END) as \`read\`,
         COUNT(CASE WHEN message_status = 'failed' THEN 1 END) as failed,
         COUNT(CASE WHEN direction = 'INBOUND' OR direction = 'inbound' THEN 1 END) as inbound
@@ -277,6 +281,10 @@ export async function getOverviewAnalytics(businessId, query = {}, user = null) 
       GROUP BY DATE(created_at)
       ORDER BY date_str ASC
     `, [businessId, startDateSql, endDateSql, ...numberFilterParams]);
+
+    if (!currMsgStats || currMsgStats.sent_count === undefined) {
+      return getFallbackOverviewAnalytics(businessId, range, query);
+    }
 
     const dateSeries = generateDateSeries(range.startDate, range.endDate);
     const timelineMap = new Map();
@@ -417,44 +425,119 @@ export async function getMessageAnalytics(businessId, query = {}, user = null) {
   }
 
   try {
-    let whereClauses = ['wm.business_id = ?', 'wm.created_at >= ?', 'wm.created_at <= ?'];
-    let params = [businessId, startDateSql, endDateSql];
-
-    if (statusFilter && statusFilter !== 'all') {
-      whereClauses.push('wm.message_status = ?');
-      params.push(statusFilter);
-    }
+    // 1. Unified Dataset Query combining campaign recipients and live chat inbox messages
+    let wmConditions = ['wm.business_id = ?', 'wm.created_at >= ?', 'wm.created_at <= ?'];
+    let wmParams = [businessId, startDateSql, endDateSql];
     if (numberId) {
-      whereClauses.push('wm.whatsapp_account_id = ?');
-      params.push(numberId);
+      wmConditions.push('wm.whatsapp_account_id = ?');
+      wmParams.push(numberId);
     }
     if (campaignId) {
-      whereClauses.push('wm.campaign_id = ?');
-      params.push(campaignId);
+      wmConditions.push('wm.campaign_id = ?');
+      wmParams.push(campaignId);
     }
+
+    let crConditions = ['cr.business_id = ?', 'cr.created_at >= ?', 'cr.created_at <= ?'];
+    let crParams = [businessId, startDateSql, endDateSql];
+    if (numberId) {
+      crConditions.push('cmp.whatsapp_account_id = ?');
+      crParams.push(numberId);
+    }
+    if (campaignId) {
+      crConditions.push('cr.campaign_id = ?');
+      crParams.push(campaignId);
+    }
+
+    const unifiedSql = `
+      SELECT 
+        wm.id,
+        wm.meta_message_id as provider_message_id,
+        wm.direction,
+        wm.message_type,
+        wm.message_body,
+        wm.message_status as status,
+        wm.failure_reason,
+        wm.sent_at,
+        wm.delivered_at,
+        wm.read_at,
+        wm.created_at,
+        wm.contact_id,
+        wm.whatsapp_account_id,
+        wm.campaign_id,
+        wm.business_id
+      FROM whatsapp_messages wm
+      WHERE ${wmConditions.join(' AND ')}
+
+      UNION ALL
+
+      SELECT 
+        cr.id,
+        cr.provider_message_id,
+        'OUTBOUND' as direction,
+        'template' as message_type,
+        NULL as message_body,
+        cr.status,
+        cr.error_message as failure_reason,
+        cr.sent_at,
+        cr.delivered_at,
+        cr.read_at,
+        cr.created_at,
+        cr.contact_id,
+        cmp.whatsapp_account_id,
+        cr.campaign_id,
+        cr.business_id
+      FROM campaign_recipients cr
+      LEFT JOIN campaigns cmp ON cr.campaign_id = cmp.id
+      WHERE ${crConditions.join(' AND ')}
+    `;
+    const unifiedParams = [...wmParams, ...crParams];
+
+    // 2. Filter wrapper on the unified dataset
+    let filterClauses = [];
+    let filterParams = [];
+
+    if (statusFilter && statusFilter !== 'all') {
+      if (statusFilter === 'sent') {
+        filterClauses.push("m.status IN ('sent', 'delivered', 'read')");
+      } else if (statusFilter === 'delivered') {
+        filterClauses.push("m.status IN ('delivered', 'read')");
+      } else if (statusFilter === 'read') {
+        filterClauses.push("m.status = 'read'");
+      } else if (statusFilter === 'failed') {
+        filterClauses.push("m.status = 'failed'");
+      } else if (statusFilter === 'queued' || statusFilter === 'pending') {
+        filterClauses.push("m.status IN ('pending', 'queued', 'sending')");
+      }
+    }
+
     if (search) {
-      whereClauses.push('(c.name LIKE ? OR c.phone LIKE ? OR wm.message_body LIKE ? OR wm.meta_message_id LIKE ?)');
+      filterClauses.push('(c.name LIKE ? OR c.phone LIKE ? OR m.provider_message_id LIKE ? OR m.message_body LIKE ?)');
       const s = `%${search}%`;
-      params.push(s, s, s, s);
+      filterParams.push(s, s, s, s);
     }
 
-    const whereSql = whereClauses.join(' AND ');
+    const filterSql = filterClauses.length > 0 ? `WHERE ${filterClauses.join(' AND ')}` : '';
 
-    // 1. KPI Counts
+    // 3. Aggregate KPIs on the entire period dataset
     const [kpiRow] = await executeQuery(`
       SELECT 
         COUNT(*) as total_count,
-        COUNT(CASE WHEN wm.message_status = 'sent' THEN 1 END) as sent_count,
-        COUNT(CASE WHEN wm.message_status = 'delivered' THEN 1 END) as delivered_count,
-        COUNT(CASE WHEN wm.message_status = 'read' THEN 1 END) as read_count,
-        COUNT(CASE WHEN wm.message_status = 'failed' THEN 1 END) as failed_count,
-        COUNT(CASE WHEN wm.message_status IN ('sending', 'queued') THEN 1 END) as pending_count,
-        COUNT(CASE WHEN wm.direction = 'INBOUND' OR wm.direction = 'inbound' THEN 1 END) as inbound_count,
-        COUNT(CASE WHEN wm.direction = 'OUTBOUND' OR wm.direction = 'outbound' THEN 1 END) as outbound_count
-      FROM whatsapp_messages wm
-      LEFT JOIN contacts c ON wm.contact_id = c.id
-      WHERE ${whereSql}
-    `, params);
+        COUNT(CASE WHEN m.status IN ('sent', 'delivered', 'read') THEN 1 END) as sent_count,
+        COUNT(CASE WHEN m.status IN ('delivered', 'read') THEN 1 END) as delivered_count,
+        COUNT(CASE WHEN m.status = 'read' THEN 1 END) as read_count,
+        COUNT(CASE WHEN m.status = 'failed' THEN 1 END) as failed_count,
+        COUNT(CASE WHEN m.status IN ('pending', 'queued', 'sending') THEN 1 END) as pending_count,
+        COUNT(CASE WHEN m.direction = 'INBOUND' OR m.direction = 'inbound' THEN 1 END) as inbound_count,
+        COUNT(CASE WHEN m.direction = 'OUTBOUND' OR m.direction = 'outbound' THEN 1 END) as outbound_count
+      FROM (${unifiedSql}) m
+      LEFT JOIN contacts c ON m.contact_id = c.id
+      ${filterSql}
+    `, [...unifiedParams, ...filterParams]);
+
+    // If mock fallback adapter is running, delegate to memory store analytics
+    if (!kpiRow || kpiRow.sent_count === undefined) {
+      return getFallbackMessageAnalytics(businessId, range, query);
+    }
 
     const total = Number(kpiRow?.total_count || 0);
     const sent = Number(kpiRow?.sent_count || 0);
@@ -463,27 +546,30 @@ export async function getMessageAnalytics(businessId, query = {}, user = null) {
     const failed = Number(kpiRow?.failed_count || 0);
     const pending = Number(kpiRow?.pending_count || 0);
 
+    // Accurate rates:
+    // Delivered is guaranteed <= Sent
+    // Read is guaranteed <= Delivered
     const deliveryRate = sent > 0 ? Number(((delivered / sent) * 100).toFixed(1)) : 0;
     const readRate = delivered > 0 ? Number(((read / delivered) * 100).toFixed(1)) : 0;
     const failureRate = sent > 0 ? Number(((failed / sent) * 100).toFixed(1)) : 0;
 
-    // 2. Daily Rate Trends (Delivery %, Read %, Failure %)
+    // 4. Daily Timeline Trends
     const dailyRows = await executeQuery(`
       SELECT 
-        DATE(wm.created_at) as date_str,
+        DATE(m.created_at) as date_str,
         COUNT(*) as total,
-        COUNT(CASE WHEN wm.message_status = 'sent' THEN 1 END) as sent,
-        COUNT(CASE WHEN wm.message_status = 'delivered' THEN 1 END) as delivered,
-        COUNT(CASE WHEN wm.message_status = 'read' THEN 1 END) as \`read\`,
-        COUNT(CASE WHEN wm.message_status = 'failed' THEN 1 END) as failed,
-        COUNT(CASE WHEN wm.direction = 'INBOUND' OR wm.direction = 'inbound' THEN 1 END) as inbound,
-        COUNT(CASE WHEN wm.direction = 'OUTBOUND' OR wm.direction = 'outbound' THEN 1 END) as outbound
-      FROM whatsapp_messages wm
-      LEFT JOIN contacts c ON wm.contact_id = c.id
-      WHERE ${whereSql}
-      GROUP BY DATE(wm.created_at)
+        COUNT(CASE WHEN m.status IN ('sent', 'delivered', 'read') THEN 1 END) as sent,
+        COUNT(CASE WHEN m.status IN ('delivered', 'read') THEN 1 END) as delivered,
+        COUNT(CASE WHEN m.status = 'read' THEN 1 END) as \`read\`,
+        COUNT(CASE WHEN m.status = 'failed' THEN 1 END) as failed,
+        COUNT(CASE WHEN m.direction = 'INBOUND' OR m.direction = 'inbound' THEN 1 END) as inbound,
+        COUNT(CASE WHEN m.direction = 'OUTBOUND' OR m.direction = 'outbound' THEN 1 END) as outbound
+      FROM (${unifiedSql}) m
+      LEFT JOIN contacts c ON m.contact_id = c.id
+      ${filterSql}
+      GROUP BY DATE(m.created_at)
       ORDER BY date_str ASC
-    `, params);
+    `, [...unifiedParams, ...filterParams]);
 
     const dateSeries = generateDateSeries(range.startDate, range.endDate);
     const dailyMap = new Map();
@@ -513,62 +599,36 @@ export async function getMessageAnalytics(businessId, query = {}, user = null) {
       };
     });
 
-    // 3. Paginated Message Table Rows
-    let messageRows = await executeQuery(`
+    // 5. Paginated Rows
+    const messageRows = await executeQuery(`
       SELECT 
-        wm.id, wm.meta_message_id, wm.direction, wm.message_type, wm.message_body,
-        wm.message_status, wm.failure_reason, wm.sent_at, wm.delivered_at, wm.read_at, wm.created_at,
-        c.id as contact_id, c.name as contact_name, c.phone as contact_phone,
-        wa.id as account_id, wa.display_name as account_name, wa.phone_number as account_phone,
-        cmp.id as campaign_id, cmp.name as campaign_name
-      FROM whatsapp_messages wm
-      LEFT JOIN contacts c ON wm.contact_id = c.id
-      LEFT JOIN whatsapp_accounts wa ON wm.whatsapp_account_id = wa.id
-      LEFT JOIN campaigns cmp ON wm.campaign_id = cmp.id
-      WHERE ${whereSql}
-      ORDER BY wm.created_at DESC, wm.id DESC
+        m.id,
+        m.provider_message_id as meta_message_id,
+        m.direction,
+        m.message_type,
+        m.message_body,
+        m.status as message_status,
+        m.failure_reason,
+        m.sent_at,
+        m.delivered_at,
+        m.read_at,
+        m.created_at,
+        c.id as contact_id,
+        c.name as contact_name,
+        c.phone as contact_phone,
+        wa.id as account_id,
+        wa.display_name as account_name,
+        wa.phone_number as account_phone,
+        cmp.id as campaign_id,
+        cmp.name as campaign_name
+      FROM (${unifiedSql}) m
+      LEFT JOIN contacts c ON m.contact_id = c.id
+      LEFT JOIN whatsapp_accounts wa ON m.whatsapp_account_id = wa.id
+      LEFT JOIN campaigns cmp ON m.campaign_id = cmp.id
+      ${filterSql}
+      ORDER BY m.created_at DESC, m.id DESC
       LIMIT ? OFFSET ?
-    `, [...params, limit, offset]);
-
-    // If whatsapp_messages is empty, fallback to campaign_recipients for broadcast records
-    if (!messageRows || messageRows.length === 0) {
-      const crWhereClauses = ['cr.business_id = ?', 'cr.created_at >= ?', 'cr.created_at <= ?'];
-      const crParams = [businessId, startDateSql, endDateSql];
-      if (statusFilter && statusFilter !== 'all') {
-        crWhereClauses.push('cr.status = ?');
-        crParams.push(statusFilter);
-      }
-      if (campaignId) {
-        crWhereClauses.push('cr.campaign_id = ?');
-        crParams.push(campaignId);
-      }
-      if (search) {
-        crWhereClauses.push('(c.name LIKE ? OR c.phone LIKE ? OR cr.provider_message_id LIKE ?)');
-        const s = `%${search}%`;
-        crParams.push(s, s, s);
-      }
-      const crWhereSql = crWhereClauses.join(' AND ');
-
-      const crRows = await executeQuery(`
-        SELECT 
-          cr.id, cr.provider_message_id as meta_message_id, 'OUTBOUND' as direction, 'template' as message_type,
-          cr.status as message_status, cr.error_message as failure_reason, cr.sent_at, cr.delivered_at, cr.read_at, cr.created_at,
-          c.id as contact_id, c.name as contact_name, c.phone as contact_phone,
-          wa.id as account_id, wa.display_name as account_name, wa.phone_number as account_phone,
-          cmp.id as campaign_id, cmp.name as campaign_name
-        FROM campaign_recipients cr
-        LEFT JOIN contacts c ON cr.contact_id = c.id
-        LEFT JOIN campaigns cmp ON cr.campaign_id = cmp.id
-        LEFT JOIN whatsapp_accounts wa ON cmp.whatsapp_account_id = wa.id
-        WHERE ${crWhereSql}
-        ORDER BY cr.created_at DESC, cr.id DESC
-        LIMIT ? OFFSET ?
-      `, [...crParams, limit, offset]);
-
-      if (crRows && crRows.length > 0) {
-        messageRows = crRows;
-      }
-    }
+    `, [...unifiedParams, ...filterParams, limit, offset]);
 
     return {
       kpis: {
@@ -1236,7 +1296,18 @@ function getFallbackMessageAnalytics(businessId, range, query) {
   const contacts = (store.contacts || []).filter(c => c.business_id === bId);
   const dateSeries = generateDateSeries(range.startDate, range.endDate);
 
-  const sampleMessages = contacts.slice(0, 15).map((c, i) => ({
+  const total = 1605;
+  const sent = 1520;
+  const delivered = 1460;
+  const read = 1140;
+  const failed = 60;
+  const pending = 25;
+
+  const deliveryRate = Number(((delivered / sent) * 100).toFixed(1));
+  const readRate = Number(((read / delivered) * 100).toFixed(1));
+  const failureRate = Number(((failed / sent) * 100).toFixed(1));
+
+  const sampleMessages = (contacts.length > 0 ? contacts : [{ id: 1, name: 'Sample Customer', phone: '+919876543210' }]).slice(0, 15).map((c, i) => ({
     id: 1000 + i,
     meta_message_id: `wamid.HBgMOTE5${8000000000 + i}`,
     direction: i % 4 === 0 ? 'INBOUND' : 'OUTBOUND',
@@ -1258,32 +1329,40 @@ function getFallbackMessageAnalytics(businessId, range, query) {
     campaign_name: i % 4 === 0 ? 'Direct / Inbox' : 'Diwali Flash Sale'
   }));
 
+  const rateTrends = dateSeries.map((d, i) => {
+    const s = Math.round(sent / dateSeries.length) + (i % 3) * 5;
+    const del = Math.round(s * 0.96);
+    const rd = Math.round(del * 0.78);
+    const f = i % 4 === 0 ? 2 : 0;
+    return {
+      date: d,
+      total: s + 5,
+      sent: s,
+      delivered: del,
+      read: rd,
+      failed: f,
+      inbound: 5,
+      outbound: s,
+      deliveryRate: s > 0 ? Number(((del / s) * 100).toFixed(1)) : 0,
+      readRate: del > 0 ? Number(((rd / del) * 100).toFixed(1)) : 0,
+      failureRate: s > 0 ? Number(((f / s) * 100).toFixed(1)) : 0
+    };
+  });
+
   return {
     kpis: {
-      total: 1605,
-      sent: 1420,
-      delivered: 1380,
-      read: 1050,
-      failed: 40,
-      pending: 0,
-      deliveryRate: 97.2,
-      readRate: 76.1,
-      failureRate: 2.8
+      total,
+      sent,
+      delivered,
+      read,
+      failed,
+      pending,
+      deliveryRate,
+      readRate,
+      failureRate
     },
-    rateTrends: dateSeries.map(d => ({
-      date: d,
-      total: 220,
-      sent: 200,
-      delivered: 195,
-      read: 150,
-      failed: 5,
-      inbound: 20,
-      outbound: 200,
-      deliveryRate: 97.5,
-      readRate: 76.9,
-      failureRate: 2.5
-    })),
-    pagination: { page: 1, limit: 20, total: sampleMessages.length, totalPages: 1 },
+    rateTrends,
+    pagination: { page: 1, limit: 20, total, totalPages: Math.ceil(total / 20) },
     messages: sampleMessages
   };
 }

@@ -114,6 +114,51 @@ export default function MessagesTab({
         </div>
       </div>
 
+      {/* Conversion & Verification Rates Row */}
+      <div className="cg-card mb-4">
+        <div className="cg-card-header pb-2">
+          <h3 className="cg-card-title mb-0">
+            <i className="bi bi-shield-check text-primary me-2"></i>
+            Verified Message Delivery & Engagement Rates
+          </h3>
+          <span className="text-secondary small">Meta Cloud API delivery funnel verification</span>
+        </div>
+        <div className="row g-4 pt-2">
+          <div className="col-12 col-md-4">
+            <div className="p-3 rounded-3" style={{ background: '#ecfdf5', border: '1px solid #a7f3d0' }}>
+              <div className="d-flex align-items-center justify-content-between">
+                <span className="fw-semibold text-secondary small">Delivery Rate (Delivered / Sent)</span>
+                <i className="bi bi-check-circle-fill text-success fs-5"></i>
+              </div>
+              <div className="fs-2 fw-bold text-success mt-2">{kpis.deliveryRate ?? 0}%</div>
+              <div className="small text-muted mt-1">Confirmed delivered to recipient phones</div>
+            </div>
+          </div>
+
+          <div className="col-12 col-md-4">
+            <div className="p-3 rounded-3" style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+              <div className="d-flex align-items-center justify-content-between">
+                <span className="fw-semibold text-secondary small">Read Rate (Read / Delivered)</span>
+                <i className="bi bi-eye-fill text-primary fs-5"></i>
+              </div>
+              <div className="fs-2 fw-bold text-primary mt-2">{kpis.readRate ?? 0}%</div>
+              <div className="small text-muted mt-1">Opened and read by recipients</div>
+            </div>
+          </div>
+
+          <div className="col-12 col-md-4">
+            <div className="p-3 rounded-3" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
+              <div className="d-flex align-items-center justify-content-between">
+                <span className="fw-semibold text-secondary small">Failure Rate (Failed / Sent)</span>
+                <i className="bi bi-x-circle-fill text-danger fs-5"></i>
+              </div>
+              <div className="fs-2 fw-bold text-danger mt-2">{kpis.failureRate ?? 0}%</div>
+              <div className="small text-muted mt-1">Undelivered or invalid numbers</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Charts Row: Daily Volume + Rate Trends */}
       <div className="row g-4 mb-4">
         {/* Daily Volume Bar Chart */}

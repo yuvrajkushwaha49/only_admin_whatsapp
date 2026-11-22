@@ -26,7 +26,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
         const count = Number(stats.unreadMessages ?? stats.unread ?? 0);
         setUnreadCount(count);
       }
-    } catch (_) {}
+    } catch (_) { }
   };
 
   useEffect(() => {
