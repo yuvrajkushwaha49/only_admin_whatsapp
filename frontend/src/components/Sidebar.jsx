@@ -112,7 +112,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
       items: [
         { to: '/campaigns', label: 'Campaigns', icon: 'bi-send' },
         { to: '/campaigns/new', label: 'Broadcast', icon: 'bi-megaphone' },
-        { to: '/dashboard?view=analytics', label: 'Analytics', icon: 'bi-graph-up' },
+        { to: '/analytics', label: 'Analytics', icon: 'bi-graph-up' },
         { to: '/activity-logs', label: 'Audit Logs', icon: 'bi-clock-history' }
       ]
     },

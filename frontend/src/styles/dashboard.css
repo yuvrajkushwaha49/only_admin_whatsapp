@@ -3841,9 +3841,6 @@
 /* =========================================================
    Marketing Campaigns Redesign (Pixel-Perfect Match to Screenshot)
    ========================================================= */
-.mc-page-container {
-  padding: 0rem 1rem 1rem 1rem;
-}
 
 /* Top Hero Banner */
 .mc-hero-banner {
@@ -4292,9 +4289,7 @@
 /* =========================================================
    Create Campaign (Campaign Builder) Redesign
    ========================================================= */
-.cc-page-container {
-  padding: 0.5rem 2rem 3rem 2rem;
-}
+
 
 /* Top Hero Banner */
 .cc-hero-banner {

@@ -34,6 +34,7 @@ import Billing from './pages/Billing';
 import ActivityLogs from './pages/ActivityLogs';
 import Settings from './pages/Settings';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
+import Analytics from './pages/Analytics/Analytics';
 
 // Super Admin Suite Pages
 import AdminOverview from './pages/admin/AdminOverview';
@@ -241,6 +242,22 @@ export default function App() {
           element={
             <ProtectedRoute allowedRoles={['owner', 'admin', 'marketer']}>
               <CampaignReport />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute allowedRoles={['superadmin', 'owner', 'admin', 'marketer', 'agent']}>
+              <Analytics />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/analytics/:tab"
+          element={
+            <ProtectedRoute allowedRoles={['superadmin', 'owner', 'admin', 'marketer', 'agent']}>
+              <Analytics />
             </ProtectedRoute>
           }
         />

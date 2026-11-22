@@ -1,0 +1,306 @@
+/* ==========================================================================
+   Analytics Module Styling - Matching "Organize Your Contacts" Design System
+   Meta Business Suite & Modern CRM Inspired Dashboard
+   ========================================================================== */
+
+/* Filter Bar */
+.an-filter-bar {
+  background: #ffffff;
+  border: 1px solid #E5EAF2;
+  border-radius: 14px;
+  padding: 1rem 1.35rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.an-filter-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.an-period-presets {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  background: #f1f5f9;
+  padding: 0.3rem 0.4rem;
+  border-radius: 10px;
+}
+
+.an-preset-btn {
+  background: transparent;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #64748b;
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.an-preset-btn:hover {
+  color: #0f172a;
+}
+
+.an-preset-btn.active {
+  background: #ffffff;
+  color: #7c3aed;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.an-filter-select {
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  padding: 0.45rem 0.95rem;
+  font-size: 0.85rem;
+  color: #1e293b;
+  background-color: #ffffff;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.an-filter-select:focus {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+.an-date-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.an-date-input {
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  padding: 0.38rem 0.75rem;
+  font-size: 0.82rem;
+  color: #1e293b;
+}
+
+/* Tabs Navigation */
+.an-tabs-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.an-tab-item {
+  background: transparent;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  border-radius: 8px 8px 0 0;
+}
+
+.an-tab-item:hover {
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+.an-tab-item.active {
+  color: #7c3aed;
+  font-weight: 700;
+}
+
+.an-tab-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #7c3aed;
+  border-radius: 3px 3px 0 0;
+}
+
+.an-tab-badge {
+  font-size: 0.72rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  background: #ede9fe;
+  color: #7c3aed;
+  font-weight: 700;
+}
+
+/* 4-KPIs Grid */
+.an-kpi-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 1.75rem;
+}
+
+@media (max-width: 1200px) {
+  .an-kpi-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 576px) {
+  .an-kpi-grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Delta Badges */
+.an-delta-pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  margin-top: 0.35rem;
+}
+
+.an-delta-pill.up {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.an-delta-pill.down {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.an-delta-pill.neutral {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* Rate Badges */
+.an-rate-badge {
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.84rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.an-rate-badge.green {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.an-rate-badge.blue {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+.an-rate-badge.amber {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+
+.an-rate-badge.red {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+/* Chart Cards */
+.an-chart-card {
+  background: #ffffff;
+  border: 1px solid #E5EAF2;
+  border-radius: 14px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  margin-bottom: 1.5rem;
+  height: 100%;
+}
+
+.an-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.an-chart-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.an-chart-subtitle {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 0.15rem;
+}
+
+/* Performance Highlight Cards */
+.an-highlight-card {
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  background: #ffffff;
+  border: 1px solid #E5EAF2;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.an-highlight-card.best {
+  border-left: 4px solid #10b981;
+}
+
+.an-highlight-card.lowest {
+  border-left: 4px solid #f59e0b;
+}
+
+/* Custom Tooltip */
+.an-custom-tooltip {
+  background: rgba(15, 23, 42, 0.95);
+  color: #ffffff;
+  padding: 0.65rem 0.95rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.an-custom-tooltip-title {
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+  color: #cbd5e1;
+  font-size: 0.8rem;
+}
+
+.an-custom-tooltip-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.25rem;
+}
