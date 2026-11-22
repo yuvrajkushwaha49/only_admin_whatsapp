@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import AiwavoHeader from '../components/AiwavoHeader';
@@ -8,6 +8,21 @@ export default function Contacts() {
   const { user, isSuperAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Tag Dropdown in Add Single Contact modal
+  const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
+  const tagDropdownRef = useRef(null);
+
+  // Close tag dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (tagDropdownRef.current && !tagDropdownRef.current.contains(event.target)) {
+        setIsTagDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -1178,99 +1193,111 @@ export default function Contacts() {
                       />
                     </div>
 
-                    {/* Contact Tag (Optional) with Search & Existing Tags Selector */}
-                    <div className="mb-3">
+                    {/* Contact Tag (Optional) Dropdown with Search & Selection */}
+                    <div className="mb-3" ref={tagDropdownRef} style={{ position: 'relative' }}>
                       <div className="d-flex align-items-center justify-content-between mb-1">
                         <label className="form-label small fw-semibold mb-0">Contact Tag (Optional)</label>
                         <span className="badge bg-light text-secondary border" style={{ fontSize: '0.72rem', fontWeight: 500 }}>Optional</span>
                       </div>
 
-                      {/* Selected Tags Display */}
-                      {newContact.tags && newContact.tags.length > 0 && (
-                        <div className="d-flex flex-wrap gap-1 mb-2 p-2 bg-light rounded border">
-                          {newContact.tags.map((tName, idx) => (
-                            <span
-                              key={idx}
-                              className="badge d-inline-flex align-items-center gap-1 px-2 py-1 text-white shadow-xs"
-                              style={{ backgroundColor: '#7c3aed', fontSize: '0.78rem', borderRadius: '6px' }}
-                            >
-                              <i className="bi bi-tag-fill" style={{ fontSize: '0.7rem' }}></i>
-                              <span>{tName}</span>
-                              <button
-                                type="button"
-                                className="btn-close btn-close-white ms-1"
-                                style={{ fontSize: '0.55rem', cursor: 'pointer' }}
-                                onClick={() => handleRemoveTagFromNewContact(tName)}
-                                title={`Remove ${tName}`}
-                              ></button>
-                            </span>
-                          ))}
+                      {/* Dropdown Trigger Box */}
+                      <div
+                        className="form-control d-flex align-items-center justify-content-between flex-wrap gap-1"
+                        style={{
+                          minHeight: '40px',
+                          cursor: 'pointer',
+                          background: '#ffffff',
+                          borderColor: isTagDropdownOpen ? '#7c3aed' : '#dee2e6',
+                          boxShadow: isTagDropdownOpen ? '0 0 0 3px rgba(124, 58, 237, 0.15)' : 'none'
+                        }}
+                        onClick={() => setIsTagDropdownOpen(prev => !prev)}
+                      >
+                        <div className="d-flex align-items-center flex-wrap gap-1 flex-grow-1">
+                          {newContact.tags && newContact.tags.length > 0 ? (
+                            newContact.tags.map((tName, idx) => (
+                              <span
+                                key={idx}
+                                className="badge d-inline-flex align-items-center gap-1 text-white shadow-xs"
+                                style={{ backgroundColor: '#7c3aed', fontSize: '0.76rem', borderRadius: '4px', padding: '0.24rem 0.5rem' }}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <i className="bi bi-tag-fill" style={{ fontSize: '0.65rem' }}></i>
+                                <span>{tName}</span>
+                                <span
+                                  role="button"
+                                  className="ms-1 fw-bold text-white opacity-75"
+                                  style={{ cursor: 'pointer', fontSize: '0.85rem', lineHeight: 1 }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveTagFromNewContact(tName);
+                                  }}
+                                  title={`Remove ${tName}`}
+                                >
+                                  &times;
+                                </span>
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-muted small">Select or search tags (Optional)...</span>
+                          )}
                         </div>
-                      )}
-
-                      {/* Search Box / Tag Input */}
-                      <div className="input-group mb-2">
-                        <span className="input-group-text bg-light text-muted border-end-0">
-                          <i className="bi bi-search"></i>
-                        </span>
-                        <input
-                          type="text"
-                          className="form-control border-start-0"
-                          placeholder="Search existing tags or type a new tag..."
-                          value={tagSearch}
-                          onChange={(e) => setTagSearch(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              if (tagSearch.trim()) {
-                                handleAddTagToNewContact(tagSearch.trim());
-                                setTagSearch('');
-                              }
-                            }
-                          }}
-                        />
-                        {tagSearch.trim() && (
-                          <button
-                            type="button"
-                            className="btn btn-primary btn-sm px-3 fw-semibold"
-                            style={{ backgroundColor: '#7c3aed', borderColor: '#7c3aed' }}
-                            onClick={() => {
-                              handleAddTagToNewContact(tagSearch.trim());
-                              setTagSearch('');
-                            }}
-                          >
-                            <i className="bi bi-plus-lg me-1"></i> Add Tag
-                          </button>
-                        )}
+                        <i className={`bi bi-chevron-${isTagDropdownOpen ? 'up' : 'down'} text-secondary ms-2 small`}></i>
                       </div>
 
-                      {/* Previously Created Tags List Container */}
-                      <div
-                        className="border rounded p-2"
-                        style={{
-                          maxHeight: '130px',
-                          overflowY: 'auto',
-                          background: '#f8fafc',
-                          border: '1px solid #e2e8f0'
-                        }}
-                      >
-                        <div className="d-flex align-items-center justify-content-between mb-1">
-                          <span className="small fw-semibold text-muted" style={{ fontSize: '0.73rem' }}>
-                            {tagSearch.trim() ? 'Matching Tags:' : 'Click to Select Existing Tags:'}
-                          </span>
-                          <span className="badge bg-white text-secondary border" style={{ fontSize: '0.68rem' }}>
-                            {tags.length} available
-                          </span>
-                        </div>
+                      {/* Dropdown Menu */}
+                      {isTagDropdownOpen && (
+                        <div
+                          className="dropdown-menu show shadow-lg border w-100 p-0 mt-1"
+                          style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            zIndex: 1060,
+                            borderRadius: '10px',
+                            overflow: 'hidden'
+                          }}
+                        >
+                          {/* Search Input inside Dropdown */}
+                          <div className="p-2 border-bottom bg-light">
+                            <div className="input-group input-group-sm">
+                              <span className="input-group-text bg-white border-end-0">
+                                <i className="bi bi-search text-muted"></i>
+                              </span>
+                              <input
+                                type="text"
+                                className="form-control border-start-0"
+                                placeholder="Search tags or type new tag..."
+                                value={tagSearch}
+                                autoFocus
+                                onChange={(e) => setTagSearch(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    if (tagSearch.trim()) {
+                                      handleAddTagToNewContact(tagSearch.trim());
+                                      setTagSearch('');
+                                    }
+                                  }
+                                }}
+                              />
+                              {tagSearch.trim() && (
+                                <button
+                                  type="button"
+                                  className="btn btn-primary btn-sm px-2 fw-semibold text-white"
+                                  style={{ backgroundColor: '#7c3aed', borderColor: '#7c3aed' }}
+                                  onClick={() => {
+                                    handleAddTagToNewContact(tagSearch.trim());
+                                    setTagSearch('');
+                                  }}
+                                >
+                                  <i className="bi bi-plus-lg me-1"></i> Add
+                                </button>
+                              )}
+                            </div>
+                          </div>
 
-                        {tags
-                          .filter(t => {
-                            const name = typeof t === 'string' ? t : (t?.name || '');
-                            if (!tagSearch.trim()) return true;
-                            return name.toLowerCase().includes(tagSearch.trim().toLowerCase());
-                          })
-                          .length > 0 ? (
-                          <div className="d-flex flex-wrap gap-1 pt-1">
+                          {/* Existing Tags Options List */}
+                          <div style={{ maxHeight: '180px', overflowY: 'auto' }}>
                             {tags
                               .filter(t => {
                                 const name = typeof t === 'string' ? t : (t?.name || '');
@@ -1281,23 +1308,10 @@ export default function Contacts() {
                                 const tName = typeof t === 'string' ? t : (t?.name || '');
                                 const isSelected = newContact.tags?.includes(tName);
                                 return (
-                                  <button
+                                  <div
                                     key={t.id || idx}
-                                    type="button"
-                                    className={`btn btn-sm d-inline-flex align-items-center gap-1 ${
-                                      isSelected
-                                        ? 'btn-primary text-white shadow-xs'
-                                        : 'btn-outline-secondary bg-white text-dark'
-                                    }`}
-                                    style={{
-                                      borderRadius: '6px',
-                                      fontSize: '0.76rem',
-                                      padding: '0.22rem 0.55rem',
-                                      borderColor: isSelected ? '#7c3aed' : '#cbd5e1',
-                                      backgroundColor: isSelected ? '#7c3aed' : '#ffffff',
-                                      fontWeight: isSelected ? 600 : 500,
-                                      transition: 'all 0.15s ease'
-                                    }}
+                                    className={`dropdown-item d-flex align-items-center justify-content-between py-2 px-3 ${isSelected ? 'bg-light fw-bold text-primary' : 'text-dark'}`}
+                                    style={{ cursor: 'pointer', fontSize: '0.82rem' }}
                                     onClick={() => {
                                       if (isSelected) {
                                         handleRemoveTagFromNewContact(tName);
@@ -1305,27 +1319,58 @@ export default function Contacts() {
                                         handleAddTagToNewContact(tName);
                                       }
                                     }}
-                                    title={isSelected ? `Remove ${tName}` : `Add ${tName}`}
                                   >
-                                    <i className={`bi ${isSelected ? 'bi-check2 text-white' : 'bi-tag text-muted'}`}></i>
-                                    <span>{tName}</span>
-                                  </button>
+                                    <div className="d-flex align-items-center gap-2">
+                                      <i className={`bi bi-tag-fill ${isSelected ? 'text-primary' : 'text-secondary'}`}></i>
+                                      <span>{tName}</span>
+                                    </div>
+                                    {isSelected && (
+                                      <i className="bi bi-check-lg text-primary fw-bold fs-6"></i>
+                                    )}
+                                  </div>
                                 );
                               })}
-                          </div>
-                        ) : (
-                          <div className="text-muted small py-2 text-center" style={{ fontSize: '0.8rem' }}>
-                            {tagSearch.trim() ? (
-                              <span>No existing tag matches "{tagSearch}". Click <strong>Add Tag</strong> button above to create it.</span>
-                            ) : (
-                              <span>No tags created yet. Type above and press <strong>Add Tag</strong> to create one.</span>
+
+                            {/* If search query doesn't match any tag */}
+                            {tagSearch.trim() &&
+                              !tags.some(t => {
+                                const name = typeof t === 'string' ? t : (t?.name || '');
+                                return name.toLowerCase() === tagSearch.trim().toLowerCase();
+                              }) && (
+                                <div
+                                  className="dropdown-item py-2 px-3 text-primary d-flex align-items-center gap-2 border-top"
+                                  style={{ cursor: 'pointer', fontSize: '0.82rem', backgroundColor: '#f5f3ff' }}
+                                  onClick={() => {
+                                    handleAddTagToNewContact(tagSearch.trim());
+                                    setTagSearch('');
+                                  }}
+                                >
+                                  <i className="bi bi-plus-circle-fill"></i>
+                                  <span>Create new tag: "<strong>{tagSearch.trim()}</strong>"</span>
+                                </div>
+                              )}
+
+                            {tags.length === 0 && !tagSearch.trim() && (
+                              <div className="text-center py-3 text-muted small">
+                                No existing tags found. Type above to create a tag.
+                              </div>
                             )}
                           </div>
-                        )}
-                      </div>
-                      <div className="form-text small text-muted mt-1" style={{ fontSize: '0.74rem' }}>
-                        Choose from existing workspace tags or type a custom tag to categorize this contact.
-                      </div>
+
+                          {/* Footer Info */}
+                          <div className="px-3 py-1 bg-light border-top d-flex align-items-center justify-content-between text-muted" style={{ fontSize: '0.72rem' }}>
+                            <span>{newContact.tags?.length || 0} tag(s) selected</span>
+                            <button
+                              type="button"
+                              className="btn btn-link p-0 text-decoration-none text-primary fw-semibold"
+                              style={{ fontSize: '0.72rem' }}
+                              onClick={() => setIsTagDropdownOpen(false)}
+                            >
+                              Done
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="mb-3">
