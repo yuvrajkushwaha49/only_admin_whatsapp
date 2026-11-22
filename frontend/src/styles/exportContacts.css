@@ -1,166 +1,11 @@
 /* ==========================================================================
-   Export Contacts Page - Aiveexa Brand Theme
-   Consistent with Contacts, Imports, and WhatsApp Accounts Pages
+   Export Contacts Page - Matching "Organize Your Contacts" Design System
    ========================================================================== */
-
-.exp-page-container {
-  max-width: 1440px;
-  margin: 0 auto;
-  min-height: calc(100vh - 72px);
-  background: #f8fafc;
-}
-
-@media (max-width: 768px) {
-  .exp-page-container {
-    padding: 1rem 1rem 2rem 1rem;
-  }
-}
-
-.exp-hero-banner {
-  background: #ffffff;
-  border: 1px solid #e5eaf2;
-  border-radius: 14px;
-  padding: 1.25rem 1.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-}
-
-.exp-hero-left {
-  display: flex;
-  align-items: center;
-  gap: 1.15rem;
-}
-
-.exp-brand-square {
-  width: 50px;
-  height: 50px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  font-size: 1.45rem;
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
-  flex-shrink: 0;
-}
-
-.exp-hero-title {
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.exp-hero-subtitle {
-  font-size: 0.86rem;
-  color: #64748b;
-  margin: 0.25rem 0 0 0;
-}
-
-.exp-kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1.25rem;
-  margin-bottom: 1.75rem;
-}
-
-@media (max-width: 991px) {
-  .exp-kpi-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 576px) {
-  .exp-kpi-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.exp-kpi-card {
-  background: #ffffff;
-  border: 1px solid #e5eaf2;
-  border-radius: 14px;
-  padding: 1.25rem 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 1.15rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-}
-
-.exp-kpi-icon-circle {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.35rem;
-  flex-shrink: 0;
-}
-
-.exp-kpi-icon-circle.purple {
-  background: #f5f0ff;
-  color: #7c3aed;
-}
-
-.exp-kpi-icon-circle.green {
-  background: #ecfdf5;
-  color: #10b981;
-}
-
-.exp-kpi-icon-circle.blue {
-  background: #eff6ff;
-  color: #3b82f6;
-}
-
-.exp-kpi-icon-circle.amber {
-  background: #fffbeb;
-  color: #f59e0b;
-}
-
-.exp-kpi-value {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: #0f172a;
-  line-height: 1.15;
-  display: block;
-}
-
-.exp-kpi-label {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: #64748b;
-  margin-top: 0.2rem;
-  display: block;
-}
-
-.exp-card-main {
-  background: #ffffff;
-  border: 1px solid #e5eaf2;
-  border-radius: 16px;
-  padding: 2rem 2.25rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
-  margin-bottom: 2rem;
-}
-
-.exp-card-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 1.5rem;
-}
 
 .exp-select-input {
   border-radius: 10px;
   border: 1px solid #cbd5e1;
-  padding: 0.65rem 1rem;
+  padding: 0.7rem 1rem;
   font-size: 0.95rem;
   color: #1e293b;
   background-color: #ffffff;
@@ -185,6 +30,7 @@
   gap: 0.5rem;
   cursor: pointer;
   transition: all 0.15s ease;
+  box-shadow: 0 2px 6px rgba(0, 168, 132, 0.2);
 }
 
 .exp-btn-csv:hover:not(:disabled) {
@@ -212,6 +58,7 @@
   gap: 0.5rem;
   cursor: pointer;
   transition: all 0.15s ease;
+  box-shadow: 0 2px 6px rgba(124, 58, 237, 0.2);
 }
 
 .exp-btn-excel:hover:not(:disabled) {
