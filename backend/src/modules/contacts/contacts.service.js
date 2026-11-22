@@ -181,7 +181,21 @@ export async function listContacts(businessId, { page = 1, limit = 20, search = 
   };
 }
 
+let ensuredAssignedUser = false;
+async function ensureAssignedUserIdColumn() {
+  if (ensuredAssignedUser || isUsingFallback()) return;
+  try {
+    const cols = await executeQuery("SHOW COLUMNS FROM contacts LIKE 'assigned_user_id'");
+    if (!cols || cols.length === 0) {
+      await executeQuery('ALTER TABLE contacts ADD COLUMN assigned_user_id INT NULL AFTER status');
+    }
+    ensuredAssignedUser = true;
+  } catch (_) { }
+}
+
 export async function createContact(businessId, { phone, name, email, countryCode = '91', tags = [], tag = '', customFields = {}, consentProof = 'Manual creation by staff' }, user = null) {
+  await ensureAssignedUserIdColumn();
+
   const norm = normalizePhone(phone, countryCode);
   if (!norm.isValid) {
     const error = new Error(`Invalid phone number format: ${norm.error}`);
@@ -256,9 +270,9 @@ export async function createContact(businessId, { phone, name, email, countryCod
   }
 
   const result = await executeQuery(
-    `INSERT INTO contacts (business_id, phone, country_code, name, email, is_opted_in, status, assigned_user_id, custom_fields)
-     VALUES (?, ?, ?, ?, ?, TRUE, 'active', ?, ?)`,
-    [businessId, cleanPhone, countryCode, name || null, email || null, assignedUserId, JSON.stringify(customFields)]
+    `INSERT INTO contacts (business_id, phone, country_code, name, email, is_opted_in, status, assigned_user_id, custom_fields, tags)
+     VALUES (?, ?, ?, ?, ?, TRUE, 'active', ?, ?, ?)`,
+    [businessId, cleanPhone, countryCode, name || null, email || null, assignedUserId, JSON.stringify(customFields), tagList.length > 0 ? JSON.stringify(tagList) : null]
   );
   const contactId = result.insertId;
 
@@ -282,7 +296,7 @@ export async function createContact(businessId, { phone, name, email, countryCod
           tagId = ins.insertId;
         }
         if (tagId) {
-          await executeQuery('INSERT IGNORE INTO contact_tags (contact_id, tag_id) VALUES (?, ?)', [contactId, tagId]);
+          await executeQuery('INSERT IGNORE INTO contact_tags (business_id, contact_id, tag_id) VALUES (?, ?, ?)', [businessId, contactId, tagId]);
         }
       } catch (tErr) {
         console.error('[Contacts] Error attaching tag on create:', tErr.message);
