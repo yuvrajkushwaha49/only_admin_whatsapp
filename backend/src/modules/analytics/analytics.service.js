@@ -113,6 +113,20 @@ export async function getDashboardStats(businessId, timeRange = 'Last 7 Days', u
   const readRate = totalDelivered > 0 ? Number(((totalRead / totalDelivered) * 100).toFixed(1)) : 0;
   const failedRate = totalSent > 0 ? Number(((totalFailed / totalSent) * 100).toFixed(1)) : 0;
 
+  // Real-time messages sent today directly from database
+  let messagesSentToday = 0;
+  try {
+    const todayCamp = await executeQuery(
+      `SELECT COALESCE(SUM(sent_count), 0) as sent FROM campaigns WHERE business_id = ? AND DATE(created_at) = CURDATE()`,
+      [numBusinessId]
+    );
+    const todayMsg = await executeQuery(
+      `SELECT COUNT(*) as sent FROM whatsapp_messages WHERE business_id = ? AND direction = 'OUTBOUND' AND DATE(created_at) = CURDATE()`,
+      [numBusinessId]
+    );
+    messagesSentToday = Number(todayCamp?.[0]?.sent || 0) + Number(todayMsg?.[0]?.sent || 0);
+  } catch (_) { }
+
   // 4. WhatsApp Accounts directly from MySQL (NO hardcoded TechSky Media)
   let accountsList = [];
   try {
@@ -126,9 +140,12 @@ export async function getDashboardStats(businessId, timeRange = 'Last 7 Days', u
       accountsList = accountRows.map(acc => ({
         id: acc.id,
         name: acc.display_name || acc.phone_number || 'WhatsApp Line',
+        displayName: acc.display_name || acc.phone_number || 'WhatsApp Line',
         phone: acc.phone_number || acc.phone_number_id || '',
-        status: (acc.status === 'connected' || acc.connection_status === 'CONNECTED') ? 'Connected' : 'Disconnected',
-        isPrimary: Boolean(acc.is_primary)
+        phoneNumber: acc.phone_number || acc.phone_number_id || '',
+        status: (acc.status === 'connected' || acc.connection_status === 'CONNECTED') ? 'connected' : 'disconnected',
+        isPrimary: Boolean(acc.is_primary),
+        lastTemplateSync: acc.updated_at ? new Date(acc.updated_at).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Connected'
       }));
     }
   } catch (err) {
@@ -330,24 +347,36 @@ export async function getDashboardStats(businessId, timeRange = 'Last 7 Days', u
   const campaignPerformance = recentCampaignsList.slice(0, 8).map(c => ({
     name: c.name,
     sent: c.sent,
-    delivered: c.delivered
+    delivered: c.delivered,
+    count: c.sent || c.totalRecipients || 0
   }));
+
+  const primaryAcc = accountsList.find(a => a.isPrimary) || accountsList[0] || null;
+
+  const kpisData = {
+    totalContacts: allTimeContacts,
+    newContacts: periodContacts,
+    totalCampaigns,
+    messagesSent: totalSent,
+    messagesSentToday,
+    deliveredMessages: totalDelivered,
+    delivered: totalDelivered,
+    readMessages: totalRead,
+    read: totalRead,
+    failedMessages: totalFailed,
+    failed: totalFailed,
+    inboundMessages: directInbound,
+    deliveryRate,
+    readRate,
+    failedRate
+  };
 
   return {
     timeRange: normalizedRange,
-    kpis: {
-      totalContacts: allTimeContacts,
-      newContacts: periodContacts,
-      totalCampaigns,
-      messagesSent: totalSent,
-      deliveredMessages: totalDelivered,
-      readMessages: totalRead,
-      failedMessages: totalFailed,
-      inboundMessages: directInbound,
-      deliveryRate,
-      readRate,
-      failedRate
-    },
+    kpis: kpisData,
+    kpi: kpisData,
+    messagesSentToday,
+    primaryAccount: primaryAcc,
     deliverySummary: {
       deliveryRate,
       sent: totalSent,
@@ -370,7 +399,10 @@ export async function getDashboardStats(businessId, timeRange = 'Last 7 Days', u
     campaignPerformance,
     recentCampaigns: recentCampaignsList,
     scheduledCampaigns: scheduledCampaignsList,
-    accounts: accountsList
+    accounts: accountsList,
+    whatsappAccounts: {
+      list: accountsList
+    }
   };
 }
 

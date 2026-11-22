@@ -70,109 +70,72 @@ export default function Dashboard() {
     return isNaN(n) ? 0 : n.toLocaleString();
   };
 
-  // Safe fallback data if newly created business has zero history yet
-  const primaryAccount = stats?.primaryAccount || {
-    phoneNumber: '1485131921340925',
-    displayName: 'TechSky Media',
-    status: 'connected',
-    lastTemplateSync: '21 Nov, 2026, 10:59 AM'
-  };
+  // Real data parsed directly from database
+  const primaryAccount = stats?.primaryAccount || (stats?.accounts && stats.accounts[0]) || null;
 
-  const kpi = stats?.kpi || {};
-  const totalContacts = kpi.totalContacts ?? 11;
-  const totalCampaigns = kpi.totalCampaigns ?? 58;
-  const messagesSentToday = stats?.messagesSentToday ?? 0;
-  const connectedNumbers = stats?.whatsappAccounts?.list?.length || 1;
-  const deliveredCount = stats?.deliverySummary?.delivered ?? kpi.delivered ?? 89;
-  const failedCount = stats?.deliverySummary?.failed ?? kpi.failedMessages ?? 34;
+  const kpi = stats?.kpis || stats?.kpi || {};
+  const totalContacts = kpi.totalContacts ?? 0;
+  const totalCampaigns = kpi.totalCampaigns ?? 0;
+  const messagesSentToday = stats?.messagesSentToday ?? kpi.messagesSentToday ?? 0;
+  const connectedNumbers = stats?.accounts?.length ?? stats?.whatsappAccounts?.list?.length ?? (primaryAccount ? 1 : 0);
+  const deliveredCount = stats?.deliverySummary?.delivered ?? kpi.deliveredMessages ?? kpi.delivered ?? 0;
+  const failedCount = stats?.deliverySummary?.failed ?? kpi.failedMessages ?? 0;
 
   const delivery = stats?.deliverySummary || {
-    deliveryRate: 58.6,
-    sent: 152,
+    deliveryRate: 0,
+    sent: 0,
     sentPct: 100,
-    delivered: 89,
-    deliveredPct: 58.6,
-    read: 85,
-    readPct: 55.9,
-    failed: 34,
-    failedPct: 22.4
+    delivered: 0,
+    deliveredPct: 0,
+    read: 0,
+    readPct: 0,
+    failed: 0,
+    failedPct: 0
   };
 
-  // 1. Campaign Performance Data (Bar Chart)
+  // 1. Campaign Performance Data (Bar Chart) - Real database campaigns only
   const campaignPerformanceData = (stats?.campaignPerformance && stats.campaignPerformance.length > 0)
-    ? stats.campaignPerformance
-    : [
-        { name: 'test-01', count: 10 },
-        { name: 'test765', count: 5 },
-        { name: '01', count: 5 },
-        { name: '02', count: 5 },
-        { name: 'test_2', count: 5 },
-        { name: 'TechCamp', count: 4 },
-        { name: 'test_001', count: 4 },
-        { name: 'test3', count: 4 },
-        { name: 'nova_life', count: 4 },
-        { name: 'abc1', count: 4 }
-      ];
+    ? stats.campaignPerformance.map(c => ({
+        name: c.name,
+        count: Number(c.count ?? c.sent ?? 0)
+      }))
+    : [];
 
-  // 2. Message Delivery Trend Data (Multi-line Chart)
+  // 2. Message Delivery Trend Data (Multi-line Chart) - Real daily database metrics
   const deliveryTrendData = (stats?.deliveryTrend && stats.deliveryTrend.length > 0)
     ? stats.deliveryTrend.map(d => ({
         date: d.date,
         sent: Number(d.sent || 0),
         delivered: Number(d.delivered || 0),
-        read: Number(d.read || Math.round((d.delivered || 0) * 0.95))
+        read: Number(d.read || 0)
       }))
-    : [
-        { date: '2026-08-24', sent: 10, delivered: 0, read: 0 },
-        { date: '2026-08-28', sent: 10, delivered: 0, read: 0 },
-        { date: '2026-08-30', sent: 6, delivered: 0, read: 0 },
-        { date: '2026-09-10', sent: 6, delivered: 0, read: 0 },
-        { date: '2026-09-28', sent: 1, delivered: 6, read: 0 },
-        { date: '2026-09-30', sent: 1, delivered: 2, read: 0 },
-        { date: '2026-10-06', sent: 2, delivered: 1, read: 0 },
-        { date: '2026-10-10', sent: 2, delivered: 1, read: 0 },
-        { date: '2026-10-14', sent: 10, delivered: 7, read: 8 },
-        { date: '2026-10-18', sent: 5, delivered: 3, read: 5 },
-        { date: '2026-10-24', sent: 2, delivered: 1, read: 2 },
-        { date: '2026-10-30', sent: 1, delivered: 1, read: 1 },
-        { date: '2026-11-10', sent: 4, delivered: 3, read: 4 },
-        { date: '2026-11-14', sent: 5, delivered: 4, read: 5 },
-        { date: '2026-11-17', sent: 6, delivered: 2, read: 6 }
-      ];
+    : [];
 
-  // 3. Contact Growth Data (Area Chart)
+  // 3. Contact Growth Data (Area Chart) - Real contacts growth
   const contactGrowthData = (stats?.contactGrowth && stats.contactGrowth.length > 0)
     ? stats.contactGrowth.map(c => ({
-        period: c.month || c.period,
+        period: c.period || c.date || c.month,
         contacts: Number(c.contacts || 0)
       }))
-    : [
-        { period: '2026-08', contacts: 4.0 },
-        { period: '2026-09', contacts: 1.0 },
-        { period: '2026-10', contacts: 5.0 },
-        { period: '2026-11', contacts: 1.0 }
-      ];
+    : [];
 
   // 4. Message Status Distribution Data (Pie Chart)
-  const statusDistributionData = (stats?.statusDistribution && stats.statusDistribution.length > 0)
-    ? stats.statusDistribution
+  const hasStatusData = stats?.statusDistribution && stats.statusDistribution.some(s => Number(s.value || 0) > 0);
+  const statusDistributionData = hasStatusData
+    ? stats.statusDistribution.map(s => ({
+        name: s.name,
+        value: Number(s.value || 0),
+        color: s.color
+      }))
     : [
-        { name: 'Sent', value: delivery.sent || 152, color: '#6366f1' },
-        { name: 'Delivered', value: delivery.delivered || 89, color: '#10b981' },
-        { name: 'Read', value: delivery.read || 85, color: '#06b6d4' },
-        { name: 'Failed', value: delivery.failed || 34, color: '#ef4444' }
+        { name: 'Sent', value: delivery.sent || 0, color: '#6366f1' },
+        { name: 'Delivered', value: delivery.delivered || 0, color: '#10b981' },
+        { name: 'Read', value: delivery.read || 0, color: '#06b6d4' },
+        { name: 'Failed', value: delivery.failed || 0, color: '#ef4444' }
       ];
 
-  // 5. Recent Campaigns (Table from Image 3)
-  const recentCampaignsList = (stats?.recentCampaigns && stats.recentCampaigns.length > 0)
-    ? stats.recentCampaigns
-    : [
-        { id: 1, name: 'ASHU', status: 'completed', sent: 2, delivered: 2, summaryText: '2 sent • 100% delivered' },
-        { id: 2, name: 'test765', status: 'completed', sent: 5, delivered: 5, summaryText: '5 sent • 100% delivered' },
-        { id: 3, name: 'dev_13', status: 'completed', sent: 2, delivered: 2, summaryText: '2 sent • 100% delivered' },
-        { id: 4, name: 'dev_12', status: 'completed', sent: 2, delivered: 0, summaryText: '2 sent • 0% delivered' },
-        { id: 5, name: 'dev_11', status: 'completed', sent: 2, delivered: 0, summaryText: '2 sent • 0% delivered' }
-      ];
+  // 5. Recent Campaigns - Real database campaigns only
+  const recentCampaignsList = stats?.recentCampaigns || [];
 
   return (
     <div className="dashboard-viewport">
@@ -221,22 +184,40 @@ export default function Dashboard() {
       <div className="dashboard-hero-grid">
         {/* Col 1: Active WhatsApp Channel Card */}
         <div className="dashboard-channel-card">
-          <div>
-            <div className="channel-icon-circle">
-              <i className="bi bi-whatsapp"></i>
-            </div>
-            <div className="channel-phone">{primaryAccount.phoneNumber}</div>
-            <div className="channel-name">{primaryAccount.displayName}</div>
+          {primaryAccount ? (
             <div>
-              <span className="channel-badge-connected">{primaryAccount.status}</span>
+              <div className="channel-icon-circle">
+                <i className="bi bi-whatsapp"></i>
+              </div>
+              <div className="channel-phone">{primaryAccount.phoneNumber || primaryAccount.phone || 'Connected Line'}</div>
+              <div className="channel-name">{primaryAccount.displayName || primaryAccount.name || 'WhatsApp Business'}</div>
+              <div>
+                <span className={primaryAccount.status === 'connected' ? 'channel-badge-connected' : 'badge bg-secondary'}>
+                  {primaryAccount.status || 'connected'}
+                </span>
+              </div>
+              <div className="channel-sync-text">
+                Templates synced {primaryAccount.lastTemplateSync || 'via Meta Cloud API'}
+              </div>
             </div>
-            <div className="channel-sync-text">
-              Templates synced {primaryAccount.lastTemplateSync}
+          ) : (
+            <div>
+              <div className="channel-icon-circle" style={{ background: '#f1f5f9', color: '#64748b' }}>
+                <i className="bi bi-whatsapp"></i>
+              </div>
+              <div className="channel-phone">No Channel Connected</div>
+              <div className="channel-name">WhatsApp Business</div>
+              <div>
+                <span className="badge bg-light text-secondary border">Not Connected</span>
+              </div>
+              <div className="channel-sync-text">
+                Connect a phone number to start broadcasts.
+              </div>
             </div>
-          </div>
+          )}
 
           <Link to="/whatsapp" className="channel-manage-btn">
-            <span>Manage connection</span>
+            <span>{primaryAccount ? 'Manage connection' : 'Connect WhatsApp'}</span>
             <i className="bi bi-arrow-right"></i>
           </Link>
         </div>
@@ -312,7 +293,7 @@ export default function Dashboard() {
           </div>
 
           <div className="kpi-sync-footer">
-            Last template sync {primaryAccount.lastTemplateSync}
+            {primaryAccount?.lastTemplateSync ? `Last template sync ${primaryAccount.lastTemplateSync}` : 'Templates synced via Meta Cloud API'}
           </div>
         </div>
 
@@ -346,11 +327,11 @@ export default function Dashboard() {
                   <span className="breakdown-label">Delivered</span>
                   <div className="breakdown-numbers">
                     <span className="breakdown-count">{formatNum(delivery.delivered)}</span>
-                    <span className="breakdown-pct">{delivery.deliveredPct || 58.6}%</span>
+                    <span className="breakdown-pct">{delivery.deliveredPct || 0}%</span>
                   </div>
                 </div>
                 <div className="breakdown-bar-bg">
-                  <div className="breakdown-bar-fill bar-gradient-delivered" style={{ width: `${Math.min(100, delivery.deliveredPct || 58.6)}%` }}></div>
+                  <div className="breakdown-bar-fill bar-gradient-delivered" style={{ width: `${Math.min(100, delivery.deliveredPct || 0)}%` }}></div>
                 </div>
               </div>
 
@@ -360,11 +341,11 @@ export default function Dashboard() {
                   <span className="breakdown-label">Read</span>
                   <div className="breakdown-numbers">
                     <span className="breakdown-count">{formatNum(delivery.read)}</span>
-                    <span className="breakdown-pct">{delivery.readPct || 55.9}%</span>
+                    <span className="breakdown-pct">{delivery.readPct || 0}%</span>
                   </div>
                 </div>
                 <div className="breakdown-bar-bg">
-                  <div className="breakdown-bar-fill bar-gradient-read" style={{ width: `${Math.min(100, delivery.readPct || 55.9)}%` }}></div>
+                  <div className="breakdown-bar-fill bar-gradient-read" style={{ width: `${Math.min(100, delivery.readPct || 0)}%` }}></div>
                 </div>
               </div>
 
@@ -374,11 +355,11 @@ export default function Dashboard() {
                   <span className="breakdown-label">Failed</span>
                   <div className="breakdown-numbers">
                     <span className="breakdown-count">{formatNum(delivery.failed)}</span>
-                    <span className="breakdown-pct">{delivery.failedPct || 22.4}%</span>
+                    <span className="breakdown-pct">{delivery.failedPct || 0}%</span>
                   </div>
                 </div>
                 <div className="breakdown-bar-bg">
-                  <div className="breakdown-bar-fill bar-gradient-failed" style={{ width: `${Math.min(100, delivery.failedPct || 22.4)}%` }}></div>
+                  <div className="breakdown-bar-fill bar-gradient-failed" style={{ width: `${Math.min(100, delivery.failedPct || 0)}%` }}></div>
                 </div>
               </div>
             </div>
@@ -388,7 +369,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ================= Middle Row: 2 Charts (Image 3) ================= */}
+      {/* ================= Middle Row: 2 Charts ================= */}
       <div className="dashboard-charts-grid">
         {/* Chart 1: Campaign Performance (Bar Chart) */}
         <div className="chart-card">
@@ -396,31 +377,39 @@ export default function Dashboard() {
             <h3 className="chart-card-title">Campaign Performance</h3>
           </div>
           <div style={{ width: '100%', height: 250 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={campaignPerformanceData} margin={{ top: 10, right: 10, left: -20, bottom: 25 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fill: '#64748b', fontSize: 11 }}
-                  interval={0}
-                  angle={-35}
-                  textAnchor="end"
-                  axisLine={{ stroke: '#e2e8f0' }}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fill: '#64748b', fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                  allowDecimals={false}
-                />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#ffffff', borderRadius: 8, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                  formatter={(val) => [`${val} Messages`, 'Count']}
-                />
-                <Bar dataKey="count" fill="#5c5cf2" radius={[4, 4, 0, 0]} maxBarSize={32} />
-              </BarChart>
-            </ResponsiveContainer>
+            {campaignPerformanceData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={campaignPerformanceData} margin={{ top: 10, right: 10, left: -20, bottom: 25 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fill: '#64748b', fontSize: 11 }}
+                    interval={0}
+                    angle={-35}
+                    textAnchor="end"
+                    axisLine={{ stroke: '#e2e8f0' }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fill: '#64748b', fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                    allowDecimals={false}
+                  />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#ffffff', borderRadius: 8, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                    formatter={(val) => [`${val} Messages`, 'Count']}
+                  />
+                  <Bar dataKey="count" fill="#5c5cf2" radius={[4, 4, 0, 0]} maxBarSize={32} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="d-flex flex-column align-items-center justify-content-center h-100 text-center py-4 text-muted">
+                <i className="bi bi-bar-chart-line fs-1 text-secondary mb-2 opacity-50"></i>
+                <div className="fw-semibold text-dark">No campaign data yet</div>
+                <div className="small text-secondary">Launch your first broadcast campaign to track deliverability here.</div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -435,35 +424,43 @@ export default function Dashboard() {
             </div>
           </div>
           <div style={{ width: '100%', height: 250 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={deliveryTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 25 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fill: '#64748b', fontSize: 10 }}
-                  angle={-35}
-                  textAnchor="end"
-                  axisLine={{ stroke: '#e2e8f0' }}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fill: '#64748b', fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#ffffff', borderRadius: 8, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                />
-                <Line type="monotone" dataKey="sent" stroke="#6366f1" strokeWidth={2} dot={{ r: 3, fill: '#6366f1' }} activeDot={{ r: 5 }} />
-                <Line type="monotone" dataKey="delivered" stroke="#10b981" strokeWidth={2} dot={{ r: 3, fill: '#10b981' }} activeDot={{ r: 5 }} />
-                <Line type="monotone" dataKey="read" stroke="#06b6d4" strokeWidth={2} dot={{ r: 3, fill: '#06b6d4' }} activeDot={{ r: 5 }} />
-              </LineChart>
-            </ResponsiveContainer>
+            {deliveryTrendData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={deliveryTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 25 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fill: '#64748b', fontSize: 10 }}
+                    angle={-35}
+                    textAnchor="end"
+                    axisLine={{ stroke: '#e2e8f0' }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fill: '#64748b', fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#ffffff', borderRadius: 8, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                  />
+                  <Line type="monotone" dataKey="sent" stroke="#6366f1" strokeWidth={2} dot={{ r: 3, fill: '#6366f1' }} activeDot={{ r: 5 }} />
+                  <Line type="monotone" dataKey="delivered" stroke="#10b981" strokeWidth={2} dot={{ r: 3, fill: '#10b981' }} activeDot={{ r: 5 }} />
+                  <Line type="monotone" dataKey="read" stroke="#06b6d4" strokeWidth={2} dot={{ r: 3, fill: '#06b6d4' }} activeDot={{ r: 5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="d-flex flex-column align-items-center justify-content-center h-100 text-center py-4 text-muted">
+                <i className="bi bi-graph-up fs-1 text-secondary mb-2 opacity-50"></i>
+                <div className="fw-semibold text-dark">No delivery activity yet</div>
+                <div className="small text-secondary">Delivery metrics will be tracked over time as messages are sent.</div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* ================= Middle Row 2: 2 Charts (Image 3) ================= */}
+      {/* ================= Middle Row 2: 2 Charts ================= */}
       <div className="dashboard-charts-grid">
         {/* Chart 3: Contact Growth (Spline Area Chart) */}
         <div className="chart-card">
@@ -471,34 +468,42 @@ export default function Dashboard() {
             <h3 className="chart-card-title">Contact Growth</h3>
           </div>
           <div style={{ width: '100%', height: 240 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={contactGrowthData} margin={{ top: 10, right: 10, left: -20, bottom: 10 }}>
-                <defs>
-                  <linearGradient id="contactGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis
-                  dataKey="period"
-                  tick={{ fill: '#64748b', fontSize: 11 }}
-                  axisLine={{ stroke: '#e2e8f0' }}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fill: '#64748b', fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                  domain={[0, 'auto']}
-                />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#ffffff', borderRadius: 8, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                  formatter={(val) => [`${val} Contacts`, 'Growth']}
-                />
-                <Area type="monotone" dataKey="contacts" stroke="#3b82f6" strokeWidth={2.5} fillOpacity={1} fill="url(#contactGradient)" dot={{ r: 4, fill: '#3b82f6' }} />
-              </AreaChart>
-            </ResponsiveContainer>
+            {contactGrowthData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={contactGrowthData} margin={{ top: 10, right: 10, left: -20, bottom: 10 }}>
+                  <defs>
+                    <linearGradient id="contactGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis
+                    dataKey="period"
+                    tick={{ fill: '#64748b', fontSize: 11 }}
+                    axisLine={{ stroke: '#e2e8f0' }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fill: '#64748b', fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                    domain={[0, 'auto']}
+                  />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#ffffff', borderRadius: 8, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                    formatter={(val) => [`${val} Contacts`, 'Growth']}
+                  />
+                  <Area type="monotone" dataKey="contacts" stroke="#3b82f6" strokeWidth={2.5} fillOpacity={1} fill="url(#contactGradient)" dot={{ r: 4, fill: '#3b82f6' }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="d-flex flex-column align-items-center justify-content-center h-100 text-center py-4 text-muted">
+                <i className="bi bi-people fs-1 text-secondary mb-2 opacity-50"></i>
+                <div className="fw-semibold text-dark">No contacts added yet</div>
+                <div className="small text-secondary">Add contacts or import CSV to track list growth here.</div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -508,62 +513,90 @@ export default function Dashboard() {
             <h3 className="chart-card-title">Message Status Distribution</h3>
           </div>
           <div style={{ width: '100%', height: 200 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={statusDistributionData}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={75}
-                  dataKey="value"
-                  strokeWidth={2}
-                  stroke="#ffffff"
-                >
-                  {statusDistributionData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#ffffff', borderRadius: 8, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                  formatter={(val, name) => [`${val} Messages`, name]}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            {hasStatusData ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={statusDistributionData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={75}
+                    dataKey="value"
+                    strokeWidth={2}
+                    stroke="#ffffff"
+                  >
+                    {statusDistributionData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#ffffff', borderRadius: 8, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                    formatter={(val, name) => [`${val} Messages`, name]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="d-flex flex-column align-items-center justify-content-center h-100 text-center py-4 text-muted">
+                <i className="bi bi-pie-chart fs-1 text-secondary mb-2 opacity-50"></i>
+                <div className="fw-semibold text-dark">No message activity yet</div>
+                <div className="small text-secondary">Status distribution will appear when messages are sent.</div>
+              </div>
+            )}
           </div>
 
-          <div className="d-flex justify-content-center align-items-center gap-3 pt-2" style={{ fontSize: '0.8rem' }}>
-            {statusDistributionData.map((s, idx) => (
-              <span key={idx} className="d-flex align-items-center gap-1 text-secondary">
-                <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: s.color, display: 'inline-block' }}></span>
-                <span>{s.name}</span>
-              </span>
-            ))}
-          </div>
+          {hasStatusData && (
+            <div className="d-flex justify-content-center align-items-center gap-3 pt-2" style={{ fontSize: '0.8rem' }}>
+              {statusDistributionData.map((s, idx) => (
+                <span key={idx} className="d-flex align-items-center gap-1 text-secondary">
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: s.color, display: 'inline-block' }}></span>
+                  <span>{s.name} ({s.value})</span>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ================= Bottom Row: Recent Campaigns (Image 3) ================= */}
+      {/* ================= Bottom Row: Recent Campaigns ================= */}
       <div className="recent-campaigns-card">
-        <h3 className="recent-campaigns-title">Recent Campaigns</h3>
-
-        <div className="recent-campaigns-list">
-          {recentCampaignsList.map((c, idx) => {
-            const sent = Number(c.sent || 0);
-            const del = Number(c.delivered || 0);
-            const rate = sent > 0 ? Math.round((del / sent) * 100) : (del > 0 ? 100 : 0);
-            const summary = c.summaryText || `${sent} sent • ${rate}% delivered`;
-
-            return (
-              <div key={c.id || idx} className="recent-campaign-row">
-                <div className="campaign-name-col">{c.name}</div>
-                <div className="campaign-status-col">
-                  <span className="campaign-badge-completed">completed</span>
-                </div>
-                <div className="campaign-stats-col">{summary}</div>
-              </div>
-            );
-          })}
+        <div className="d-flex align-items-center justify-content-between mb-3">
+          <h3 className="recent-campaigns-title m-0">Recent Campaigns</h3>
+          <Link to="/campaigns" className="small text-primary text-decoration-none fw-semibold">
+            View All Campaigns &rarr;
+          </Link>
         </div>
+
+        {recentCampaignsList.length > 0 ? (
+          <div className="recent-campaigns-list">
+            {recentCampaignsList.map((c, idx) => {
+              const sent = Number(c.sent || 0);
+              const del = Number(c.delivered || 0);
+              const rate = sent > 0 ? Math.round((del / sent) * 100) : (del > 0 ? 100 : 0);
+              const summary = c.summaryText || `${sent} sent • ${rate}% delivered`;
+
+              return (
+                <div key={c.id || idx} className="recent-campaign-row">
+                  <div className="campaign-name-col">{c.name}</div>
+                  <div className="campaign-status-col">
+                    <span className={`campaign-badge-${c.status === 'completed' ? 'completed' : 'pending'}`}>
+                      {c.status || 'completed'}
+                    </span>
+                  </div>
+                  <div className="campaign-stats-col">{summary}</div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-4 text-muted">
+            <i className="bi bi-megaphone fs-2 text-secondary mb-2 d-block opacity-50"></i>
+            <div className="fw-semibold text-dark mb-1">No campaigns found</div>
+            <div className="small text-secondary mb-3">You haven't run any WhatsApp broadcast campaigns yet.</div>
+            <Link to="/campaigns/new" className="btn btn-sm btn-primary px-3">
+              <i className="bi bi-plus-lg me-1"></i> Create Campaign
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
