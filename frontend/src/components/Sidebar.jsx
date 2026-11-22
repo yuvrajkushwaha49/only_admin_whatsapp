@@ -121,7 +121,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
       items: [
         { to: '/campaign-reports', label: 'Campaign Report', icon: 'bi-send' },
         { to: '/activity-logs?type=messages', label: 'Message Report', icon: 'bi-chat-square-dots' },
-        { to: '/contacts?view=reports', label: 'Contact Report', icon: null }
+        { to: '/contact-reports', label: 'Contact Report', icon: 'bi-person-lines-fill' }
       ]
     },
     {

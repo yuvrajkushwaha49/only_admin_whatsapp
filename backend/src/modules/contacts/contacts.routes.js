@@ -8,6 +8,7 @@ const router = Router();
 router.use(authenticate, requireTenant);
 
 router.get('/', contactsController.list);
+router.get('/reports', contactsController.list);
 router.get('/export', contactsController.exportContactsFile);
 router.get('/export/count', contactsController.exportCount);
 router.get('/tags', contactsController.tags);

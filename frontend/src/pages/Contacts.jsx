@@ -15,6 +15,8 @@ export default function Contacts() {
       navigate('/export', { replace: true });
     } else if (params.get('view') === 'tags') {
       navigate('/tags', { replace: true });
+    } else if (params.get('view') === 'reports') {
+      navigate('/contact-reports', { replace: true });
     }
   }, [location.search, navigate]);
   const isAgent = user?.role === 'agent';

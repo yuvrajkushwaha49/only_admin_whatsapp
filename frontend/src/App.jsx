@@ -29,6 +29,7 @@ import CampaignBuilder from './pages/CampaignBuilder';
 import CampaignDetail from './pages/CampaignDetail';
 import CampaignReport from './pages/CampaignReport';
 import CampaignReports from './pages/CampaignReports';
+import ContactReports from './pages/ContactReports';
 import Analytics from './pages/Analytics/Analytics';
 import AiAssistant from './pages/AiAssistant';
 import TeamManagement from './pages/TeamManagement';
@@ -259,6 +260,22 @@ export default function App() {
           element={
             <ProtectedRoute allowedRoles={['owner', 'admin', 'marketer']}>
               <CampaignReports />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/contact-reports"
+          element={
+            <ProtectedRoute allowedRoles={['owner', 'admin', 'marketer']}>
+              <ContactReports />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/contacts/reports"
+          element={
+            <ProtectedRoute allowedRoles={['owner', 'admin', 'marketer']}>
+              <ContactReports />
             </ProtectedRoute>
           }
         />
