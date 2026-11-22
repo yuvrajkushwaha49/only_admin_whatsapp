@@ -19,6 +19,7 @@ export default function TeamManagement() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [isMatrixOpen, setIsMatrixOpen] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', text: '' });
 
   const [inviteData, setInviteData] = useState({
@@ -255,203 +256,226 @@ export default function TeamManagement() {
           </button>
         </div>
 
-        {/* 4. Role Permission Matrix Card */}
-        <div className="team-card">
-          <div className="team-card-header">
-            <h2 className="team-card-title">
-              <svg
-                viewBox="0 0 24 24"
-                width="20"
-                height="20"
-                fill="none"
-                stroke="#10b981"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+        {/* 4. Role Permission Matrix Card (Collapsible Dropdown Accordion) */}
+        <div className="team-card mb-4">
+          <div
+            className="team-card-header d-flex align-items-center justify-content-between py-3"
+            style={{ cursor: 'pointer', userSelect: 'none' }}
+            onClick={() => setIsMatrixOpen(!isMatrixOpen)}
+            title="Click to toggle Role Permission Matrix"
+          >
+            <div className="d-flex align-items-center gap-2">
+              <i className="bi bi-shield-check text-success fs-5"></i>
+              <span className="fw-bold text-dark fs-6">Role Permission Matrix</span>
+              <span className="badge bg-light text-secondary border ms-2" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
+                {isMatrixOpen ? 'Click to Collapse' : 'Click to View Matrix'}
+              </span>
+            </div>
+
+            <div className="d-flex align-items-center gap-2 text-secondary">
+              <span className="small text-muted d-none d-sm-inline">{isMatrixOpen ? 'Hide Permissions' : 'Show Permissions'}</span>
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '8px',
+                  background: isMatrixOpen ? '#f1f5f9' : '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease'
+                }}
               >
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                <path d="m9 12 2 2 4-4" />
-              </svg>
-              <span>Role Permission Matrix</span>
-            </h2>
+                <i
+                  className="bi bi-chevron-down text-dark"
+                  style={{
+                    transform: isMatrixOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.2s ease'
+                  }}
+                ></i>
+              </div>
+            </div>
           </div>
 
-          <div className="table-responsive">
-            <table className="team-table">
-              <thead>
-                <tr>
-                  <th style={{ width: '18%' }}>ROLE</th>
-                  <th style={{ width: '20%' }}>CAMPAIGNS</th>
-                  <th style={{ width: '23%' }}>CONTACTS & IMPORTS</th>
-                  <th style={{ width: '21%' }}>WHATSAPP ACCOUNTS</th>
-                  <th style={{ width: '18%' }}>BILLING & TEAM</th>
-                </tr>
-              </thead>
-              <tbody>
-                {/* Row 1: Owner */}
-                <tr>
-                  <td>
-                    <span className="role-pill pill-owner">Owner</span>
-                  </td>
-                  <td>
-                    <span className="perm-cell perm-allow">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      Full Access
-                    </span>
-                  </td>
-                  <td>
-                    <span className="perm-cell perm-allow">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      Full Access
-                    </span>
-                  </td>
-                  <td>
-                    <span className="perm-cell perm-allow">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      Full Access
-                    </span>
-                  </td>
-                  <td>
-                    <span className="perm-cell perm-allow">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      Full Access
-                    </span>
-                  </td>
-                </tr>
+          {isMatrixOpen && (
+            <div className="table-responsive border-top">
+              <table className="team-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '18%' }}>ROLE</th>
+                    <th style={{ width: '20%' }}>CAMPAIGNS</th>
+                    <th style={{ width: '23%' }}>CONTACTS & IMPORTS</th>
+                    <th style={{ width: '21%' }}>WHATSAPP ACCOUNTS</th>
+                    <th style={{ width: '18%' }}>BILLING & TEAM</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Row 1: Owner */}
+                  <tr>
+                    <td>
+                      <span className="role-pill pill-owner">Owner</span>
+                    </td>
+                    <td>
+                      <span className="perm-cell perm-allow">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Full Access
+                      </span>
+                    </td>
+                    <td>
+                      <span className="perm-cell perm-allow">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Full Access
+                      </span>
+                    </td>
+                    <td>
+                      <span className="perm-cell perm-allow">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Full Access
+                      </span>
+                    </td>
+                    <td>
+                      <span className="perm-cell perm-allow">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Full Access
+                      </span>
+                    </td>
+                  </tr>
 
-                {/* Row 2: Admin */}
-                <tr>
-                  <td>
-                    <span className="role-pill pill-admin">Admin</span>
-                  </td>
-                  <td>
-                    <span className="perm-cell perm-allow">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      Full Access
-                    </span>
-                  </td>
-                  <td>
-                    <span className="perm-cell perm-allow">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      Full Access
-                    </span>
-                  </td>
-                  <td>
-                    <span className="perm-cell perm-allow">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      Full Access
-                    </span>
-                  </td>
-                  <td>
-                    <span className="perm-cell perm-limited">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10" />
-                        <polyline points="12 6 12 12 16 14" />
-                      </svg>
-                      Invite only
-                    </span>
-                  </td>
-                </tr>
+                  {/* Row 2: Admin */}
+                  <tr>
+                    <td>
+                      <span className="role-pill pill-admin">Admin</span>
+                    </td>
+                    <td>
+                      <span className="perm-cell perm-allow">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Full Access
+                      </span>
+                    </td>
+                    <td>
+                      <span className="perm-cell perm-allow">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Full Access
+                      </span>
+                    </td>
+                    <td>
+                      <span className="perm-cell perm-allow">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Full Access
+                      </span>
+                    </td>
+                    <td>
+                      <span className="perm-cell perm-limited">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10" />
+                          <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        Invite only
+                      </span>
+                    </td>
+                  </tr>
 
-                {/* Row 3: Marketing */}
-                <tr>
-                  <td>
-                    <span className="role-pill pill-marketing">Marketing</span>
-                  </td>
-                  <td>
-                    <span className="perm-cell perm-allow">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      Create & Launch
-                    </span>
-                  </td>
-                  <td>
-                    <span className="perm-cell perm-allow">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      Import & Manage
-                    </span>
-                  </td>
-                  <td>
-                    <span className="perm-cell perm-allow">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      Sync Templates
-                    </span>
-                  </td>
-                  <td>
-                    <span className="perm-cell perm-denied">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                      </svg>
-                      No Access
-                    </span>
-                  </td>
-                </tr>
+                  {/* Row 3: Marketing */}
+                  <tr>
+                    <td>
+                      <span className="role-pill pill-marketing">Marketing</span>
+                    </td>
+                    <td>
+                      <span className="perm-cell perm-allow">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Create & Launch
+                      </span>
+                    </td>
+                    <td>
+                      <span className="perm-cell perm-allow">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Import & Manage
+                      </span>
+                    </td>
+                    <td>
+                      <span className="perm-cell perm-allow">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Sync Templates
+                      </span>
+                    </td>
+                    <td>
+                      <span className="perm-cell perm-denied">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                        No Access
+                      </span>
+                    </td>
+                  </tr>
 
-                {/* Row 4: Agent */}
-                <tr>
-                  <td>
-                    <span className="role-pill pill-agent">Agent</span>
-                  </td>
-                  <td>
-                    <span className="perm-cell perm-limited">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10" />
-                        <polyline points="12 6 12 12 16 14" />
-                      </svg>
-                      View Only
-                    </span>
-                  </td>
-                  <td>
-                    <span className="perm-cell perm-limited">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10" />
-                        <polyline points="12 6 12 12 16 14" />
-                      </svg>
-                      View Only
-                    </span>
-                  </td>
-                  <td>
-                    <span className="perm-cell perm-denied">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                      </svg>
-                      No Access
-                    </span>
-                  </td>
-                  <td>
-                    <span className="perm-cell perm-denied">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                      </svg>
-                      No Access
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+                  {/* Row 4: Agent */}
+                  <tr>
+                    <td>
+                      <span className="role-pill pill-agent">Agent</span>
+                    </td>
+                    <td>
+                      <span className="perm-cell perm-limited">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10" />
+                          <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        View Only
+                      </span>
+                    </td>
+                    <td>
+                      <span className="perm-cell perm-limited">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10" />
+                          <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        View Only
+                      </span>
+                    </td>
+                    <td>
+                      <span className="perm-cell perm-denied">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                        No Access
+                      </span>
+                    </td>
+                    <td>
+                      <span className="perm-cell perm-denied">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                        No Access
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* 5. Workspace Collaborators Card */}
