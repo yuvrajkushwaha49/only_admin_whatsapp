@@ -127,8 +127,8 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
     {
       heading: 'TEAM',
       items: [
-        { to: '/team?role=lead', label: 'Team Leads', icon: 'bi-person' },
-        { to: '/team', label: 'Members', icon: 'bi-people' }
+        { to: '/team?role=lead', label: 'Team Leads', icon: 'bi-person-badge' },
+        { to: '/team?role=agent', label: 'Members', icon: 'bi-people' }
       ]
     },
     {
@@ -144,6 +144,12 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
   const isItemActive = (targetTo) => {
     if (targetTo === '/dashboard') {
       return location.pathname === '/' || (location.pathname === '/dashboard' && !location.search);
+    }
+    if (targetTo === '/team?role=lead') {
+      return location.pathname === '/team' && location.search.includes('role=lead');
+    }
+    if (targetTo === '/team?role=agent' || targetTo === '/team') {
+      return location.pathname === '/team' && (!location.search || location.search.includes('role=agent') || location.search.includes('role=member'));
     }
     if (targetTo.includes('?')) {
       return currentFullPath === targetTo;

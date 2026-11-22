@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import AiwavoHeader from '../components/AiwavoHeader';
 import { useAuth } from '../hooks/useAuth';
+import '../styles/dashboard.css';
+import '../styles/analytics.css';
 import '../styles/team.css';
 
 export default function TeamManagement() {
   const { user } = useAuth();
   const outletContext = useOutletContext();
   const onToggleSidebar = outletContext?.onToggleSidebar;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawRole = searchParams.get('role'); // 'lead', 'agent', or 'all'
+  const activeRoleView = rawRole === 'lead' ? 'lead' : (rawRole === 'all' ? 'all' : 'agent');
+
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -18,7 +24,7 @@ export default function TeamManagement() {
   const [inviteData, setInviteData] = useState({
     name: '',
     email: '',
-    role: 'marketer',
+    role: activeRoleView === 'lead' ? 'admin' : 'agent',
     password: 'TempPassword123!'
   });
 
@@ -45,7 +51,7 @@ export default function TeamManagement() {
     try {
       await api.post('/users/invite', inviteData);
       setShowInviteModal(false);
-      setInviteData({ name: '', email: '', role: 'marketer', password: 'TempPassword123!' });
+      setInviteData({ name: '', email: '', role: activeRoleView === 'lead' ? 'admin' : 'agent', password: 'TempPassword123!' });
       setFeedback({ type: 'success', text: 'Team member invited successfully!' });
       fetchMembers();
     } catch (err) {
@@ -96,12 +102,21 @@ export default function TeamManagement() {
   // Helper for avatar background
   const getAvatarClass = (role, name) => {
     if (role === 'owner' || name?.toLowerCase().includes('rahul')) return 'av-owner';
+    if (role === 'admin') return 'av-owner';
     if (role === 'marketer' || role === 'marketing' || name?.toLowerCase().includes('priya')) return 'av-marketer';
     return 'av-agent';
   };
 
+  // Segment leads (Admins/Owners) and agents (Agents/Marketers)
+  const leads = members.filter(m => m.role === 'admin' || m.role === 'owner' || m.role === 'superadmin');
+  const agents = members.filter(m => m.role === 'agent' || m.role === 'marketer' || m.role === 'member');
+
+  const roleMembers = activeRoleView === 'lead'
+    ? leads
+    : (activeRoleView === 'all' ? members : agents);
+
   // Filter members by search query
-  const filteredMembers = members.filter((m) => {
+  const filteredMembers = roleMembers.filter((m) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -110,6 +125,31 @@ export default function TeamManagement() {
       m.role?.toLowerCase().includes(q)
     );
   });
+
+  const isLeadView = activeRoleView === 'lead';
+  const isAgentView = activeRoleView === 'agent';
+
+  const heroTitle = isLeadView
+    ? 'Team Leads & Admins'
+    : (isAgentView ? 'Team Members & Agents' : 'Manage Your Team & Access');
+
+  const heroSubtitle = isLeadView
+    ? 'Workspace administrators and team leaders managing campaigns, automations, and tenant permissions.'
+    : (isAgentView ? 'Support agents and marketers managing customer chats, inbox conversations, and broadcast outreach.' : 'Invite team members, assign roles, and control permissions for a secure workflow.');
+
+  const inviteBtnLabel = isLeadView
+    ? 'Invite Team Lead / Admin'
+    : (isAgentView ? 'Invite Agent' : 'Invite Team Member');
+
+  const openInviteModal = () => {
+    setInviteData({
+      name: '',
+      email: '',
+      role: isLeadView ? 'admin' : 'agent',
+      password: 'TempPassword123!'
+    });
+    setShowInviteModal(true);
+  };
 
   return (
     <div>
@@ -131,43 +171,91 @@ export default function TeamManagement() {
         <div className="team-hero-banner">
           <div className="team-hero-left">
             <div className="team-hero-icon">
-              <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-                <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
-              </svg>
+              <i className={`bi ${isLeadView ? 'bi-person-badge-fill' : 'bi-people-fill'}`}></i>
             </div>
             <div>
-              <h1 className="team-hero-title">Manage Your Team & Access</h1>
-              <p className="team-hero-subtitle">
-                Invite team members, assign roles, and control permissions for a secure and efficient workflow.
-              </p>
+              <h1 className="team-hero-title">{heroTitle}</h1>
+              <p className="team-hero-subtitle">{heroSubtitle}</p>
             </div>
           </div>
 
           <button
             type="button"
             className="team-btn-invite"
-            onClick={() => setShowInviteModal(true)}
+            onClick={openInviteModal}
           >
-            <svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="8.5" cy="7" r="4" />
-              <line x1="20" y1="8" x2="20" y2="14" />
-              <line x1="23" y1="11" x2="17" y2="11" />
-            </svg>
-            <span>Invite Team Member</span>
+            <i className="bi bi-person-plus-fill"></i>
+            <span>{inviteBtnLabel}</span>
           </button>
         </div>
 
-        {/* 2. Role Permission Matrix Card */}
+        {/* 2. 3 Stats Cards Row (Matching Organize Your Contacts layout) */}
+        <div className="cg-stats-grid">
+          <div className="cg-stat-card">
+            <div className="cg-stat-icon-wrap cg-stat-icon-blue">
+              <i className="bi bi-people-fill"></i>
+            </div>
+            <div>
+              <div className="cg-stat-label">Total Collaborators</div>
+              <div className="cg-stat-value">{members.length}</div>
+            </div>
+          </div>
+
+          <div className="cg-stat-card">
+            <div className="cg-stat-icon-wrap cg-stat-icon-green">
+              <i className="bi bi-person-badge-fill"></i>
+            </div>
+            <div>
+              <div className="cg-stat-label">Team Leads (Admins)</div>
+              <div className="cg-stat-value text-green">{leads.length}</div>
+            </div>
+          </div>
+
+          <div className="cg-stat-card">
+            <div className="cg-stat-icon-wrap cg-stat-icon-cyan">
+              <i className="bi bi-headset"></i>
+            </div>
+            <div>
+              <div className="cg-stat-label">Support Agents</div>
+              <div className="cg-stat-value" style={{ color: '#0284c7' }}>{agents.length}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Navigation Tabs to quickly toggle views */}
+        <div className="analytics-nav-tabs mb-4">
+          <button
+            type="button"
+            className={`analytics-tab-btn ${isLeadView ? 'active' : ''}`}
+            onClick={() => setSearchParams({ role: 'lead' })}
+          >
+            <i className="bi bi-person-badge"></i>
+            <span>Team Leads (Admins)</span>
+            <span className="badge rounded-pill bg-light text-dark ms-1">{leads.length}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`analytics-tab-btn ${isAgentView ? 'active' : ''}`}
+            onClick={() => setSearchParams({ role: 'agent' })}
+          >
+            <i className="bi bi-people"></i>
+            <span>Members (Agents)</span>
+            <span className="badge rounded-pill bg-light text-dark ms-1">{agents.length}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`analytics-tab-btn ${activeRoleView === 'all' ? 'active' : ''}`}
+            onClick={() => setSearchParams({ role: 'all' })}
+          >
+            <i className="bi bi-person-lines-fill"></i>
+            <span>All Collaborators</span>
+            <span className="badge rounded-pill bg-light text-dark ms-1">{members.length}</span>
+          </button>
+        </div>
+
+        {/* 4. Role Permission Matrix Card */}
         <div className="team-card">
           <div className="team-card-header">
             <h2 className="team-card-title">
@@ -366,26 +454,16 @@ export default function TeamManagement() {
           </div>
         </div>
 
-        {/* 3. Workspace Collaborators Card */}
+        {/* 5. Workspace Collaborators Card */}
         <div className="team-card">
           <div className="team-card-header">
             <h2 className="team-card-title">
-              <svg
-                viewBox="0 0 24 24"
-                width="20"
-                height="20"
-                fill="none"
-                stroke="#10b981"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
-              <span>Workspace Collaborators ({filteredMembers.length})</span>
+              <i className={`bi ${isLeadView ? 'bi-person-badge text-success' : 'bi-people text-primary'} fs-5`}></i>
+              <span>
+                {isLeadView
+                  ? 'Team Leads & Admins'
+                  : (isAgentView ? 'Support Agents & Members' : 'Workspace Collaborators')} ({filteredMembers.length})
+              </span>
             </h2>
 
             <div className="team-search-wrap">
@@ -406,7 +484,7 @@ export default function TeamManagement() {
               <input
                 type="text"
                 className="team-search-input"
-                placeholder="Search members..."
+                placeholder={`Search ${isLeadView ? 'leads & admins' : 'agents & members'}...`}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -433,8 +511,26 @@ export default function TeamManagement() {
                   </tr>
                 ) : filteredMembers.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="text-center py-4 text-muted">
-                      No collaborators found matching your search.
+                    <td colSpan="5" className="text-center py-5 text-muted">
+                      <i className={`bi ${isLeadView ? 'bi-person-badge' : 'bi-people'} fs-1 text-secondary d-block mb-2`}></i>
+                      <div className="fw-bold text-dark fs-6 mb-1">
+                        {isLeadView ? 'No Team Leads or Admins Found' : 'No Agents or Members Found'}
+                      </div>
+                      <div className="small text-secondary mb-3">
+                        {searchQuery
+                          ? 'No team members matched your search query.'
+                          : (isLeadView
+                              ? 'Assign an administrator to delegate workspace management and campaign operations.'
+                              : 'Invite support agents to manage incoming WhatsApp customer conversations.')}
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-primary"
+                        onClick={openInviteModal}
+                      >
+                        <i className="bi bi-plus-lg me-1"></i>
+                        {inviteBtnLabel}
+                      </button>
                     </td>
                   </tr>
                 ) : (
