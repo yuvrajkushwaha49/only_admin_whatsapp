@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
+import { useAuth } from '../hooks/useAuth';
 
 /**
  * SystemUserBulkConnectModal
@@ -10,6 +11,9 @@ import api from '../services/api';
  * 2. Tareeqa 1: "Permanent System User Token" (Direct paste for custom/manual tokens)
  */
 export default function SystemUserBulkConnectModal({ isOpen, onClose, onSuccess, detectedToken, readiness: propReadiness }) {
+  const { isSuperAdmin: checkSuperAdmin, user } = useAuth();
+  const isSuperAdmin = typeof checkSuperAdmin === 'function' ? checkSuperAdmin() : (user?.role === 'superadmin');
+
   const [step, setStep] = useState(1); // 1: Connect / Scan, 2: Select Numbers, 3: Connecting / Results
   const [activeTab, setActiveTab] = useState('facebook'); // 'facebook' | 'token'
   const [token, setToken] = useState(detectedToken || '');

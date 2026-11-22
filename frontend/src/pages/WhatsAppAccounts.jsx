@@ -518,7 +518,7 @@ export default function WhatsAppAccounts() {
         */}
 
         {/* Meta Developer In-Software Control Center (Restricted to SuperAdmin Only) */}
-        {isSuperAdmin() && accounts.length > 0 && !loading && (
+        {isSuper && accounts.length > 0 && !loading && (
           <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: '14px', background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)' }}>
             <div className="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
               <div className="d-flex align-items-center gap-2">
@@ -773,7 +773,7 @@ export default function WhatsAppAccounts() {
                               <i className="bi bi-shield-lock-fill fs-5"></i>
                               <span>Number Allocation Required</span>
                             </button>
-                            {isSuperAdmin && (
+                            {isSuper && (
                               <Link to="/admin/numbers" className="btn btn-outline-dark btn-lg fw-semibold" style={{ borderRadius: '10px' }}>
                                 <i className="bi bi-diagram-3-fill me-1"></i> Allocate Numbers
                               </Link>
@@ -916,7 +916,7 @@ export default function WhatsAppAccounts() {
                                 <i className="bi bi-eye me-2 text-primary"></i> View Credentials
                               </Link>
                             </li>
-                            {isSuperAdmin() && (
+                            {isSuper && (
                               <li>
                                 <button
                                   type="button"
@@ -1268,7 +1268,7 @@ export default function WhatsAppAccounts() {
         )}
 
         {/* Meta Test Messenger Modal (In-Software Meta Developer Testing Tool - SuperAdmin Only) */}
-        {isSuperAdmin() && testModal.isOpen && (
+        {isSuper && testModal.isOpen && (
           <div className="modal show d-block" tabIndex="-1" style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', zIndex: 1060 }}>
             <div className="modal-dialog modal-dialog-centered">
               <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '16px', overflow: 'hidden' }}>

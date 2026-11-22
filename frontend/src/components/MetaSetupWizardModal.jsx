@@ -14,7 +14,8 @@ import { useAuth } from '../hooks/useAuth';
  * 6. Live verification stepper -> Success summary
  */
 export default function MetaSetupWizardModal({ isOpen, onClose, onSuccess }) {
-  const { isSuperAdmin } = useAuth();
+  const { isSuperAdmin: checkSuperAdmin, user } = useAuth();
+  const isSuperAdmin = Boolean(typeof checkSuperAdmin === 'function' ? checkSuperAdmin() : (user?.role === 'superadmin'));
 
   // Wizard Steps: 'welcome' | 'verifying' | 'success'
   const [screen, setScreen] = useState('welcome');
