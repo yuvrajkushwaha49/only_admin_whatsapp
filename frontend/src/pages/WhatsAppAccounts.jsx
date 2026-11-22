@@ -951,7 +951,8 @@ export default function WhatsAppAccounts() {
                       </div>
                     </div>
 
-                    {/* WABA ID and Phone Number ID Boxes */}
+                    {/* WABA ID and Phone Number ID Boxes (Temporarily commented out per request) */}
+                    {/*
                     <div className="wa-ids-grid">
                       <div className="wa-id-field">
                         <span className="wa-id-label">WABA ID</span>
@@ -983,6 +984,7 @@ export default function WhatsAppAccounts() {
                         </div>
                       </div>
                     </div>
+                    */}
 
                     {/* Pills Row: Quality, Tier, Webhook */}
                     <div className="wa-badges-row">
