@@ -237,8 +237,13 @@
 }
 
 @keyframes floatInfinity {
-  0% { transform: translateY(0px) scale(1); }
-  100% { transform: translateY(-4px) scale(1.02); }
+  0% {
+    transform: translateY(0px) scale(1);
+  }
+
+  100% {
+    transform: translateY(-4px) scale(1.02);
+  }
 }
 
 .aiwavo-quick-actions-card {
@@ -2459,9 +2464,7 @@
 /* =========================================================
    Contacts Page Redesign (Pixel-Perfect Match to Screenshot)
    ========================================================= */
-.cnt-page-container {
-  padding: 0rem 1rem 1rem 1rem;
-}
+
 
 /* Top Hero Banner */
 .cnt-hero-banner {
@@ -3061,9 +3064,7 @@
 /* =========================================================
    Excel Manager Redesign (Pixel-Perfect Match to Screenshot)
    ========================================================= */
-.em-page-container {
-  padding: 0rem 1rem 1rem 1rem;
-}
+
 
 /* Top Hero Banner */
 .em-hero-banner {
@@ -3430,9 +3431,7 @@
 /* =========================================================
    Contact Groups Redesign (Pixel-Perfect Match to Screenshot)
    ========================================================= */
-.cg-page-container {
-  padding: 0rem 1rem 1rem 1rem;
-}
+
 
 /* Top Hero Banner */
 .cg-hero-banner {

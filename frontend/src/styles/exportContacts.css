@@ -7,7 +7,6 @@
   max-width: 1440px;
   margin: 0 auto;
   min-height: calc(100vh - 72px);
-  padding: 1.5rem 2rem 3rem 2rem;
   background: #f8fafc;
 }
 
@@ -36,8 +35,8 @@
 }
 
 .exp-brand-square {
-  width: 48px;
-  height: 48px;
+  width: 50px;
+  height: 50px;
   border-radius: 12px;
   background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
   display: flex;
@@ -106,10 +105,25 @@
   flex-shrink: 0;
 }
 
-.exp-kpi-icon-circle.purple { background: #f5f0ff; color: #7c3aed; }
-.exp-kpi-icon-circle.green  { background: #ecfdf5; color: #10b981; }
-.exp-kpi-icon-circle.blue   { background: #eff6ff; color: #3b82f6; }
-.exp-kpi-icon-circle.amber  { background: #fffbeb; color: #f59e0b; }
+.exp-kpi-icon-circle.purple {
+  background: #f5f0ff;
+  color: #7c3aed;
+}
+
+.exp-kpi-icon-circle.green {
+  background: #ecfdf5;
+  color: #10b981;
+}
+
+.exp-kpi-icon-circle.blue {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.exp-kpi-icon-circle.amber {
+  background: #fffbeb;
+  color: #f59e0b;
+}
 
 .exp-kpi-value {
   font-size: 1.6rem;

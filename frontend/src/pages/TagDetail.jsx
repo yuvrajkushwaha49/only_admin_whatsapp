@@ -3,7 +3,18 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import tagsService from '../services/tags.service';
 import api from '../services/api';
 import { useAuth } from '../hooks/useAuth';
-import '../styles/tags.css';
+import '../styles/dashboard.css';
+
+const PRESET_COLORS = [
+  '#7c3aed', // Purple
+  '#0d6efd', // Blue
+  '#198754', // Green
+  '#fd7e14', // Orange
+  '#d63384', // Pink
+  '#20c997', // Teal
+  '#ffc107', // Yellow
+  '#0dcaf0'  // Cyan
+];
 
 export default function TagDetail() {
   const { id } = useParams();
@@ -23,13 +34,12 @@ export default function TagDetail() {
   const [editName, setEditName] = useState('');
   const [editColor, setEditColor] = useState('#7c3aed');
   const [savingEdit, setSavingEdit] = useState(false);
-  const [editError, setEditError] = useState('');
 
   // Add Contacts Modal
   const [showAddModal, setShowAddModal] = useState(false);
-  const [directoryContacts, setDirectoryContacts] = useState([]);
+  const [availableContacts, setAvailableContacts] = useState([]);
   const [selectedContactIds, setSelectedContactIds] = useState([]);
-  const [loadingDirectory, setLoadingDirectory] = useState(false);
+  const [loadingContacts, setLoadingContacts] = useState(false);
   const [addingContacts, setAddingContacts] = useState(false);
   const [contactSearch, setContactSearch] = useState('');
 
@@ -67,7 +77,6 @@ export default function TagDetail() {
     if (!tag) return;
     setEditName(tag.name);
     setEditColor(tag.color || '#7c3aed');
-    setEditError('');
     setShowEditModal(true);
   };
 
@@ -78,12 +87,11 @@ export default function TagDetail() {
     try {
       setSavingEdit(true);
       await tagsService.updateTag(id, { name: editName.trim(), color: editColor });
-      showToast('success', 'Tag updated successfully');
+      showToast('success', 'Contact tag updated successfully!');
       setShowEditModal(false);
       loadTagDetail();
     } catch (err) {
-      console.error('[TagDetail] Update failed:', err);
-      setEditError(err.response?.data?.message || 'Failed to update tag');
+      showToast('danger', err.response?.data?.message || 'Failed to update tag');
     } finally {
       setSavingEdit(false);
     }
@@ -95,7 +103,6 @@ export default function TagDetail() {
       await tagsService.deleteTag(id);
       navigate('/tags', { replace: true });
     } catch (err) {
-      console.error('[TagDetail] Delete failed:', err);
       showToast('danger', err.response?.data?.message || 'Failed to delete tag');
       setDeleting(false);
     }
@@ -106,10 +113,9 @@ export default function TagDetail() {
 
     try {
       await tagsService.removeContactFromTag(id, contactId);
-      showToast('success', 'Contact removed from tag');
+      showToast('success', 'Contact removed from tag.');
       loadTagDetail();
     } catch (err) {
-      console.error('[TagDetail] Remove contact failed:', err);
       showToast('danger', err.response?.data?.message || 'Failed to remove contact from tag');
     }
   };
@@ -117,7 +123,7 @@ export default function TagDetail() {
   const handleOpenAddModal = async () => {
     try {
       setShowAddModal(true);
-      setLoadingDirectory(true);
+      setLoadingContacts(true);
       setSelectedContactIds([]);
       setContactSearch('');
 
@@ -125,12 +131,12 @@ export default function TagDetail() {
       if (res.data?.success) {
         const allContacts = res.data.data || [];
         const existingIds = new Set(contacts.map(c => c.id));
-        setDirectoryContacts(allContacts.filter(c => !existingIds.has(c.id)));
+        setAvailableContacts(allContacts.filter(c => !existingIds.has(c.id)));
       }
     } catch (err) {
-      console.error('[TagDetail] Load contacts failed:', err);
+      showToast('danger', 'Failed to load contacts list');
     } finally {
-      setLoadingDirectory(false);
+      setLoadingContacts(false);
     }
   };
 
@@ -146,18 +152,17 @@ export default function TagDetail() {
     try {
       setAddingContacts(true);
       await tagsService.addContactsToTag(id, selectedContactIds);
-      showToast('success', `Assigned tag to ${selectedContactIds.length} contacts`);
+      showToast('success', `${selectedContactIds.length} contact(s) added to tag!`);
       setShowAddModal(false);
       loadTagDetail();
     } catch (err) {
-      console.error('[TagDetail] Add contacts failed:', err);
-      showToast('danger', err.response?.data?.message || 'Failed to assign tag');
+      showToast('danger', err.response?.data?.message || 'Failed to assign contacts to tag');
     } finally {
       setAddingContacts(false);
     }
   };
 
-  const filteredDirectory = directoryContacts.filter(c => {
+  const filteredAvailable = availableContacts.filter(c => {
     if (!contactSearch.trim()) return true;
     const q = contactSearch.toLowerCase();
     return (
@@ -167,11 +172,9 @@ export default function TagDetail() {
     );
   });
 
-  const PRESET_COLORS = ['#7c3aed', '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#6366f1'];
-
   if (loading && !tag) {
     return (
-      <div className="tag-page-container d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
+      <div className="contact-groups-page text-center py-5">
         <div className="spinner-border text-primary" role="status"></div>
       </div>
     );
@@ -179,7 +182,7 @@ export default function TagDetail() {
 
   if (!tag) {
     return (
-      <div className="tag-page-container text-center py-5">
+      <div className="contact-groups-page text-center py-5">
         <h4 className="fw-bold mb-3">Tag Not Found</h4>
         <Link to="/tags" className="btn btn-outline-primary">
           &larr; Back to Tags
@@ -189,272 +192,204 @@ export default function TagDetail() {
   }
 
   const tagColor = tag.color || '#7c3aed';
-  const optedInCount = contacts.filter(c => c.is_opted_in).length;
 
   return (
-    <div className="tag-page-container">
+    <div className="contact-groups-page pb-5">
       {/* Toast Alert */}
       {toastMsg && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          zIndex: 9999,
-          background: toastMsg.type === 'danger' ? '#ef4444' : '#10b981',
-          color: '#ffffff',
-          padding: '0.75rem 1.25rem',
-          borderRadius: '8px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          fontWeight: 600,
-          fontSize: '0.88rem'
-        }}>
-          <i className={`bi ${toastMsg.type === 'danger' ? 'bi-exclamation-circle' : 'bi-check-circle-fill'}`}></i>
-          <span>{toastMsg.text}</span>
+        <div
+          className={`alert alert-${toastMsg.type} alert-dismissible fade show shadow-sm position-fixed top-0 end-0 m-3 z-3`}
+          role="alert"
+          style={{ maxWidth: '420px', zIndex: 1080 }}
+        >
+          <div className="d-flex align-items-center gap-2">
+            <i className={`bi ${toastMsg.type === 'success' ? 'bi-check-circle-fill' : 'bi-info-circle-fill'}`}></i>
+            <span>{toastMsg.text}</span>
+          </div>
+          <button type="button" className="btn-close" onClick={() => setToastMsg(null)}></button>
         </div>
       )}
 
-      {/* Back Link */}
-      <div className="mb-3">
-        <Link to="/tags" className="text-secondary text-decoration-none fw-semibold small d-inline-flex align-items-center gap-1">
-          <i className="bi bi-arrow-left"></i>
-          <span>Back to All Tags</span>
-        </Link>
-      </div>
-
-      {/* Tag Detail Top Header Banner */}
-      <div className="tag-detail-banner">
-        <div className="tag-detail-info">
-          <span
-            className="tag-detail-pill"
-            style={{
-              backgroundColor: `${tagColor}18`,
-              color: tagColor,
-              borderColor: `${tagColor}40`
-            }}
-          >
-            <span className="tag-dot-circle" style={{ backgroundColor: tagColor, width: '14px', height: '14px' }}></span>
-            <span>{tag.name}</span>
-          </span>
-
-          <div className="d-flex align-items-center gap-3 text-secondary small">
-            <div>
-              <i className="bi bi-people-fill text-primary me-1"></i>
-              <strong>{totalContacts}</strong> contact{totalContacts === 1 ? '' : 's'}
-            </div>
-            <div>
-              <i className="bi bi-patch-check-fill text-success me-1"></i>
-              <strong>{optedInCount}</strong> opted-in
-            </div>
-            <div>
-              <i className="bi bi-clock-history me-1"></i>
-              Created {tag.created_at ? new Date(tag.created_at).toLocaleDateString() : 'Recently'}
-            </div>
-          </div>
+      <div className="cg-page-container">
+        {/* Back Navigation Bar */}
+        <div className="mb-3">
+          <Link to="/tags" className="text-secondary text-decoration-none fw-semibold small d-inline-flex align-items-center gap-1">
+            <i className="bi bi-arrow-left"></i>
+            <span>Back to All Tags</span>
+          </Link>
         </div>
 
-        <div className="tag-detail-actions">
-          <button className="tag-primary-btn" onClick={handleOpenAddModal}>
-            <i className="bi bi-person-plus-fill"></i>
-            <span>+ Add Contacts to Tag</span>
-          </button>
+        {/* Selected Tag Detail Section (Matching Contact Groups activeGroupDetail) */}
+        <div className="cg-card">
+          <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+            <div className="d-flex align-items-center gap-2">
+              <span
+                className="rounded-circle d-inline-block"
+                style={{ width: '14px', height: '14px', backgroundColor: tagColor }}
+              ></span>
+              <h3 className="cg-card-title mb-0">
+                {tag.name} ({totalContacts} {totalContacts === 1 ? 'Member' : 'Members'})
+              </h3>
+            </div>
 
-          <button
-            type="button"
-            className="btn btn-outline-secondary d-inline-flex align-items-center gap-1"
-            style={{ borderRadius: '10px' }}
-            onClick={handleOpenEdit}
-          >
-            <i className="bi bi-pencil"></i>
-            <span>Edit</span>
-          </button>
+            <div className="d-flex align-items-center gap-2">
+              <button
+                type="button"
+                onClick={handleOpenAddModal}
+                className="cg-hero-btn-create py-2 px-3"
+              >
+                <i className="bi bi-person-plus-fill"></i>
+                <span>Add Contacts to Tag</span>
+              </button>
 
-          {canDelete && (
-            <button
-              type="button"
-              className="btn btn-outline-danger d-inline-flex align-items-center gap-1"
-              style={{ borderRadius: '10px' }}
-              onClick={() => setShowDeleteConfirm(true)}
-            >
-              <i className="bi bi-trash"></i>
-              <span>Delete</span>
-            </button>
-          )}
-        </div>
-      </div>
+              <button
+                type="button"
+                className="btn btn-outline-secondary py-2 px-3"
+                style={{ borderRadius: '10px' }}
+                onClick={handleOpenEdit}
+                title="Edit Tag"
+              >
+                <i className="bi bi-pencil"></i>
+                <span className="ms-1">Edit</span>
+              </button>
 
-      {/* Tagged Contacts Table Card */}
-      <div className="tag-contacts-card">
-        <div className="tag-contacts-head">
-          <h5 className="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-            <i className="bi bi-person-lines-fill text-primary"></i>
-            <span>Tagged Contacts ({totalContacts})</span>
-          </h5>
-
-          <div className="tag-search-box" style={{ maxWidth: '320px' }}>
-            <i className="bi bi-search"></i>
-            <input
-              type="text"
-              className="tag-search-input"
-              placeholder="Search contacts..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+              {canDelete && (
+                <button
+                  type="button"
+                  className="btn btn-outline-danger py-2 px-3"
+                  style={{ borderRadius: '10px' }}
+                  onClick={() => setShowDeleteConfirm(true)}
+                  title="Delete Tag"
+                >
+                  <i className="bi bi-trash3"></i>
+                </button>
+              )}
+            </div>
           </div>
-        </div>
 
-        {contacts.length === 0 ? (
-          <div className="tag-empty-state">
-            <i className="bi bi-people tag-empty-icon"></i>
-            <h5 className="fw-bold text-dark mb-2">No Contacts In This Tag</h5>
-            <p className="text-secondary small mb-3">
-              {search ? 'No contacts match your search query.' : 'Assign contacts from your directory to this tag.'}
-            </p>
-            <button className="tag-primary-btn mx-auto" onClick={handleOpenAddModal}>
-              <i className="bi bi-person-plus-fill"></i> + Add Contacts
-            </button>
+          {/* Search Contacts in Tag */}
+          <div className="mb-3" style={{ maxWidth: '340px' }}>
+            <div className="cg-search-box" style={{ minWidth: '100%' }}>
+              <i className="bi bi-search cg-search-icon"></i>
+              <input
+                type="text"
+                className="cg-search-input"
+                placeholder="Search tagged contacts..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
           </div>
-        ) : (
+
           <div className="table-responsive">
-            <table className="tag-contacts-table">
+            <table className="table cf-table mb-0 align-middle">
               <thead>
                 <tr>
-                  <th>Contact</th>
+                  <th>Contact Name</th>
                   <th>Phone Number</th>
                   <th>Email</th>
-                  <th>Status</th>
+                  <th>Consent Status</th>
                   <th>Tagged Date</th>
-                  <th className="text-end">Actions</th>
+                  <th className="text-end">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {contacts.map((c) => {
-                  const initial = (c.name || c.phone || 'C').charAt(0).toUpperCase();
-                  return (
+                {contacts.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="text-center py-5 text-muted">
+                      No contacts in this tag yet. Click <strong>"Add Contacts to Tag"</strong> above to assign contacts!
+                    </td>
+                  </tr>
+                ) : (
+                  contacts.map(c => (
                     <tr key={c.id}>
                       <td>
-                        <div className="d-flex align-items-center gap-2">
-                          <div className="tag-contact-avatar">{initial}</div>
-                          <div>
-                            <div className="fw-bold text-dark">{c.name || 'Unnamed'}</div>
-                            <div className="text-muted small">ID: #{c.id}</div>
-                          </div>
-                        </div>
+                        <Link to={`/contacts/${c.id}`} className="fw-semibold text-dark text-decoration-none">
+                          {c.name || 'Anonymous Customer'}
+                        </Link>
                       </td>
-
                       <td>
-                        <span className="fw-semibold text-dark">{c.phone}</span>
+                        <code className="text-dark fw-bold">{c.phone}</code>
                       </td>
-
-                      <td>
-                        <span className="text-secondary">{c.email || '—'}</span>
-                      </td>
-
+                      <td className="small text-muted">{c.email || '-'}</td>
                       <td>
                         {c.is_opted_in ? (
-                          <span className="badge bg-success bg-opacity-10 text-success border border-success-subtle">
-                            <i className="bi bi-check-circle-fill me-1"></i> Opted-In
+                          <span className="badge bg-success-subtle text-success border border-success-subtle">
+                            Opted In
                           </span>
                         ) : (
-                          <span className="badge bg-secondary bg-opacity-10 text-secondary">
-                            Not Opted-In
+                          <span className="badge bg-secondary-subtle text-secondary border">
+                            Opted Out
                           </span>
                         )}
                       </td>
-
-                      <td>
-                        <span className="text-muted small">
-                          {c.tagged_at ? new Date(c.tagged_at).toLocaleDateString() : '—'}
-                        </span>
+                      <td className="small text-muted">
+                        {c.tagged_at ? new Date(c.tagged_at).toLocaleDateString() : 'N/A'}
                       </td>
-
                       <td className="text-end">
-                        <div className="d-inline-flex align-items-center gap-2">
-                          <Link
-                            to={`/contacts/${c.id}`}
-                            className="btn btn-sm btn-outline-primary"
-                            style={{ borderRadius: '6px' }}
-                            title="View Contact Profile"
-                          >
-                            <i className="bi bi-person"></i> View
-                          </Link>
-
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-danger"
-                            style={{ borderRadius: '6px' }}
-                            onClick={() => handleRemoveContact(c.id, c.name)}
-                            title="Remove Tag from Contact"
-                          >
-                            <i className="bi bi-x-lg"></i>
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveContact(c.id, c.name)}
+                          className="btn btn-sm btn-outline-danger"
+                          style={{ borderRadius: '6px' }}
+                          title="Remove from tag"
+                        >
+                          <i className="bi bi-x-circle me-1"></i> Remove
+                        </button>
                       </td>
                     </tr>
-                  );
-                })}
+                  ))
+                )}
               </tbody>
             </table>
           </div>
-        )}
+        </div>
       </div>
 
       {/* ========================================================= */}
-      {/* ADD CONTACTS MODAL */}
+      {/* ADD CONTACTS TO TAG MODAL (Matching Contact Groups Modal) */}
       {/* ========================================================= */}
       {showAddModal && (
-        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(15,23,42,0.65)' }}>
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog modal-lg modal-dialog-centered">
-            <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '16px' }}>
-              <div className="modal-header bg-light border-bottom px-4 py-3">
-                <div className="d-flex align-items-center gap-2">
-                  <div
-                    className="p-2 rounded-circle"
-                    style={{ backgroundColor: `${tagColor}20`, color: tagColor }}
-                  >
-                    <i className="bi bi-person-plus-fill fs-5"></i>
-                  </div>
-                  <div>
-                    <h5 className="modal-title fw-bold text-dark mb-0">Assign Tag to Contacts</h5>
-                    <p className="text-muted small mb-0">
-                      Select contacts to tag with <strong>"{tag.name}"</strong>
-                    </p>
-                  </div>
-                </div>
-                <button type="button" className="btn-close" onClick={() => setShowAddModal(false)}></button>
+            <div className="modal-content border-0 shadow">
+              <div className="modal-header">
+                <h5 className="modal-title fw-bold">Add Contacts to Tag</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowAddModal(false)}
+                ></button>
               </div>
-
-              <div className="modal-body p-4">
+              <div className="modal-body">
                 <div className="mb-3">
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="Search available contacts by name, phone or email..."
+                    placeholder="Search available contacts..."
                     value={contactSearch}
-                    onChange={(e) => setContactSearch(e.target.value)}
+                    onChange={e => setContactSearch(e.target.value)}
                   />
                 </div>
 
-                {loadingDirectory ? (
+                {loadingContacts ? (
                   <div className="text-center py-4">
-                    <div className="spinner-border spinner-border-sm text-primary" role="status"></div>
-                    <div className="small text-muted mt-2">Loading contacts...</div>
+                    <div className="spinner-border spinner-border-sm text-success" role="status"></div>
+                    <div className="text-muted small mt-2">Loading contacts...</div>
                   </div>
-                ) : filteredDirectory.length === 0 ? (
-                  <div className="text-center py-4 text-muted small">
-                    {contactSearch ? 'No matching contacts found.' : 'All contacts in your workspace already have this tag.'}
+                ) : filteredAvailable.length === 0 ? (
+                  <div className="text-center py-4 text-muted">
+                    No available contacts to add (or all matching contacts are already in this tag).
                   </div>
                 ) : (
-                  <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
+                  <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
                     <div className="list-group">
-                      {filteredDirectory.map((c) => {
+                      {filteredAvailable.map(c => {
                         const isChecked = selectedContactIds.includes(c.id);
                         return (
                           <label
                             key={c.id}
-                            className={`list-group-item list-group-item-action d-flex align-items-center gap-3 cursor-pointer ${isChecked ? 'bg-light' : ''}`}
+                            className={`list-group-item list-group-item-action d-flex align-items-center gap-3 ${isChecked ? 'bg-light' : ''}`}
                             style={{ cursor: 'pointer' }}
                           >
                             <input
@@ -464,10 +399,8 @@ export default function TagDetail() {
                               onChange={() => handleToggleSelectContact(c.id)}
                             />
                             <div className="flex-grow-1">
-                              <div className="fw-bold text-dark">{c.name || 'Unnamed'}</div>
-                              <div className="text-muted small">
-                                {c.phone} {c.email ? `• ${c.email}` : ''}
-                              </div>
+                              <div className="fw-semibold text-dark">{c.name || 'Anonymous Customer'}</div>
+                              <div className="small text-muted">{c.phone} {c.email ? `• ${c.email}` : ''}</div>
                             </div>
                           </label>
                         );
@@ -476,10 +409,9 @@ export default function TagDetail() {
                   </div>
                 )}
               </div>
-
-              <div className="modal-footer bg-light px-4 py-3 justify-content-between">
+              <div className="modal-footer justify-content-between">
                 <div className="small text-muted">
-                  <strong>{selectedContactIds.length}</strong> selected
+                  {selectedContactIds.length} contact(s) selected
                 </div>
                 <div className="d-flex gap-2">
                   <button
@@ -492,12 +424,12 @@ export default function TagDetail() {
                   </button>
                   <button
                     type="button"
-                    className="btn text-white fw-semibold"
-                    style={{ backgroundColor: '#7c3aed' }}
-                    onClick={handleAddSelectedContacts}
                     disabled={addingContacts || selectedContactIds.length === 0}
+                    onClick={handleAddSelectedContacts}
+                    className="btn btn-cf-primary text-white"
+                    style={{ backgroundColor: '#7c3aed', borderColor: '#7c3aed' }}
                   >
-                    {addingContacts ? 'Assigning...' : `Add Selected (${selectedContactIds.length})`}
+                    {addingContacts ? 'Adding...' : `Add Selected (${selectedContactIds.length})`}
                   </button>
                 </div>
               </div>
@@ -510,52 +442,53 @@ export default function TagDetail() {
       {/* EDIT TAG MODAL */}
       {/* ========================================================= */}
       {showEditModal && (
-        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(15,23,42,0.65)' }}>
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '16px' }}>
-              <div className="modal-header bg-light border-bottom px-4 py-3">
-                <h5 className="modal-title fw-bold text-dark mb-0">Edit Tag</h5>
-                <button type="button" className="btn-close" onClick={() => setShowEditModal(false)}></button>
-              </div>
-
+            <div className="modal-content border-0 shadow">
               <form onSubmit={handleSaveEdit}>
-                <div className="modal-body p-4">
-                  {editError && (
-                    <div className="alert alert-danger py-2 px-3 small d-flex align-items-center gap-2 mb-3 rounded-3">
-                      <i className="bi bi-exclamation-triangle-fill fs-5"></i>
-                      <div>{editError}</div>
-                    </div>
-                  )}
-
+                <div className="modal-header">
+                  <h5 className="modal-title fw-bold">Edit Contact Tag</h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={() => setShowEditModal(false)}
+                  ></button>
+                </div>
+                <div className="modal-body">
                   <div className="mb-3">
-                    <label className="form-label small fw-bold">Tag Name</label>
+                    <label className="form-label small fw-semibold">Tag Name *</label>
                     <input
                       type="text"
                       className="form-control"
                       value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
+                      onChange={e => setEditName(e.target.value)}
                       required
                     />
                   </div>
 
                   <div className="mb-3">
-                    <label className="form-label small fw-bold mb-1">Color</label>
-                    <div className="tag-color-swatches mb-2">
-                      {PRESET_COLORS.map((c) => (
-                        <div
+                    <label className="form-label small fw-semibold">Tag Color</label>
+                    <div className="d-flex align-items-center gap-2 flex-wrap mb-2">
+                      {PRESET_COLORS.map(c => (
+                        <button
                           key={c}
-                          className={`tag-color-swatch-item ${editColor.toLowerCase() === c.toLowerCase() ? 'selected' : ''}`}
-                          style={{ backgroundColor: c }}
+                          type="button"
+                          className="rounded-circle border-0 d-inline-block"
+                          style={{
+                            width: '28px',
+                            height: '28px',
+                            backgroundColor: c,
+                            outline: editColor.toLowerCase() === c.toLowerCase() ? '3px solid #000' : 'none',
+                            outlineOffset: '2px',
+                            cursor: 'pointer'
+                          }}
                           onClick={() => setEditColor(c)}
-                        >
-                          {editColor.toLowerCase() === c.toLowerCase() && <i className="bi bi-check"></i>}
-                        </div>
+                        ></button>
                       ))}
                     </div>
                   </div>
                 </div>
-
-                <div className="modal-footer bg-light px-4 py-3">
+                <div className="modal-footer">
                   <button
                     type="button"
                     className="btn btn-outline-secondary"
@@ -566,9 +499,9 @@ export default function TagDetail() {
                   </button>
                   <button
                     type="submit"
-                    className="btn text-white fw-semibold"
-                    style={{ backgroundColor: '#7c3aed' }}
                     disabled={savingEdit}
+                    className="btn btn-cf-primary text-white"
+                    style={{ backgroundColor: '#7c3aed', borderColor: '#7c3aed' }}
                   >
                     {savingEdit ? 'Saving...' : 'Save Changes'}
                   </button>
@@ -583,35 +516,43 @@ export default function TagDetail() {
       {/* DELETE TAG CONFIRM MODAL */}
       {/* ========================================================= */}
       {showDeleteConfirm && (
-        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(15,23,42,0.65)' }}>
-          <div className="modal-dialog modal-dialog-centered modal-sm">
-            <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '16px' }}>
-              <div className="modal-body p-4 text-center">
-                <div className="p-3 bg-danger bg-opacity-10 text-danger rounded-circle d-inline-block mb-3">
-                  <i className="bi bi-trash-fill fs-2"></i>
-                </div>
-                <h5 className="fw-bold text-dark mb-2">Delete Tag?</h5>
-                <p className="text-secondary small mb-3">
-                  Are you sure you want to delete <strong>"{tag.name}"</strong>? It will be unassigned from all {totalContacts} contacts.
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 shadow">
+              <div className="modal-header">
+                <h5 className="modal-title fw-bold text-danger">Delete Contact Tag</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowDeleteConfirm(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p className="text-muted mb-2">
+                  Are you sure you want to delete the tag <strong>"{tag.name}"</strong>?
                 </p>
-                <div className="d-flex justify-content-center gap-2">
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary"
-                    onClick={() => setShowDeleteConfirm(false)}
-                    disabled={deleting}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-danger"
-                    onClick={handleDeleteTag}
-                    disabled={deleting}
-                  >
-                    {deleting ? 'Deleting...' : 'Delete'}
-                  </button>
+                <div className="small text-danger">
+                  <i className="bi bi-exclamation-triangle-fill me-1"></i>
+                  The tag will be removed from all assigned contacts. Contacts belonging to this tag will <strong>not</strong> be deleted from your database.
                 </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={handleDeleteTag}
+                  disabled={deleting}
+                >
+                  {deleting ? 'Deleting...' : 'Delete Tag'}
+                </button>
               </div>
             </div>
           </div>

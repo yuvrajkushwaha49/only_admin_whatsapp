@@ -7,15 +7,10 @@
   max-width: 1440px;
   margin: 0 auto;
   min-height: calc(100vh - 72px);
-  padding: 1.5rem 2rem 3rem 2rem;
   background: #f8fafc;
 }
 
-@media (max-width: 768px) {
-  .tag-page-container {
-    padding: 1rem 1rem 2rem 1rem;
-  }
-}
+
 
 /* 1. Hero Title Banner */
 .tag-hero-banner {
@@ -139,10 +134,25 @@
   flex-shrink: 0;
 }
 
-.tag-kpi-icon-circle.purple { background: #f5f0ff; color: #7c3aed; }
-.tag-kpi-icon-circle.green  { background: #ecfdf5; color: #10b981; }
-.tag-kpi-icon-circle.blue   { background: #eff6ff; color: #3b82f6; }
-.tag-kpi-icon-circle.amber  { background: #fffbeb; color: #f59e0b; }
+.tag-kpi-icon-circle.purple {
+  background: #f5f0ff;
+  color: #7c3aed;
+}
+
+.tag-kpi-icon-circle.green {
+  background: #ecfdf5;
+  color: #10b981;
+}
+
+.tag-kpi-icon-circle.blue {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.tag-kpi-icon-circle.amber {
+  background: #fffbeb;
+  color: #f59e0b;
+}
 
 .tag-kpi-value {
   font-size: 1.6rem;
