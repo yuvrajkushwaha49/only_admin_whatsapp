@@ -38,6 +38,7 @@ export default function Analytics() {
 
   // Data & Loading States
   const [tabData, setTabData] = useState(null);
+  const [overviewKpis, setOverviewKpis] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [toastMsg, setToastMsg] = useState(null);
@@ -46,6 +47,21 @@ export default function Analytics() {
     setToastMsg({ type, text });
     setTimeout(() => setToastMsg(null), 4000);
   };
+
+  // Pre-fetch top summary KPIs so stats row is always populated
+  useEffect(() => {
+    let isMounted = true;
+    const fetchTopKpis = async () => {
+      try {
+        const res = await api.get('/analytics/overview', { params: { period } });
+        if (isMounted && res.data?.success && res.data.data?.kpis) {
+          setOverviewKpis(res.data.data.kpis);
+        }
+      } catch (_) {}
+    };
+    fetchTopKpis();
+    return () => { isMounted = false; };
+  }, [period]);
 
   // Fetch Numbers for Dropdown Filter
   useEffect(() => {
@@ -197,6 +213,20 @@ export default function Analytics() {
     ...(isSuper ? [{ key: 'revenue', label: 'Revenue', icon: 'bi-currency-dollar', superAdminOnly: true }] : [])
   ];
 
+  const currentKpis = (currentTab === 'overview' && tabData?.kpis) ? tabData.kpis : (overviewKpis || tabData?.kpis || {});
+
+  const getMetricVal = (item, fallback = 0) => {
+    if (item === null || item === undefined) return fallback;
+    if (typeof item === 'object') return item.value !== undefined ? item.value : fallback;
+    return item;
+  };
+
+  const sentCount = Number(getMetricVal(currentKpis.sent, getMetricVal(currentKpis.outgoing ?? currentKpis.outbound, 0)));
+  const deliveredCount = Number(getMetricVal(currentKpis.delivered, 0));
+  const readCount = Number(currentKpis.read !== undefined ? getMetricVal(currentKpis.read, 0) : 0);
+  const deliveryRate = Number(getMetricVal(currentKpis.deliveryRate, sentCount > 0 ? ((deliveredCount / sentCount) * 100).toFixed(1) : (deliveredCount > 0 ? 100 : 0)));
+  const readRate = Number(getMetricVal(currentKpis.readRate, deliveredCount > 0 ? ((readCount / deliveredCount) * 100).toFixed(1) : (readCount > 0 ? 100 : 0)));
+
   return (
     <div className="contact-groups-page pb-5">
       {/* Toast Alert */}
@@ -249,6 +279,39 @@ export default function Analytics() {
               <i className="bi bi-download"></i>
               <span>Export CSV</span>
             </button>
+          </div>
+        </div>
+
+        {/* 3 Stats Cards Row (Matching Organize Your Contacts design system) */}
+        <div className="cg-stats-grid">
+          <div className="cg-stat-card">
+            <div className="cg-stat-icon-wrap cg-stat-icon-blue">
+              <i className="bi bi-send-fill"></i>
+            </div>
+            <div>
+              <div className="cg-stat-label">Total Messages Sent</div>
+              <div className="cg-stat-value">{sentCount.toLocaleString()}</div>
+            </div>
+          </div>
+
+          <div className="cg-stat-card">
+            <div className="cg-stat-icon-wrap cg-stat-icon-green">
+              <i className="bi bi-patch-check-fill"></i>
+            </div>
+            <div>
+              <div className="cg-stat-label">Delivery Success Rate</div>
+              <div className="cg-stat-value text-green">{deliveryRate}%</div>
+            </div>
+          </div>
+
+          <div className="cg-stat-card">
+            <div className="cg-stat-icon-wrap cg-stat-icon-cyan">
+              <i className="bi bi-eye-fill"></i>
+            </div>
+            <div>
+              <div className="cg-stat-label">Read Engagement Rate</div>
+              <div className="cg-stat-value" style={{ color: '#0284c7' }}>{readRate}%</div>
+            </div>
           </div>
         </div>
 
@@ -330,8 +393,10 @@ export default function Analytics() {
           </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="an-tabs-nav">
+        {/* Main Content Card Container (Matching Organize Your Contacts design system) */}
+        <div className="cg-card">
+          {/* Tab Navigation */}
+          <div className="an-tabs-nav">
           {tabs.map(t => (
             <button
               key={t.key}
@@ -406,5 +471,6 @@ export default function Analytics() {
         </div>
       </div>
     </div>
+  </div>
   );
 }

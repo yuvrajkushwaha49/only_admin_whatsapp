@@ -28,13 +28,13 @@ import CampaignList from './pages/CampaignList';
 import CampaignBuilder from './pages/CampaignBuilder';
 import CampaignDetail from './pages/CampaignDetail';
 import CampaignReport from './pages/CampaignReport';
+import Analytics from './pages/Analytics/Analytics';
 import AiAssistant from './pages/AiAssistant';
 import TeamManagement from './pages/TeamManagement';
 import Billing from './pages/Billing';
 import ActivityLogs from './pages/ActivityLogs';
 import Settings from './pages/Settings';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
-import Analytics from './pages/Analytics/Analytics';
 
 // Super Admin Suite Pages
 import AdminOverview from './pages/admin/AdminOverview';
@@ -248,7 +248,7 @@ export default function App() {
         <Route
           path="/analytics"
           element={
-            <ProtectedRoute allowedRoles={['superadmin', 'owner', 'admin', 'marketer', 'agent']}>
+            <ProtectedRoute allowedRoles={['owner', 'admin', 'marketer']}>
               <Analytics />
             </ProtectedRoute>
           }
@@ -256,7 +256,7 @@ export default function App() {
         <Route
           path="/analytics/:tab"
           element={
-            <ProtectedRoute allowedRoles={['superadmin', 'owner', 'admin', 'marketer', 'agent']}>
+            <ProtectedRoute allowedRoles={['owner', 'admin', 'marketer']}>
               <Analytics />
             </ProtectedRoute>
           }
