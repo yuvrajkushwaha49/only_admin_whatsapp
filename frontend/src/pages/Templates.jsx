@@ -66,6 +66,7 @@ export default function Templates() {
   const [quickTestVars, setQuickTestVars] = useState({});
   const [quickTestSending, setQuickTestSending] = useState(false);
   const [quickTestResult, setQuickTestResult] = useState(null);
+  const [quickTestSenderAccountId, setQuickTestSenderAccountId] = useState('');
 
   // Create Form State
   const [formName, setFormName] = useState('');
@@ -347,6 +348,12 @@ export default function Templates() {
     setQuickTestTemplate(tpl);
     setQuickTestResult(null);
     setQuickTestPhone('');
+    setQuickTestSenderAccountId(
+      tpl.whatsapp_account_id ||
+      (selectedAccountId && selectedAccountId !== 'ALL' ? selectedAccountId : '') ||
+      accounts[0]?.id ||
+      ''
+    );
 
     // Parse components to extract variables
     const comps = Array.isArray(tpl.components)
@@ -384,7 +391,7 @@ export default function Templates() {
         templateName: quickTestTemplate.name,
         language: quickTestTemplate.language || 'en',
         parameters: parameters.length > 0 ? parameters : undefined,
-        accountId: quickTestTemplate.whatsapp_account_id || undefined
+        accountId: quickTestSenderAccountId || quickTestTemplate.whatsapp_account_id || undefined
       };
 
       const res = await api.post('/whatsapp/send-test', payload);
@@ -2090,6 +2097,34 @@ export default function Templates() {
                         <span className="badge bg-white text-secondary border small">({quickTestTemplate.language})</span>
                       </div>
                     </div>
+
+                    {/* Sender Account Selection */}
+                    {accounts.length > 0 && (
+                      <div className="mb-3">
+                        <label className="form-label small fw-bold">
+                          Sending WhatsApp Number / Account <span className="text-danger">*</span>
+                        </label>
+                        <select
+                          className="form-select form-select-sm"
+                          value={quickTestSenderAccountId}
+                          onChange={(e) => setQuickTestSenderAccountId(e.target.value)}
+                          required
+                        >
+                          {accounts.map(acc => {
+                            const name = acc.display_name || acc.verified_name || acc.account_name || 'WhatsApp Account';
+                            const phone = acc.phone_number || acc.display_phone_number;
+                            return (
+                              <option key={acc.id} value={acc.id}>
+                                {phone ? `${name} (${phone})` : name}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        <div className="form-text small text-muted">
+                          Dispatched directly from this verified WhatsApp Business account.
+                        </div>
+                      </div>
+                    )}
 
                     {/* Recipient Phone Number */}
                     <div className="mb-3">

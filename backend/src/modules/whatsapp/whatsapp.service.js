@@ -581,6 +581,39 @@ export async function sendTestMessage(businessId, accountId, payload = {}) {
           }
         });
       }
+
+      // Automatically satisfy media header (IMAGE, VIDEO, DOCUMENT) parameters required by Meta
+      const headerComp = comps.find(c => (c.type || '').toUpperCase() === 'HEADER');
+      if (headerComp && ['IMAGE', 'VIDEO', 'DOCUMENT'].includes((headerComp.format || '').toUpperCase())) {
+        const hFormat = headerComp.format.toLowerCase();
+        const hasHeaderParam = targetComponents.some(c => (c.type || '').toLowerCase() === 'header');
+        if (!hasHeaderParam) {
+          let mediaUrl = null;
+          if (headerComp.example?.header_handle?.[0]) {
+            mediaUrl = headerComp.example.header_handle[0];
+          }
+          if (!mediaUrl && payload.headerMediaUrl) {
+            mediaUrl = payload.headerMediaUrl;
+          }
+          if (!mediaUrl || !/^https?:\/\//i.test(mediaUrl)) {
+            if (hFormat === 'video') mediaUrl = 'https://www.w3schools.com/html/mov_bbb.mp4';
+            else if (hFormat === 'image') mediaUrl = 'https://images.unsplash.com/photo-1579208575657-c595a05383b7?w=800';
+            else if (hFormat === 'document') mediaUrl = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
+          }
+
+          if (mediaUrl) {
+            targetComponents.unshift({
+              type: 'header',
+              parameters: [
+                {
+                  type: hFormat,
+                  [hFormat]: { link: mediaUrl }
+                }
+              ]
+            });
+          }
+        }
+      }
     } else if (targetName === 'welcome_msg') {
       targetLang = 'en';
       if (targetComponents.length === 0) {

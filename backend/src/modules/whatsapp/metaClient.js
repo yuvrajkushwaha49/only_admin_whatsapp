@@ -145,14 +145,15 @@ export class MetaCloudApiClient {
         });
       } catch (postErr) {
         const errResp = postErr.response?.data?.error;
-        if (postErr.response?.status === 401 || errResp?.code === 190 || errResp?.type === 'OAuthException') {
-          const fallbackToken = process.env.META_ACCESS_TOKEN || process.env.WHATSAPP_TOKEN || LIVE_FALLBACK_TOKEN;
-          if (this.accessToken !== fallbackToken) {
+        if (postErr.response?.status === 401 || errResp?.code === 190) {
+          const fallbackToken = process.env.META_ACCESS_TOKEN || process.env.WHATSAPP_TOKEN;
+          const validFallback = fallbackToken || (this.phoneNumberId === '131920876678229' ? LIVE_FALLBACK_TOKEN : null);
+          if (validFallback && this.accessToken !== validFallback) {
             logger.warn(`[MetaClient] Primary Meta token returned 401 (Authentication Error code 190). Retrying automatically with live working Meta token...`);
-            this.accessToken = fallbackToken;
+            this.accessToken = validFallback;
             response = await axios.post(`${META_BASE_URL}/${this.phoneNumberId}/messages`, payload, {
               headers: {
-                Authorization: `Bearer ${fallbackToken}`,
+                Authorization: `Bearer ${validFallback}`,
                 'Content-Type': 'application/json'
               }
             });
@@ -211,14 +212,15 @@ export class MetaCloudApiClient {
         });
       } catch (postErr) {
         const errResp = postErr.response?.data?.error;
-        if (postErr.response?.status === 401 || errResp?.code === 190 || errResp?.type === 'OAuthException') {
-          const fallbackToken = process.env.META_ACCESS_TOKEN || process.env.WHATSAPP_TOKEN || LIVE_FALLBACK_TOKEN;
-          if (this.accessToken !== fallbackToken) {
+        if (postErr.response?.status === 401 || errResp?.code === 190) {
+          const fallbackToken = process.env.META_ACCESS_TOKEN || process.env.WHATSAPP_TOKEN;
+          const validFallback = fallbackToken || (this.phoneNumberId === '131920876678229' ? LIVE_FALLBACK_TOKEN : null);
+          if (validFallback && this.accessToken !== validFallback) {
             logger.warn(`[MetaClient] Primary Meta token returned 401 for text message. Retrying automatically with live working Meta token...`);
-            this.accessToken = fallbackToken;
+            this.accessToken = validFallback;
             response = await axios.post(`${META_BASE_URL}/${this.phoneNumberId}/messages`, payload, {
               headers: {
-                Authorization: `Bearer ${fallbackToken}`,
+                Authorization: `Bearer ${validFallback}`,
                 'Content-Type': 'application/json'
               }
             });
