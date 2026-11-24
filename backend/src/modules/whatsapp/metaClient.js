@@ -348,7 +348,9 @@ export class MetaCloudApiClient {
       if (errData?.error?.error_subcode === 33 || (metaErrMsg && (metaErrMsg.includes('missing permissions') || metaErrMsg.includes('does not exist')))) {
         metaErrMsg = `Meta Permission Error: Object with ID '${this.wabaId || this.phoneNumberId}' cannot be loaded due to missing permissions. The Meta access token does not have permission to manage this WhatsApp Business Account.`;
       }
-      throw new Error(metaErrMsg);
+      const err = new Error(metaErrMsg);
+      err.statusCode = error.response?.status || 400;
+      throw err;
     }
   }
 

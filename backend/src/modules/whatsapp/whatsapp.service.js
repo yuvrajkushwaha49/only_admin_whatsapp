@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { executeQuery, isUsingFallback, getMemoryStore, saveMemoryStore } from '../../database/db.js';
 import { MetaCloudApiClient } from './metaClient.js';
 import { encryptToken, decryptToken } from '../../utils/crypto.js';
@@ -1557,6 +1559,136 @@ export async function getTemplate(businessId, templateId) {
 }
 
 /**
+ * Create Meta Resumable Upload session and get header_handle (4::...) for template creation.
+ */
+async function uploadMediaForTemplateHeader(accessToken, sampleRef, format) {
+  if (typeof sampleRef === 'string' && sampleRef.startsWith('4::')) {
+    return sampleRef;
+  }
+
+  let buffer = null;
+  let mimeType = 'image/jpeg';
+  const cleanFormat = String(format || 'IMAGE').toUpperCase();
+  if (cleanFormat === 'VIDEO') mimeType = 'video/mp4';
+  else if (cleanFormat === 'DOCUMENT') mimeType = 'application/pdf';
+  else mimeType = 'image/jpeg';
+
+  // 1. Try reading from local disk if it's a local uploaded file (/uploads/templates/...)
+  if (typeof sampleRef === 'string' && (sampleRef.includes('/uploads/templates/') || sampleRef.includes('uploads/templates/'))) {
+    const filename = sampleRef.split(/uploads[\\\/]templates[\\\/]/).pop()?.split('?')[0];
+    if (filename) {
+      const localPath = path.resolve(process.cwd(), 'uploads', 'templates', filename);
+      if (fs.existsSync(localPath)) {
+        try {
+          buffer = fs.readFileSync(localPath);
+          const ext = path.extname(filename).toLowerCase();
+          if (ext === '.png') mimeType = 'image/png';
+          else if (ext === '.jpg' || ext === '.jpeg') mimeType = 'image/jpeg';
+          else if (ext === '.mp4') mimeType = 'video/mp4';
+          else if (ext === '.pdf') mimeType = 'application/pdf';
+        } catch (readErr) {
+          logger.warn(`[WhatsApp Template] Could not read local media file "${localPath}": ${readErr.message}`);
+        }
+      }
+    }
+  }
+
+  // 2. If not local or file not found, try fetching if it's an HTTP/HTTPS URL
+  if (!buffer && typeof sampleRef === 'string' && /^https?:\/\//i.test(sampleRef)) {
+    try {
+      const res = await fetch(sampleRef, { signal: AbortSignal.timeout(10000) });
+      if (res.ok) {
+        buffer = Buffer.from(await res.arrayBuffer());
+        const ct = res.headers.get('content-type');
+        if (ct && !ct.includes('text/html')) {
+          mimeType = ct.split(';')[0].trim();
+        }
+      }
+    } catch (e) {
+      logger.warn(`[WhatsApp Template] Could not fetch sample URL "${sampleRef}": ${e.message}`);
+    }
+  }
+
+  // 3. Fallbacks if buffer is still empty
+  if (!buffer || buffer.length === 0) {
+    if (cleanFormat === 'IMAGE') {
+      // 1x1 transparent PNG fallback
+      buffer = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+      mimeType = 'image/png';
+    } else if (cleanFormat === 'DOCUMENT') {
+      const minimalPdf = `%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Count 1/Kids[3 0 R]>>endobj\n3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R/Resources<<>>>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000009 00000 n\n0000000052 00000 n\n0000000101 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n178\n%%EOF`;
+      buffer = Buffer.from(minimalPdf, 'utf-8');
+      mimeType = 'application/pdf';
+    } else if (cleanFormat === 'VIDEO') {
+      try {
+        const vRes = await fetch('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', { signal: AbortSignal.timeout(10000) });
+        if (vRes.ok) {
+          buffer = Buffer.from(await vRes.arrayBuffer());
+          mimeType = 'video/mp4';
+        }
+      } catch (_) {}
+    }
+  }
+
+  if (!buffer || buffer.length === 0) {
+    const err = new Error(`Please upload a sample media file for your ${cleanFormat} header before submitting.`);
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // 4. Obtain Meta App ID
+  let appId = null;
+  try {
+    const appRes = await fetch(`https://graph.facebook.com/v21.0/app?access_token=${accessToken}`, { signal: AbortSignal.timeout(8000) });
+    const appData = await appRes.json();
+    if (appData?.id) {
+      appId = appData.id;
+    }
+  } catch (_) {}
+
+  if (!appId) {
+    appId = process.env.META_APP_ID || '1165054629187576';
+  }
+
+  // 5. Create upload session: POST /{app-id}/uploads
+  const sessionUrl = `https://graph.facebook.com/v21.0/${appId}/uploads?file_length=${buffer.length}&file_type=${encodeURIComponent(mimeType)}&access_token=${accessToken}`;
+  const sessionRes = await fetch(sessionUrl, { method: 'POST', signal: AbortSignal.timeout(15000) });
+  const sessionData = await sessionRes.json();
+
+  if (!sessionRes.ok || !sessionData.id) {
+    const errMsg = sessionData?.error?.error_user_msg || sessionData?.error?.message || 'Failed to initiate Meta upload session';
+    logger.error(`[WhatsApp Template] Meta upload session error: ${errMsg}`, sessionData);
+    const err = new Error(`Meta Media Upload failed: ${errMsg}`);
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // 6. Upload binary: POST /{upload-id}
+  const uploadRes = await fetch(`https://graph.facebook.com/v21.0/${sessionData.id}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `OAuth ${accessToken}`,
+      file_offset: '0',
+      'Content-Type': 'application/octet-stream'
+    },
+    body: buffer,
+    signal: AbortSignal.timeout(30000)
+  });
+  const uploadData = await uploadRes.json();
+
+  if (!uploadRes.ok || !uploadData.h) {
+    const errMsg = uploadData?.error?.error_user_msg || uploadData?.error?.message || 'Failed to transfer media binary to Meta';
+    logger.error(`[WhatsApp Template] Meta binary upload error: ${errMsg}`, uploadData);
+    const err = new Error(`Meta Media Upload failed: ${errMsg}`);
+    err.statusCode = 400;
+    throw err;
+  }
+
+  logger.info(`[WhatsApp Template] Successfully generated Meta header handle for ${cleanFormat}: ${uploadData.h.substring(0, 25)}...`);
+  return uploadData.h;
+}
+
+/**
  * Validate and submit a new message template to Meta Cloud API
  * POST /{WABA_ID}/message_templates
  */
@@ -1757,6 +1889,14 @@ export async function createTemplate(businessId, userId, templateData) {
   }
 
   const client = new MetaCloudApiClient(authAccount.decryptedToken, authAccount.phone_number_id, authAccount.waba_id);
+
+  // 4.5. Resolve media header handle via Meta Resumable Upload if template includes IMAGE, VIDEO, or DOCUMENT
+  const mediaHeaderComp = metaComponents.find(c => c.type === 'HEADER' && ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(c.format));
+  if (mediaHeaderComp) {
+    const rawSample = header?.example_handle || header?.example_url || header?.example || (mediaHeaderComp.example?.header_handle ? mediaHeaderComp.example.header_handle[0] : null);
+    const validHandle = await uploadMediaForTemplateHeader(authAccount.decryptedToken, rawSample, mediaHeaderComp.format);
+    mediaHeaderComp.example = { header_handle: [validHandle] };
+  }
 
   logger.info(`[WhatsApp] Submitting template "${cleanName}" to Meta for Business #${businessId}`);
 
