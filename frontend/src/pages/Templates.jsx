@@ -1405,39 +1405,28 @@ export default function Templates() {
                           </div>
                         </div>
 
-                        {/* Header Selection with Full Meta WhatsApp Manager Add Media Capabilities */}
+                        {/* Header Selection with Dropdown */}
                         <div className="mb-4">
-                          <div className="d-flex align-items-center justify-content-between mb-2">
-                            <label className="form-label small fw-bold mb-0">Header Format (Optional)</label>
-                            <span className="text-muted small" style={{ fontSize: '0.72rem' }}>
-                              Add a title or rich media to your message
-                            </span>
-                          </div>
-
-                          {/* Primary Type Pills: None | Text | Media */}
-                          <div className="btn-group w-100 mb-3" role="group">
-                            <button
-                              type="button"
-                              className={`btn btn-sm ${headerType === 'NONE' ? 'btn-success' : 'btn-outline-secondary'}`}
-                              onClick={() => setHeaderType('NONE')}
-                            >
-                              <i className="bi bi-dash-circle me-1"></i> None
-                            </button>
-                            <button
-                              type="button"
-                              className={`btn btn-sm ${headerType === 'TEXT' ? 'btn-success' : 'btn-outline-secondary'}`}
-                              onClick={() => setHeaderType('TEXT')}
-                            >
-                              <i className="bi bi-fonts me-1"></i> Text
-                            </button>
-                            <button
-                              type="button"
-                              className={`btn btn-sm ${['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerType) ? 'btn-success' : 'btn-outline-secondary'}`}
-                              onClick={() => setHeaderType(mediaFormat)}
-                            >
-                              <i className="bi bi-collection-play me-1"></i> Media (Image, Video, Document)
-                            </button>
-                          </div>
+                          <label className="form-label small fw-bold">Header Format (Optional)</label>
+                          <select
+                            className="form-select mb-2"
+                            value={headerType}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setHeaderType(val);
+                              if (['IMAGE', 'VIDEO', 'DOCUMENT'].includes(val)) {
+                                handleMediaFormatChange(val);
+                              } else {
+                                handleRemoveMedia();
+                              }
+                            }}
+                          >
+                            <option value="NONE">None (No Header)</option>
+                            <option value="TEXT">Text Header</option>
+                            <option value="IMAGE">Image Header (PNG/JPG)</option>
+                            <option value="VIDEO">Video Header (MP4)</option>
+                            <option value="DOCUMENT">Document Header (PDF)</option>
+                          </select>
 
                           {/* If TEXT */}
                           {headerType === 'TEXT' && (
@@ -1460,34 +1449,6 @@ export default function Templates() {
                           {/* If MEDIA (IMAGE, VIDEO, DOCUMENT) */}
                           {['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerType) && (
                             <div className="tpl-media-sample-box border rounded-3 p-3 bg-light-subtle">
-                              {/* Media Type Sub-Selector */}
-                              <label className="form-label small fw-bold text-dark mb-2 d-flex align-items-center gap-1">
-                                <i className="bi bi-file-earmark-arrow-up text-primary"></i>
-                                <span>Select Media Type:</span>
-                              </label>
-                              <div className="d-flex gap-2 mb-3">
-                                {[
-                                  { id: 'IMAGE', label: 'Image', icon: 'bi-image', spec: 'JPG, PNG (Max 5MB)' },
-                                  { id: 'VIDEO', label: 'Video', icon: 'bi-play-btn', spec: 'MP4 (Up to 100MB)' },
-                                  { id: 'DOCUMENT', label: 'Document', icon: 'bi-file-earmark-pdf', spec: 'PDF (Max 100MB)' }
-                                ].map(m => (
-                                  <button
-                                    key={m.id}
-                                    type="button"
-                                    className={`btn btn-sm flex-fill d-flex flex-column align-items-center justify-content-center py-2 ${headerType === m.id ? 'btn-primary' : 'btn-outline-secondary bg-white'}`}
-                                    onClick={() => handleMediaFormatChange(m.id)}
-                                  >
-                                    <div className="d-flex align-items-center gap-1 fw-bold">
-                                      <i className={`bi ${m.icon}`}></i>
-                                      <span>{m.label}</span>
-                                    </div>
-                                    <span style={{ fontSize: '0.65rem' }} className={headerType === m.id ? 'text-white-50' : 'text-muted'}>
-                                      {m.spec}
-                                    </span>
-                                  </button>
-                                ))}
-                              </div>
-
                               {/* Meta WhatsApp Manager Notice */}
                               <div className="alert alert-info py-2 px-3 small mb-3 rounded-2 d-flex align-items-start gap-2" style={{ fontSize: '0.75rem' }}>
                                 <i className="bi bi-info-circle-fill text-info fs-6 mt-1 flex-shrink-0"></i>
