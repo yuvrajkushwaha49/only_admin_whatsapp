@@ -474,8 +474,8 @@ export default function Templates() {
         setMediaError('Invalid file format. Please upload an .mp4 video.');
         return;
       }
-      if (sizeMB > 16) {
-        setMediaError(`Video size (${sizeMB.toFixed(1)}MB) exceeds Meta WhatsApp limit of 16MB. Please choose a sample video under 16MB.`);
+      if (sizeMB > 100) {
+        setMediaError(`Video size (${sizeMB.toFixed(1)}MB) exceeds 100MB limit. Please choose a file under 100MB.`);
         return;
       }
     } else if (mediaFormat === 'DOCUMENT') {
@@ -1546,7 +1546,7 @@ export default function Templates() {
                                         </div>
                                         <div className="text-muted" style={{ fontSize: '0.72rem' }}>
                                           {headerType === 'IMAGE' && 'Supported formats: .jpg, .png (Max 5MB)'}
-                                          {headerType === 'VIDEO' && 'Supported format: .mp4 (Max 16MB for WhatsApp API)'}
+                                          {headerType === 'VIDEO' && 'Supported format: .mp4 (Up to 100MB)'}
                                           {headerType === 'DOCUMENT' && 'Supported format: .pdf (Max 100MB)'}
                                         </div>
                                       </div>
