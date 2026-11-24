@@ -378,6 +378,9 @@ export default function Templates() {
       if (headerComp?.example?.header_handle?.[0]) {
         defaultMedia = headerComp.example.header_handle[0];
       }
+      if (hFormat === 'VIDEO' && (!defaultMedia || defaultMedia.includes('arlak_pharma_15mb.mp4') || !defaultMedia.startsWith('http'))) {
+        defaultMedia = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+      }
       setQuickTestMediaUrl(defaultMedia);
     } else {
       setQuickTestMediaUrl('');

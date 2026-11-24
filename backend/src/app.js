@@ -91,7 +91,23 @@ app.use(express.json({
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
 // Serve static uploaded media files
+const uploadsDirs = [
+  path.resolve(process.cwd(), 'uploads'),
+  path.resolve(process.cwd(), 'backend', 'uploads'),
+  path.resolve('/var/www/campaignflow/uploads'),
+  path.resolve('/var/www/campaignflow/backend/uploads')
+];
+
+uploadsDirs.forEach(dir => {
+  try {
+    if (fs.existsSync(dir)) {
+      app.use('/uploads', express.static(dir));
+      app.use('/api/uploads', express.static(dir));
+    }
+  } catch (_) {}
+});
 app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
+app.use('/api/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {

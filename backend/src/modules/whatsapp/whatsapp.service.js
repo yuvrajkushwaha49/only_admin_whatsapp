@@ -605,8 +605,25 @@ export async function sendTestMessage(businessId, accountId, payload = {}) {
           if (!mediaUrl && headerComp.example?.header_handle?.[0]) {
             mediaUrl = headerComp.example.header_handle[0];
           }
+
+          // Check if mediaUrl points to a local upload on aiveexa.com
+          if (mediaUrl && (mediaUrl.includes('aiveexa.com/uploads/') || mediaUrl.includes('aiveexa.com/api/uploads/'))) {
+            const filename = path.basename(mediaUrl.split('?')[0]);
+            const candidatePaths = [
+              path.resolve(process.cwd(), 'uploads', 'templates', filename),
+              path.resolve(process.cwd(), 'backend', 'uploads', 'templates', filename),
+              path.resolve('/var/www/campaignflow/uploads', 'templates', filename),
+              path.resolve('/var/www/campaignflow/backend/uploads', 'templates', filename)
+            ];
+            const fileExists = candidatePaths.some(p => fs.existsSync(p));
+            if (!fileExists) {
+              logger.warn(`[TestMessenger] Local template media file "${filename}" not found on server disk. Falling back to verified sample media to ensure Meta delivery.`);
+              mediaUrl = null;
+            }
+          }
+
           if (!mediaUrl || !/^https?:\/\//i.test(mediaUrl)) {
-            if (hFormat === 'video') mediaUrl = 'https://www.w3schools.com/html/mov_bbb.mp4';
+            if (hFormat === 'video') mediaUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
             else if (hFormat === 'image') mediaUrl = 'https://images.unsplash.com/photo-1579208575657-c595a05383b7?w=800';
             else if (hFormat === 'document') mediaUrl = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
           }
