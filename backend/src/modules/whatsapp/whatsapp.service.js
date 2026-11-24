@@ -1620,14 +1620,33 @@ async function uploadMediaForTemplateHeader(accessToken, sampleRef, format) {
       buffer = Buffer.from(minimalPdf, 'utf-8');
       mimeType = 'application/pdf';
     } else if (cleanFormat === 'VIDEO') {
-      try {
-        const vRes = await fetch('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', { signal: AbortSignal.timeout(10000) });
-        if (vRes.ok) {
-          buffer = Buffer.from(await vRes.arrayBuffer());
-          mimeType = 'video/mp4';
-        }
-      } catch (_) {}
+      const videoFallbacks = [
+        'https://www.w3schools.com/html/mov_bbb.mp4',
+        'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'
+      ];
+      for (const vUrl of videoFallbacks) {
+        try {
+          const vRes = await fetch(vUrl, { signal: AbortSignal.timeout(10000) });
+          if (vRes.ok) {
+            buffer = Buffer.from(await vRes.arrayBuffer());
+            mimeType = 'video/mp4';
+            break;
+          }
+        } catch (_) {}
+      }
     }
+  }
+
+  // Meta strictly limits WhatsApp video to 16MB for template sample
+  if (cleanFormat === 'VIDEO' && buffer && buffer.length > 16 * 1024 * 1024) {
+    logger.warn(`[WhatsApp Template] Provided video (${(buffer.length / (1024 * 1024)).toFixed(1)}MB) exceeds Meta WhatsApp 16MB limit. Switching to standard sample video for Meta template review.`);
+    try {
+      const vRes = await fetch('https://www.w3schools.com/html/mov_bbb.mp4', { signal: AbortSignal.timeout(10000) });
+      if (vRes.ok) {
+        buffer = Buffer.from(await vRes.arrayBuffer());
+        mimeType = 'video/mp4';
+      }
+    } catch (_) {}
   }
 
   if (!buffer || buffer.length === 0) {

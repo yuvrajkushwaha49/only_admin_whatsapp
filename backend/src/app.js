@@ -72,14 +72,14 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
-// Capture raw body for Meta webhook signature verification & support large CSV/Excel uploads (up to 50MB)
+// Capture raw body for Meta webhook signature verification & support large CSV/Excel uploads (up to 100MB)
 app.use(express.json({
-  limit: '50mb',
+  limit: '100mb',
   verify: (req, res, buf) => {
     req.rawBody = buf.toString();
   }
 }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
 // Serve static uploaded media files
 app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));

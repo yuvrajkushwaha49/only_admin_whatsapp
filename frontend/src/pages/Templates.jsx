@@ -474,8 +474,8 @@ export default function Templates() {
         setMediaError('Invalid file format. Please upload an .mp4 video.');
         return;
       }
-      if (sizeMB > 100) {
-        setMediaError(`Video size exceeds 100MB limit (${sizeMB.toFixed(1)}MB). Please choose a smaller file.`);
+      if (sizeMB > 16) {
+        setMediaError(`Video size (${sizeMB.toFixed(1)}MB) exceeds Meta WhatsApp limit of 16MB. Please choose a sample video under 16MB.`);
         return;
       }
     } else if (mediaFormat === 'DOCUMENT') {
@@ -506,9 +506,12 @@ export default function Templates() {
       });
       if (res.data?.success && res.data.data?.url) {
         setMediaPreviewUrl(res.data.data.url);
+      } else {
+        throw new Error(res.data?.error?.message || 'Server upload failed');
       }
     } catch (err) {
-      console.warn('[Template Media] Server upload failed, retaining local preview:', err.message);
+      console.warn('[Template Media] Server upload failed:', err.message);
+      setMediaError(formatErrorString(err, 'Failed to upload media file to server.'));
     } finally {
       setMediaUploading(false);
     }
@@ -550,11 +553,15 @@ export default function Templates() {
           example: headerExample || undefined
         };
       } else if (['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerType)) {
-        const sampleUrl = mediaPreviewUrl || (
+        if (mediaUploading) {
+          setFormError('Please wait for media upload to finish before submitting.');
+          return;
+        }
+        const sampleUrl = (mediaPreviewUrl && !mediaPreviewUrl.startsWith('blob:')) ? mediaPreviewUrl : (
           headerType === 'IMAGE'
             ? 'https://images.unsplash.com/photo-1579208575657-c595a05383b7?w=800'
             : headerType === 'VIDEO'
-            ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
+            ? 'https://www.w3schools.com/html/mov_bbb.mp4'
             : 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
         );
         headerPayload = {
@@ -1498,7 +1505,15 @@ export default function Templates() {
                                         <div className="overflow-hidden">
                                           <div className="fw-bold small text-truncate text-dark">{mediaFileName || 'sample-media-file'}</div>
                                           <div className="small text-muted" style={{ fontSize: '0.72rem' }}>
-                                            {mediaFileSize || 'Sample Media'} · <span className="text-success">✓ Ready for Meta</span>
+                                            {mediaFileSize || 'Sample Media'} · {
+                                              mediaUploading ? (
+                                                <span className="text-primary fw-semibold"><span className="spinner-border spinner-border-sm me-1" style={{ width: '0.75rem', height: '0.75rem' }}></span>Uploading to server...</span>
+                                              ) : mediaPreviewUrl && !mediaPreviewUrl.startsWith('blob:') ? (
+                                                <span className="text-success fw-semibold">✓ Ready for Meta</span>
+                                              ) : (
+                                                <span className="text-secondary">Sample Selected</span>
+                                              )
+                                            }
                                           </div>
                                         </div>
                                       </div>
@@ -1531,7 +1546,7 @@ export default function Templates() {
                                         </div>
                                         <div className="text-muted" style={{ fontSize: '0.72rem' }}>
                                           {headerType === 'IMAGE' && 'Supported formats: .jpg, .png (Max 5MB)'}
-                                          {headerType === 'VIDEO' && 'Supported format: .mp4 (Up to 100MB)'}
+                                          {headerType === 'VIDEO' && 'Supported format: .mp4 (Max 16MB for WhatsApp API)'}
                                           {headerType === 'DOCUMENT' && 'Supported format: .pdf (Max 100MB)'}
                                         </div>
                                       </div>
@@ -1843,7 +1858,7 @@ export default function Templates() {
                           </button>
                           <button
                             type="submit"
-                            disabled={submitting}
+                            disabled={submitting || mediaUploading}
                             className="btn btn-success d-flex align-items-center gap-2"
                           >
                             {submitting ? (
