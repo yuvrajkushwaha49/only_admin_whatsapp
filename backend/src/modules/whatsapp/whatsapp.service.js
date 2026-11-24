@@ -601,12 +601,9 @@ export async function sendTestMessage(businessId, accountId, payload = {}) {
         const hFormat = headerComp.format.toLowerCase();
         const hasHeaderParam = targetComponents.some(c => (c.type || '').toLowerCase() === 'header');
         if (!hasHeaderParam) {
-          let mediaUrl = null;
-          if (headerComp.example?.header_handle?.[0]) {
+          let mediaUrl = payload.headerMediaUrl || null;
+          if (!mediaUrl && headerComp.example?.header_handle?.[0]) {
             mediaUrl = headerComp.example.header_handle[0];
-          }
-          if (!mediaUrl && payload.headerMediaUrl) {
-            mediaUrl = payload.headerMediaUrl;
           }
           if (!mediaUrl || !/^https?:\/\//i.test(mediaUrl)) {
             if (hFormat === 'video') mediaUrl = 'https://www.w3schools.com/html/mov_bbb.mp4';
