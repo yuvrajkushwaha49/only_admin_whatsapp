@@ -344,7 +344,10 @@ export class MetaCloudApiClient {
     } catch (error) {
       const errData = error.response ? error.response.data : null;
       logger.error(`[MetaClient] Failed to create template "${name}" on Meta`, error, { response: errData });
-      const metaErrMsg = errData?.error?.error_user_msg || errData?.error?.message || error.message;
+      let metaErrMsg = errData?.error?.error_user_msg || errData?.error?.message || error.message;
+      if (errData?.error?.error_subcode === 33 || (metaErrMsg && (metaErrMsg.includes('missing permissions') || metaErrMsg.includes('does not exist')))) {
+        metaErrMsg = `Meta Permission Error: Object with ID '${this.wabaId || this.phoneNumberId}' cannot be loaded due to missing permissions. The Meta access token does not have permission to manage this WhatsApp Business Account.`;
+      }
       throw new Error(metaErrMsg);
     }
   }

@@ -748,13 +748,18 @@ export async function checkConnection() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`);
     } catch (_) {}
 
-    // Ensure live Indian WhatsApp account has active encrypted access token
+    // Ensure live Indian WhatsApp account has active encrypted access token matching its real WABA & Phone ID
     try {
       const liveToken = 'EAAQjnGtRDZCgBS1tjbT3HB636ZArmfxy00RUrQLYzujvPZBN1sU0yDZClKaiBAQAhxiiECwnCp1k2YDlL9s6Ff3ZAZBGA4DvySmfnWutocges1MV3eIjW9bciSoNHfojmwcRcVizsWZCwMzDolQBQJfK9yXp6VsOFuabsnVn92TnosYP6AZBXGoRJob5J9STih1qfgZDZD';
       const encToken = encryptToken(liveToken);
       await p.execute(`
         UPDATE whatsapp_accounts 
-        SET access_token_encrypted = ?, status = 'connected', connection_status = 'CONNECTED'
+        SET waba_id = '1618945099958602',
+            phone_number_id = '1341070215765610',
+            phone_number = '+91 86014 67210',
+            display_name = 'Yuvraj Kushawaha (Live)',
+            verified_name = 'Yuvraj Kushawaha',
+            access_token_encrypted = ?, status = 'connected', connection_status = 'CONNECTED'
         WHERE business_id = 1 AND (id IN (45, 94, 85) OR is_primary = 1)
       `, [encToken]);
     } catch (_) {}
