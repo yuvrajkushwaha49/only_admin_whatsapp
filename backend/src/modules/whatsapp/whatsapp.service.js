@@ -1637,18 +1637,6 @@ async function uploadMediaForTemplateHeader(accessToken, sampleRef, format) {
     }
   }
 
-  // Meta strictly limits WhatsApp video to 16MB for template sample
-  if (cleanFormat === 'VIDEO' && buffer && buffer.length > 16 * 1024 * 1024) {
-    logger.warn(`[WhatsApp Template] Provided video (${(buffer.length / (1024 * 1024)).toFixed(1)}MB) exceeds Meta WhatsApp 16MB limit. Switching to standard sample video for Meta template review.`);
-    try {
-      const vRes = await fetch('https://www.w3schools.com/html/mov_bbb.mp4', { signal: AbortSignal.timeout(10000) });
-      if (vRes.ok) {
-        buffer = Buffer.from(await vRes.arrayBuffer());
-        mimeType = 'video/mp4';
-      }
-    } catch (_) {}
-  }
-
   if (!buffer || buffer.length === 0) {
     const err = new Error(`Please upload a sample media file for your ${cleanFormat} header before submitting.`);
     err.statusCode = 400;
@@ -1671,7 +1659,7 @@ async function uploadMediaForTemplateHeader(accessToken, sampleRef, format) {
 
   // 5. Create upload session: POST /{app-id}/uploads
   const sessionUrl = `https://graph.facebook.com/v21.0/${appId}/uploads?file_length=${buffer.length}&file_type=${encodeURIComponent(mimeType)}&access_token=${accessToken}`;
-  const sessionRes = await fetch(sessionUrl, { method: 'POST', signal: AbortSignal.timeout(15000) });
+  const sessionRes = await fetch(sessionUrl, { method: 'POST', signal: AbortSignal.timeout(30000) });
   const sessionData = await sessionRes.json();
 
   if (!sessionRes.ok || !sessionData.id) {
@@ -1682,7 +1670,7 @@ async function uploadMediaForTemplateHeader(accessToken, sampleRef, format) {
     throw err;
   }
 
-  // 6. Upload binary: POST /{upload-id}
+  // 6. Upload binary: POST /{upload-id} (supports files up to 100MB)
   const uploadRes = await fetch(`https://graph.facebook.com/v21.0/${sessionData.id}`, {
     method: 'POST',
     headers: {
@@ -1691,7 +1679,7 @@ async function uploadMediaForTemplateHeader(accessToken, sampleRef, format) {
       'Content-Type': 'application/octet-stream'
     },
     body: buffer,
-    signal: AbortSignal.timeout(30000)
+    signal: AbortSignal.timeout(120000)
   });
   const uploadData = await uploadRes.json();
 
