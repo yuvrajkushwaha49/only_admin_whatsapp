@@ -161,14 +161,25 @@ export async function uploadTemplateMedia(req, res, next) {
 export async function uploadTemplateMediaChunk(req, res, next) {
   try {
     const { uploadId, chunkIndex, totalChunks, originalName } = req.body;
-    if (!uploadId || chunkIndex === undefined || !totalChunks || !originalName) {
-      return res.status(400).json({ success: false, error: { message: 'Missing chunk upload parameters.' } });
+    if (!uploadId || chunkIndex === undefined || !totalChunks || !originalName || !req.file) {
+      return res.status(400).json({ success: false, error: { message: 'Missing chunk upload parameters or file.' } });
     }
 
     const cIndex = parseInt(chunkIndex, 10);
     const tChunks = parseInt(totalChunks, 10);
     const safeUploadId = uploadId.replace(/[^a-zA-Z0-9_-]/g, '');
     const chunkDir = path.resolve(process.cwd(), 'uploads', 'chunks', safeUploadId);
+    if (!fs.existsSync(chunkDir)) {
+      fs.mkdirSync(chunkDir, { recursive: true });
+    }
+
+    const chunkDest = path.join(chunkDir, `chunk_${cIndex}`);
+    try {
+      fs.renameSync(req.file.path, chunkDest);
+    } catch (_) {
+      fs.copyFileSync(req.file.path, chunkDest);
+      fs.unlinkSync(req.file.path);
+    }
 
     // If more chunks remain
     if (cIndex < tChunks - 1) {

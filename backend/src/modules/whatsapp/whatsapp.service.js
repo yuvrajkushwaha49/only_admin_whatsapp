@@ -1577,17 +1577,27 @@ async function uploadMediaForTemplateHeader(accessToken, sampleRef, format) {
   if (typeof sampleRef === 'string' && (sampleRef.includes('/uploads/templates/') || sampleRef.includes('uploads/templates/'))) {
     const filename = sampleRef.split(/uploads[\\\/]templates[\\\/]/).pop()?.split('?')[0];
     if (filename) {
-      const localPath = path.resolve(process.cwd(), 'uploads', 'templates', filename);
-      if (fs.existsSync(localPath)) {
-        try {
-          buffer = fs.readFileSync(localPath);
-          const ext = path.extname(filename).toLowerCase();
-          if (ext === '.png') mimeType = 'image/png';
-          else if (ext === '.jpg' || ext === '.jpeg') mimeType = 'image/jpeg';
-          else if (ext === '.mp4') mimeType = 'video/mp4';
-          else if (ext === '.pdf') mimeType = 'application/pdf';
-        } catch (readErr) {
-          logger.warn(`[WhatsApp Template] Could not read local media file "${localPath}": ${readErr.message}`);
+      const candidatePaths = [
+        path.resolve(process.cwd(), 'uploads', 'templates', filename),
+        path.resolve(process.cwd(), 'backend', 'uploads', 'templates', filename),
+        path.resolve(process.cwd(), '..', 'uploads', 'templates', filename),
+        path.resolve('/var/www/campaignflow/backend/uploads/templates', filename),
+        path.resolve('/var/www/campaignflow/uploads/templates', filename)
+      ];
+      for (const cPath of candidatePaths) {
+        if (fs.existsSync(cPath)) {
+          try {
+            buffer = fs.readFileSync(cPath);
+            const ext = path.extname(filename).toLowerCase();
+            if (ext === '.png') mimeType = 'image/png';
+            else if (ext === '.jpg' || ext === '.jpeg') mimeType = 'image/jpeg';
+            else if (ext === '.mp4') mimeType = 'video/mp4';
+            else if (ext === '.pdf') mimeType = 'application/pdf';
+            logger.info(`[WhatsApp Template] Loaded local media file for Meta header from "${cPath}" (${(buffer.length / (1024 * 1024)).toFixed(1)}MB)`);
+            break;
+          } catch (readErr) {
+            logger.warn(`[WhatsApp Template] Could not read local media file "${cPath}": ${readErr.message}`);
+          }
         }
       }
     }

@@ -515,11 +515,11 @@ export default function Templates() {
         const chunkBlob = file.slice(start, end);
 
         const formData = new FormData();
-        formData.append('file', chunkBlob, `chunk_${chunkIndex}`);
         formData.append('uploadId', uploadId);
         formData.append('chunkIndex', String(chunkIndex));
         formData.append('totalChunks', String(totalChunks));
         formData.append('originalName', file.name);
+        formData.append('file', chunkBlob, `chunk_${chunkIndex}`);
 
         const res = await api.post('/whatsapp/templates/upload-chunk', formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
@@ -587,7 +587,11 @@ export default function Templates() {
           setFormError('Please wait for media upload to finish before submitting.');
           return;
         }
-        const sampleUrl = (mediaPreviewUrl && !mediaPreviewUrl.startsWith('blob:')) ? mediaPreviewUrl : (
+        if (mediaSourceType === 'upload' && (!mediaPreviewUrl || mediaPreviewUrl.startsWith('blob:'))) {
+          setFormError(`Please wait for your ${headerType} to finish uploading to the server before submitting.`);
+          return;
+        }
+        const sampleUrl = mediaPreviewUrl || (
           headerType === 'IMAGE'
             ? 'https://images.unsplash.com/photo-1579208575657-c595a05383b7?w=800'
             : headerType === 'VIDEO'
