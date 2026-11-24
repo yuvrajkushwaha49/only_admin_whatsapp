@@ -67,6 +67,7 @@ export default function Templates() {
   const [quickTestSending, setQuickTestSending] = useState(false);
   const [quickTestResult, setQuickTestResult] = useState(null);
   const [quickTestSenderAccountId, setQuickTestSenderAccountId] = useState('');
+  const [quickTestMediaUrl, setQuickTestMediaUrl] = useState('');
 
   // Create Form State
   const [formName, setFormName] = useState('');
@@ -368,6 +369,19 @@ export default function Templates() {
       initialVars[v] = idx === 0 ? 'Rahul Sharma' : `Sample ${idx + 1}`;
     });
     setQuickTestVars(initialVars);
+
+    // Extract default media URL if template has a media header
+    const headerComp = comps.find(c => (c.type || '').toUpperCase() === 'HEADER');
+    const hFormat = (headerComp?.format || '').toUpperCase();
+    if (['IMAGE', 'VIDEO', 'DOCUMENT'].includes(hFormat)) {
+      let defaultMedia = '';
+      if (headerComp?.example?.header_handle?.[0]) {
+        defaultMedia = headerComp.example.header_handle[0];
+      }
+      setQuickTestMediaUrl(defaultMedia);
+    } else {
+      setQuickTestMediaUrl('');
+    }
   };
 
   const handleSendQuickTest = async (e) => {
@@ -391,7 +405,8 @@ export default function Templates() {
         templateName: quickTestTemplate.name,
         language: quickTestTemplate.language || 'en',
         parameters: parameters.length > 0 ? parameters : undefined,
-        accountId: quickTestSenderAccountId || quickTestTemplate.whatsapp_account_id || undefined
+        accountId: quickTestSenderAccountId || quickTestTemplate.whatsapp_account_id || undefined,
+        headerMediaUrl: quickTestMediaUrl || undefined
       };
 
       const res = await api.post('/whatsapp/send-test', payload);
@@ -2190,6 +2205,41 @@ export default function Templates() {
                         </div>
                       </div>
                     )}
+
+                    {/* Header Media URL (for VIDEO, IMAGE, DOCUMENT templates) */}
+                    {(() => {
+                      const comps = Array.isArray(quickTestTemplate.components)
+                        ? quickTestTemplate.components
+                        : (typeof quickTestTemplate.components === 'string' ? JSON.parse(quickTestTemplate.components || '[]') : []);
+                      const hComp = comps.find(c => (c.type || '').toUpperCase() === 'HEADER');
+                      const format = (hComp?.format || '').toUpperCase();
+                      if (!['VIDEO', 'IMAGE', 'DOCUMENT'].includes(format)) return null;
+
+                      return (
+                        <div className="mb-3">
+                          <label className="form-label small fw-bold d-flex justify-content-between align-items-center">
+                            <span>Header {format} URL</span>
+                            {format === 'VIDEO' && (
+                              <span className="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle small">
+                                Max 16 MB required by Meta
+                              </span>
+                            )}
+                          </label>
+                          <input
+                            type="url"
+                            className="form-control form-control-sm font-monospace"
+                            placeholder={format === 'VIDEO' ? 'https://.../video.mp4 (Must be under 16MB)' : 'https://.../media.jpg'}
+                            value={quickTestMediaUrl}
+                            onChange={(e) => setQuickTestMediaUrl(e.target.value)}
+                          />
+                          <div className="form-text small text-muted">
+                            {format === 'VIDEO'
+                              ? 'Meta strictly enforces a 16MB file limit for WhatsApp video delivery. Video must be under 16MB.'
+                              : `Direct public URL to the ${format.toLowerCase()} to include in the message header.`}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div className="modal-footer bg-light px-4 py-3 d-flex justify-content-between">
