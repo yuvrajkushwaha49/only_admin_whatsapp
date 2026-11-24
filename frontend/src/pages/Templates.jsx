@@ -474,8 +474,8 @@ export default function Templates() {
         setMediaError('Invalid file format. Please upload an .mp4 video.');
         return;
       }
-      if (sizeMB > 16) {
-        setMediaError(`Video size exceeds 16MB limit (${sizeMB.toFixed(1)}MB).`);
+      if (sizeMB > 100) {
+        setMediaError(`Video size exceeds 100MB limit (${sizeMB.toFixed(1)}MB). Please choose a smaller file.`);
         return;
       }
     } else if (mediaFormat === 'DOCUMENT') {
@@ -1468,7 +1468,7 @@ export default function Templates() {
                               <div className="d-flex gap-2 mb-3">
                                 {[
                                   { id: 'IMAGE', label: 'Image', icon: 'bi-image', spec: 'JPG, PNG (Max 5MB)' },
-                                  { id: 'VIDEO', label: 'Video', icon: 'bi-play-btn', spec: 'MP4 (Max 16MB)' },
+                                  { id: 'VIDEO', label: 'Video', icon: 'bi-play-btn', spec: 'MP4 (Up to 100MB)' },
                                   { id: 'DOCUMENT', label: 'Document', icon: 'bi-file-earmark-pdf', spec: 'PDF (Max 100MB)' }
                                 ].map(m => (
                                   <button
@@ -1570,7 +1570,7 @@ export default function Templates() {
                                         </div>
                                         <div className="text-muted" style={{ fontSize: '0.72rem' }}>
                                           {headerType === 'IMAGE' && 'Supported formats: .jpg, .png (Max 5MB)'}
-                                          {headerType === 'VIDEO' && 'Supported format: .mp4 (Max 16MB)'}
+                                          {headerType === 'VIDEO' && 'Supported format: .mp4 (Up to 100MB)'}
                                           {headerType === 'DOCUMENT' && 'Supported format: .pdf (Max 100MB)'}
                                         </div>
                                       </div>
