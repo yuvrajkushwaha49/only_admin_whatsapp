@@ -21,6 +21,31 @@ const storage = multer.diskStorage({
   }
 });
 
+const CHUNKS_DIR = path.resolve(process.cwd(), 'uploads', 'chunks');
+if (!fs.existsSync(CHUNKS_DIR)) {
+  fs.mkdirSync(CHUNKS_DIR, { recursive: true });
+}
+
+export const chunkUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      const uploadId = (req.body.uploadId || 'temp').replace(/[^a-zA-Z0-9_-]/g, '');
+      const userChunkDir = path.join(CHUNKS_DIR, uploadId);
+      if (!fs.existsSync(userChunkDir)) {
+        fs.mkdirSync(userChunkDir, { recursive: true });
+      }
+      cb(null, userChunkDir);
+    },
+    filename: (req, file, cb) => {
+      const chunkIndex = req.body.chunkIndex !== undefined ? req.body.chunkIndex : Date.now();
+      cb(null, `chunk_${chunkIndex}`);
+    }
+  }),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB per chunk limit
+  }
+});
+
 const fileFilter = (req, file, cb) => {
   const allowedExts = ['.jpg', '.jpeg', '.png', '.mp4', '.pdf'];
   const ext = path.extname(file.originalname).toLowerCase();

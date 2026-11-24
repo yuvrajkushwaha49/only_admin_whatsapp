@@ -1,3 +1,6 @@
+import fs from 'fs';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 import * as whatsappService from './whatsapp.service.js';
 
 export async function getConnectConfig(req, res, next) {
@@ -155,6 +158,80 @@ export async function uploadTemplateMedia(req, res, next) {
   }
 }
 
+export async function uploadTemplateMediaChunk(req, res, next) {
+  try {
+    const { uploadId, chunkIndex, totalChunks, originalName } = req.body;
+    if (!uploadId || chunkIndex === undefined || !totalChunks || !originalName) {
+      return res.status(400).json({ success: false, error: { message: 'Missing chunk upload parameters.' } });
+    }
+
+    const cIndex = parseInt(chunkIndex, 10);
+    const tChunks = parseInt(totalChunks, 10);
+    const safeUploadId = uploadId.replace(/[^a-zA-Z0-9_-]/g, '');
+    const chunkDir = path.resolve(process.cwd(), 'uploads', 'chunks', safeUploadId);
+
+    // If more chunks remain
+    if (cIndex < tChunks - 1) {
+      return res.json({
+        success: true,
+        completed: false,
+        chunkIndex: cIndex,
+        totalChunks: tChunks,
+        progress: Math.round(((cIndex + 1) / tChunks) * 100)
+      });
+    }
+
+    // All chunks received, assemble final file!
+    const ext = path.extname(originalName).toLowerCase();
+    let format = 'IMAGE';
+    if (ext === '.mp4') format = 'VIDEO';
+    else if (ext === '.pdf') format = 'DOCUMENT';
+
+    const finalFileName = `tpl-media-${Date.now()}-${uuidv4().slice(0, 8)}${ext}`;
+    const finalDir = path.resolve(process.cwd(), 'uploads', 'templates');
+    if (!fs.existsSync(finalDir)) {
+      fs.mkdirSync(finalDir, { recursive: true });
+    }
+    const finalPath = path.join(finalDir, finalFileName);
+
+    const writeStream = fs.createWriteStream(finalPath);
+    for (let i = 0; i < tChunks; i++) {
+      const chunkPath = path.join(chunkDir, `chunk_${i}`);
+      if (fs.existsSync(chunkPath)) {
+        const chunkBuf = fs.readFileSync(chunkPath);
+        writeStream.write(chunkBuf);
+      }
+    }
+    writeStream.end();
+    await new Promise((resolve, reject) => {
+      writeStream.on('finish', resolve);
+      writeStream.on('error', reject);
+    });
+
+    // Cleanup chunk directory
+    try {
+      fs.rmSync(chunkDir, { recursive: true, force: true });
+    } catch (_) {}
+
+    const stats = fs.statSync(finalPath);
+    const fileUrl = `/uploads/templates/${finalFileName}`;
+
+    res.json({
+      success: true,
+      completed: true,
+      progress: 100,
+      data: {
+        url: fileUrl,
+        filename: originalName,
+        format,
+        size: stats.size
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function syncTemplates(req, res, next) {
   try {
     const accountId = req.params.accountId || req.query.accountId;
@@ -273,6 +350,8 @@ export default {
   listTemplates,
   getTemplate,
   createTemplate,
+  uploadTemplateMedia,
+  uploadTemplateMediaChunk,
   syncTemplates,
   checkTemplateStatus,
   deleteTemplate,

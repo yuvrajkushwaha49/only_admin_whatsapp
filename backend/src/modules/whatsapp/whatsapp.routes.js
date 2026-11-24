@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import * as whatsappController from './whatsapp.controller.js';
 import inboxRouter from '../inbox/inbox.routes.js';
-import { templateMediaUpload } from './templateMediaUpload.js';
+import { templateMediaUpload, chunkUpload } from './templateMediaUpload.js';
 import { authenticate } from '../../middleware/auth.js';
 import { requireTenant, requireRole } from '../../middleware/tenant.js';
 
@@ -46,6 +46,7 @@ router.post('/webhook/ping', whatsappController.testWebhookPing);
 router.get('/templates', whatsappController.listTemplates);
 router.post('/templates', requireRole(['owner', 'admin', 'marketer']), whatsappController.createTemplate);
 router.post('/templates/upload-media', requireRole(['owner', 'admin', 'marketer']), templateMediaUpload.single('file'), whatsappController.uploadTemplateMedia);
+router.post('/templates/upload-chunk', requireRole(['owner', 'admin', 'marketer']), chunkUpload.single('file'), whatsappController.uploadTemplateMediaChunk);
 router.post('/templates/sync', requireRole(['owner', 'admin', 'marketer']), whatsappController.syncTemplates);
 router.get('/templates/:id', requireRole(['owner', 'admin', 'marketer']), whatsappController.getTemplate);
 router.get('/templates/:id/status', requireRole(['owner', 'admin', 'marketer']), whatsappController.checkTemplateStatus);

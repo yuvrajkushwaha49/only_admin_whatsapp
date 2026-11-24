@@ -83,6 +83,7 @@ export default function Templates() {
   const [mediaFileName, setMediaFileName] = useState('');
   const [mediaFileSize, setMediaFileSize] = useState('');
   const [mediaUploading, setMediaUploading] = useState(false);
+  const [mediaUploadProgress, setMediaUploadProgress] = useState(0);
   const [mediaError, setMediaError] = useState('');
   const fileInputRef = useRef(null);
   const [bodyText, setBodyText] = useState('Hello {{1}}, welcome to our official WhatsApp channel!');
@@ -496,21 +497,50 @@ export default function Templates() {
     const localUrl = URL.createObjectURL(file);
     setMediaPreviewUrl(localUrl);
 
-    // Upload to server for persistent public URL
+    // Chunked upload to server: uses 800KB slices so each chunk is strictly < 1MB,
+    // completely preventing Nginx 413 (Payload Too Large) even on default 1M server configurations!
     try {
       setMediaUploading(true);
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await api.post('/whatsapp/templates/upload-media', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      if (res.data?.success && res.data.data?.url) {
-        setMediaPreviewUrl(res.data.data.url);
+      setMediaUploadProgress(0);
+
+      const CHUNK_SIZE = 800 * 1024; // 800 KB per chunk (guaranteed < 1MB)
+      const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+      const uploadId = `up_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+      let finalUrl = null;
+
+      for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+        const start = chunkIndex * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, file.size);
+        const chunkBlob = file.slice(start, end);
+
+        const formData = new FormData();
+        formData.append('file', chunkBlob, `chunk_${chunkIndex}`);
+        formData.append('uploadId', uploadId);
+        formData.append('chunkIndex', String(chunkIndex));
+        formData.append('totalChunks', String(totalChunks));
+        formData.append('originalName', file.name);
+
+        const res = await api.post('/whatsapp/templates/upload-chunk', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+
+        const percent = Math.round(((chunkIndex + 1) / totalChunks) * 100);
+        setMediaUploadProgress(percent);
+
+        if (res.data?.completed && res.data.data?.url) {
+          finalUrl = res.data.data.url;
+        }
+      }
+
+      if (finalUrl) {
+        setMediaPreviewUrl(finalUrl);
+        setMediaUploadProgress(100);
       } else {
-        throw new Error(res.data?.error?.message || 'Server upload failed');
+        throw new Error('Upload completed but final media URL not received.');
       }
     } catch (err) {
-      console.warn('[Template Media] Server upload failed:', err.message);
+      console.warn('[Template Media] Chunked upload failed:', err.message);
       setMediaError(formatErrorString(err, 'Failed to upload media file to server.'));
     } finally {
       setMediaUploading(false);
@@ -1507,7 +1537,7 @@ export default function Templates() {
                                           <div className="small text-muted" style={{ fontSize: '0.72rem' }}>
                                             {mediaFileSize || 'Sample Media'} · {
                                               mediaUploading ? (
-                                                <span className="text-primary fw-semibold"><span className="spinner-border spinner-border-sm me-1" style={{ width: '0.75rem', height: '0.75rem' }}></span>Uploading to server...</span>
+                                                <span className="text-primary fw-semibold"><span className="spinner-border spinner-border-sm me-1" style={{ width: '0.75rem', height: '0.75rem' }}></span>Uploading {mediaUploadProgress}%...</span>
                                               ) : mediaPreviewUrl && !mediaPreviewUrl.startsWith('blob:') ? (
                                                 <span className="text-success fw-semibold">✓ Ready for Meta</span>
                                               ) : (
