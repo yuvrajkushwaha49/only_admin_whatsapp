@@ -2087,7 +2087,7 @@ export default function Templates() {
                     <div className="card bg-light border p-3 rounded-3 mb-3">
                       <div className="d-flex align-items-center justify-content-between mb-1">
                         <span className="small text-muted">Selected Template:</span>
-                        <span className="badge bg-success-subtle text-success border border-success-subtle">
+                        <span className={`badge border ${quickTestTemplate.status === 'APPROVED' ? 'bg-success-subtle text-success border-success-subtle' : 'bg-warning-subtle text-warning-emphasis border-warning-subtle'}`}>
                           {quickTestTemplate.status}
                         </span>
                       </div>
@@ -2097,6 +2097,15 @@ export default function Templates() {
                         <span className="badge bg-white text-secondary border small">({quickTestTemplate.language})</span>
                       </div>
                     </div>
+
+                    {quickTestTemplate.status !== 'APPROVED' && (
+                      <div className="alert alert-warning py-2 px-3 small d-flex align-items-center gap-2 mb-3 rounded-3">
+                        <i className="bi bi-clock-history fs-5 flex-shrink-0"></i>
+                        <div>
+                          <strong>Meta Approval Pending:</strong> Template status is currently <code>{quickTestTemplate.status}</code>. Meta Cloud API only allows sending messages once the template is <strong>APPROVED</strong>.
+                        </div>
+                      </div>
+                    )}
 
                     {/* Sender Account Selection */}
                     {accounts.length > 0 && (
@@ -2187,7 +2196,7 @@ export default function Templates() {
                     <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setQuickTestTemplate(null)}>
                       Cancel
                     </button>
-                    <button type="submit" className="btn btn-success btn-sm d-flex align-items-center gap-2 shadow-xs" disabled={quickTestSending}>
+                    <button type="submit" className="btn btn-success btn-sm d-flex align-items-center gap-2 shadow-xs" disabled={quickTestSending || quickTestTemplate.status !== 'APPROVED'}>
                       <i className={`bi ${quickTestSending ? 'bi-arrow-repeat spin-icon' : 'bi-send-fill'}`}></i>
                       <span>{quickTestSending ? 'Dispatching...' : 'Send Live Test'}</span>
                     </button>

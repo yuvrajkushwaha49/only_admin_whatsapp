@@ -24,7 +24,23 @@ async function checkImportJobStatus(jobId) {
 export async function processImportJob(job) {
   const jobId = job.id;
   const businessId = Number(job.business_id);
-  const filePath = job.file_path;
+  let filePath = job.file_path;
+  if (!filePath || !fs.existsSync(filePath)) {
+    const filename = path.basename(filePath ? filePath.replace(/\\/g, '/') : '');
+    const candidatePaths = [
+      filePath,
+      path.resolve(process.cwd(), 'uploads', 'imports', filename),
+      path.resolve(process.cwd(), 'backend', 'uploads', 'imports', filename),
+      path.resolve('/var/www/campaignflow/backend/uploads/imports', filename),
+      path.resolve('/var/www/campaignflow/uploads/imports', filename),
+      path.resolve(process.cwd(), '..', 'uploads', 'imports', filename)
+    ].filter(Boolean);
+
+    const found = candidatePaths.find(p => fs.existsSync(p));
+    if (found) {
+      filePath = found;
+    }
+  }
   const fileType = job.file_type || 'csv';
   const columnMapping = typeof job.column_mapping === 'string' ? JSON.parse(job.column_mapping) : (job.column_mapping || {});
   const options = typeof job.options === 'string' ? JSON.parse(job.options) : (job.options || {});

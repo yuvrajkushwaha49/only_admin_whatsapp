@@ -41,13 +41,22 @@ const allowedOrigins = [
   'https://aiveexa.com',
   'https://www.aiveexa.com',
   'http://aiveexa.com',
-  'http://www.aiveexa.com'
+  'http://www.aiveexa.com',
+  'https://dxxs3.com',
+  'https://www.dxxs3.com',
+  'http://dxxs3.com',
+  'http://www.dxxs3.com'
 ].filter(Boolean);
 
 export const isCorsOriginAllowed = (origin) => {
   if (!origin) return true;
-  if (allowedOrigins.includes(origin)) return true;
-  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true;
+  const cleanOrigin = origin.replace(/\/+$/, '');
+  if (allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes(origin)) return true;
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(cleanOrigin)) return true;
+  if (process.env.ADDITIONAL_CORS_ORIGINS) {
+    const extras = process.env.ADDITIONAL_CORS_ORIGINS.split(',').map(s => s.trim().replace(/\/+$/, ''));
+    if (extras.includes(cleanOrigin)) return true;
+  }
   return false;
 };
 
