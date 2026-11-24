@@ -147,7 +147,7 @@ export class MetaCloudApiClient {
         const errResp = postErr.response?.data?.error;
         if (postErr.response?.status === 401 || errResp?.code === 190) {
           const fallbackToken = process.env.META_ACCESS_TOKEN || process.env.WHATSAPP_TOKEN;
-          const validFallback = fallbackToken || (this.phoneNumberId === '131920876678229' ? LIVE_FALLBACK_TOKEN : null);
+          const validFallback = fallbackToken || (this.phoneNumberId === '1341070215765610' ? LIVE_FALLBACK_TOKEN : null);
           if (validFallback && this.accessToken !== validFallback) {
             logger.warn(`[MetaClient] Primary Meta token returned 401 (Authentication Error code 190). Retrying automatically with live working Meta token...`);
             this.accessToken = validFallback;
@@ -214,7 +214,7 @@ export class MetaCloudApiClient {
         const errResp = postErr.response?.data?.error;
         if (postErr.response?.status === 401 || errResp?.code === 190) {
           const fallbackToken = process.env.META_ACCESS_TOKEN || process.env.WHATSAPP_TOKEN;
-          const validFallback = fallbackToken || (this.phoneNumberId === '131920876678229' ? LIVE_FALLBACK_TOKEN : null);
+          const validFallback = fallbackToken || (this.phoneNumberId === '1341070215765610' ? LIVE_FALLBACK_TOKEN : null);
           if (validFallback && this.accessToken !== validFallback) {
             logger.warn(`[MetaClient] Primary Meta token returned 401 for text message. Retrying automatically with live working Meta token...`);
             this.accessToken = validFallback;
