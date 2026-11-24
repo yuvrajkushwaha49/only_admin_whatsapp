@@ -20,7 +20,8 @@ export default function AdminSidebar({ isOpen, onClose, onToggle }) {
     { to: '/admin/logs', icon: 'bi-clock-history', name: 'Global Activity Logs', shortName: 'Audit Logs' },
     { to: '/admin/meta', icon: 'bi-gear-wide-connected', name: 'Meta Platform App', shortName: 'Meta App' },
     { to: '/admin/meta-monitoring', icon: 'bi-activity', name: 'Meta Monitoring', shortName: 'Health' },
-    { to: '/admin/accounts', icon: 'bi-whatsapp', name: 'Raw Accounts', shortName: 'Raw Accs' }
+    { to: '/admin/accounts', icon: 'bi-whatsapp', name: 'Raw Accounts', shortName: 'Raw Accs' },
+    { to: '/admin/ai-support', icon: 'bi-robot', name: 'AI Support Assistant', shortName: 'AI Support' }
   ];
 
   const handleLinkClick = () => {

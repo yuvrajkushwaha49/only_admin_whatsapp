@@ -128,6 +128,33 @@ export async function createTemplate(req, res, next) {
   }
 }
 
+export async function uploadTemplateMedia(req, res, next) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: { message: 'No media file uploaded.' } });
+    }
+    const filename = req.file.filename;
+    const originalname = req.file.originalname;
+    const ext = (originalname.split('.').pop() || '').toLowerCase();
+    let format = 'IMAGE';
+    if (ext === 'mp4') format = 'VIDEO';
+    else if (ext === 'pdf') format = 'DOCUMENT';
+
+    const fileUrl = `/uploads/templates/${filename}`;
+    res.json({
+      success: true,
+      data: {
+        url: fileUrl,
+        filename: originalname,
+        format,
+        size: req.file.size
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function syncTemplates(req, res, next) {
   try {
     const accountId = req.params.accountId || req.query.accountId;

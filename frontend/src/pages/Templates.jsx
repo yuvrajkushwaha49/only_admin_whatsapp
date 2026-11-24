@@ -74,6 +74,17 @@ export default function Templates() {
   const [headerType, setHeaderType] = useState('NONE'); // NONE, TEXT, IMAGE, VIDEO, DOCUMENT
   const [headerText, setHeaderText] = useState('');
   const [headerExample, setHeaderExample] = useState('');
+  
+  // Media Header State (Meta WhatsApp Manager parity)
+  const [mediaFormat, setMediaFormat] = useState('IMAGE'); // IMAGE, VIDEO, DOCUMENT
+  const [mediaSourceType, setMediaSourceType] = useState('upload'); // upload, url
+  const [mediaFile, setMediaFile] = useState(null);
+  const [mediaPreviewUrl, setMediaPreviewUrl] = useState('');
+  const [mediaFileName, setMediaFileName] = useState('');
+  const [mediaFileSize, setMediaFileSize] = useState('');
+  const [mediaUploading, setMediaUploading] = useState(false);
+  const [mediaError, setMediaError] = useState('');
+  const fileInputRef = useRef(null);
   const [bodyText, setBodyText] = useState('Hello {{1}}, welcome to our official WhatsApp channel!');
   const [variableExamples, setVariableExamples] = useState({ '1': 'Customer' });
   const [footerText, setFooterText] = useState('');
@@ -435,6 +446,85 @@ export default function Templates() {
     setButtons(buttons.filter((_, i) => i !== index));
   };
 
+  const handleMediaFormatChange = (fmt) => {
+    setMediaFormat(fmt);
+    setHeaderType(fmt);
+    setMediaError('');
+  };
+
+  const handleMediaFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setMediaError('');
+
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const sizeMB = file.size / (1024 * 1024);
+
+    if (mediaFormat === 'IMAGE') {
+      if (!['jpg', 'jpeg', 'png'].includes(ext)) {
+        setMediaError('Invalid file format. Please upload a .jpg or .png image.');
+        return;
+      }
+      if (sizeMB > 5) {
+        setMediaError(`Image size exceeds 5MB limit (${sizeMB.toFixed(1)}MB).`);
+        return;
+      }
+    } else if (mediaFormat === 'VIDEO') {
+      if (ext !== 'mp4') {
+        setMediaError('Invalid file format. Please upload an .mp4 video.');
+        return;
+      }
+      if (sizeMB > 16) {
+        setMediaError(`Video size exceeds 16MB limit (${sizeMB.toFixed(1)}MB).`);
+        return;
+      }
+    } else if (mediaFormat === 'DOCUMENT') {
+      if (ext !== 'pdf') {
+        setMediaError('Invalid file format. Please upload a .pdf document.');
+        return;
+      }
+      if (sizeMB > 100) {
+        setMediaError(`Document size exceeds 100MB limit (${sizeMB.toFixed(1)}MB).`);
+        return;
+      }
+    }
+
+    setMediaFile(file);
+    setMediaFileName(file.name);
+    setMediaFileSize(sizeMB < 1 ? `${Math.round(file.size / 1024)} KB` : `${sizeMB.toFixed(1)} MB`);
+
+    const localUrl = URL.createObjectURL(file);
+    setMediaPreviewUrl(localUrl);
+
+    // Upload to server for persistent public URL
+    try {
+      setMediaUploading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await api.post('/whatsapp/templates/upload-media', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (res.data?.success && res.data.data?.url) {
+        setMediaPreviewUrl(res.data.data.url);
+      }
+    } catch (err) {
+      console.warn('[Template Media] Server upload failed, retaining local preview:', err.message);
+    } finally {
+      setMediaUploading(false);
+    }
+  };
+
+  const handleRemoveMedia = () => {
+    setMediaFile(null);
+    setMediaPreviewUrl('');
+    setMediaFileName('');
+    setMediaFileSize('');
+    setMediaError('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
@@ -451,16 +541,36 @@ export default function Templates() {
 
     try {
       setSubmitting(true);
+
+      let headerPayload = null;
+      if (headerType === 'TEXT') {
+        headerPayload = {
+          type: 'TEXT',
+          text: headerText,
+          example: headerExample || undefined
+        };
+      } else if (['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerType)) {
+        const sampleUrl = mediaPreviewUrl || (
+          headerType === 'IMAGE'
+            ? 'https://images.unsplash.com/photo-1579208575657-c595a05383b7?w=800'
+            : headerType === 'VIDEO'
+            ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
+            : 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
+        );
+        headerPayload = {
+          type: headerType,
+          example_url: sampleUrl,
+          example_handle: sampleUrl,
+          example: sampleUrl
+        };
+      }
+
       const payload = {
         name: cleanName,
         category: formCategory,
         language: formLanguage,
         accountId: formAccountId ? Number(formAccountId) : undefined,
-        header: headerType !== 'NONE' ? {
-          type: headerType,
-          text: headerText,
-          example: headerExample
-        } : null,
+        header: headerPayload,
         body: {
           text: bodyText,
           examples: variableExamples
@@ -480,6 +590,7 @@ export default function Templates() {
         setBodyText('Hello {{1}}, welcome to our official WhatsApp channel!');
         setFooterText('');
         setButtons([]);
+        handleRemoveMedia();
         fetchTemplates();
       }
     } catch (err) {
@@ -515,6 +626,7 @@ export default function Templates() {
   const renderSimulatedPreview = (tplOrForm, isForm = false) => {
     let hType = 'NONE';
     let hText = '';
+    let hMediaUrl = '';
     let bText = '';
     let fText = '';
     let btnList = [];
@@ -522,6 +634,7 @@ export default function Templates() {
     if (isForm) {
       hType = headerType;
       hText = headerText;
+      hMediaUrl = mediaPreviewUrl;
       bText = bodyText;
       fText = footerText;
       btnList = buttons;
@@ -539,6 +652,7 @@ export default function Templates() {
       if (hComp) {
         hType = hComp.format || 'TEXT';
         hText = hComp.text || '';
+        hMediaUrl = hComp.example?.header_handle?.[0] || hComp.example_url || '';
       }
       const bComp = comps.find(c => c.type === 'BODY' || c.type === 'body');
       bText = bComp?.text || 'No body text';
@@ -572,10 +686,41 @@ export default function Templates() {
             <div className="wa-bubble-preview">
               {hType !== 'NONE' && (
                 <>
-                  {['IMAGE', 'VIDEO', 'DOCUMENT'].includes(hType) ? (
-                    <div className="wa-header-media">
-                      <i className={`bi ${hType === 'IMAGE' ? 'bi-image' : hType === 'VIDEO' ? 'bi-play-circle' : 'bi-file-earmark-text'} fs-1 text-secondary mb-1`}></i>
-                      <span>WhatsApp {hType} Header</span>
+                  {hType === 'IMAGE' ? (
+                    hMediaUrl ? (
+                      <div className="wa-header-media-img-wrap">
+                        <img src={hMediaUrl} alt="Header" className="wa-header-media-img" />
+                      </div>
+                    ) : (
+                      <div className="wa-header-media">
+                        <i className="bi bi-image fs-1 text-secondary mb-1"></i>
+                        <span>Sample Image Header (PNG/JPG)</span>
+                      </div>
+                    )
+                  ) : hType === 'VIDEO' ? (
+                    hMediaUrl ? (
+                      <div className="wa-header-media-video-wrap">
+                        <video src={hMediaUrl} className="wa-header-media-video" controls={false} />
+                        <div className="wa-video-play-badge"><i className="bi bi-play-fill"></i></div>
+                      </div>
+                    ) : (
+                      <div className="wa-header-media">
+                        <i className="bi bi-play-circle fs-1 text-secondary mb-1"></i>
+                        <span>Sample Video Header (MP4)</span>
+                      </div>
+                    )
+                  ) : hType === 'DOCUMENT' ? (
+                    <div className="wa-header-media-doc-card">
+                      <div className="wa-doc-icon">
+                        <i className="bi bi-file-earmark-pdf-fill"></i>
+                      </div>
+                      <div className="wa-doc-info">
+                        <div className="wa-doc-title">{(isForm && mediaFileName) ? mediaFileName : 'Document_Catalog.pdf'}</div>
+                        <div className="wa-doc-meta">{(isForm && mediaFileSize) ? mediaFileSize : '1.8 MB'} · PDF</div>
+                      </div>
+                      <div className="wa-doc-download">
+                        <i className="bi bi-arrow-down-circle"></i>
+                      </div>
                     </div>
                   ) : (
                     hText && <div className="wa-header-text">{hText}</div>
@@ -1260,29 +1405,211 @@ export default function Templates() {
                           </div>
                         </div>
 
-                        {/* Header Selection */}
-                        <div className="mb-3">
-                          <label className="form-label small fw-bold">Header Format (Optional)</label>
-                          <select
-                            className="form-select mb-2"
-                            value={headerType}
-                            onChange={(e) => setHeaderType(e.target.value)}
-                          >
-                            <option value="NONE">None (No Header)</option>
-                            <option value="TEXT">Text Header</option>
-                            <option value="IMAGE">Image Header (PNG/JPG)</option>
-                            <option value="VIDEO">Video Header (MP4)</option>
-                            <option value="DOCUMENT">Document Header (PDF)</option>
-                          </select>
+                        {/* Header Selection with Full Meta WhatsApp Manager Add Media Capabilities */}
+                        <div className="mb-4">
+                          <div className="d-flex align-items-center justify-content-between mb-2">
+                            <label className="form-label small fw-bold mb-0">Header Format (Optional)</label>
+                            <span className="text-muted small" style={{ fontSize: '0.72rem' }}>
+                              Add a title or rich media to your message
+                            </span>
+                          </div>
 
+                          {/* Primary Type Pills: None | Text | Media */}
+                          <div className="btn-group w-100 mb-3" role="group">
+                            <button
+                              type="button"
+                              className={`btn btn-sm ${headerType === 'NONE' ? 'btn-success' : 'btn-outline-secondary'}`}
+                              onClick={() => setHeaderType('NONE')}
+                            >
+                              <i className="bi bi-dash-circle me-1"></i> None
+                            </button>
+                            <button
+                              type="button"
+                              className={`btn btn-sm ${headerType === 'TEXT' ? 'btn-success' : 'btn-outline-secondary'}`}
+                              onClick={() => setHeaderType('TEXT')}
+                            >
+                              <i className="bi bi-fonts me-1"></i> Text
+                            </button>
+                            <button
+                              type="button"
+                              className={`btn btn-sm ${['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerType) ? 'btn-success' : 'btn-outline-secondary'}`}
+                              onClick={() => setHeaderType(mediaFormat)}
+                            >
+                              <i className="bi bi-collection-play me-1"></i> Media (Image, Video, Document)
+                            </button>
+                          </div>
+
+                          {/* If TEXT */}
                           {headerType === 'TEXT' && (
-                            <input
-                              type="text"
-                              className="form-control"
-                              placeholder="Header text (e.g. Exclusive Diwali VIP Offer!)"
-                              value={headerText}
-                              onChange={(e) => setHeaderText(e.target.value)}
-                            />
+                            <div>
+                              <input
+                                type="text"
+                                className="form-control mb-1"
+                                placeholder="Header text (e.g. Exclusive Diwali VIP Offer!)"
+                                maxLength={60}
+                                value={headerText}
+                                onChange={(e) => setHeaderText(e.target.value)}
+                              />
+                              <div className="d-flex justify-content-between text-muted" style={{ fontSize: '0.72rem' }}>
+                                <span>Keep it concise (bold title on WhatsApp)</span>
+                                <span>{headerText.length}/60</span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* If MEDIA (IMAGE, VIDEO, DOCUMENT) */}
+                          {['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerType) && (
+                            <div className="tpl-media-sample-box border rounded-3 p-3 bg-light-subtle">
+                              {/* Media Type Sub-Selector */}
+                              <label className="form-label small fw-bold text-dark mb-2 d-flex align-items-center gap-1">
+                                <i className="bi bi-file-earmark-arrow-up text-primary"></i>
+                                <span>Select Media Type:</span>
+                              </label>
+                              <div className="d-flex gap-2 mb-3">
+                                {[
+                                  { id: 'IMAGE', label: 'Image', icon: 'bi-image', spec: 'JPG, PNG (Max 5MB)' },
+                                  { id: 'VIDEO', label: 'Video', icon: 'bi-play-btn', spec: 'MP4 (Max 16MB)' },
+                                  { id: 'DOCUMENT', label: 'Document', icon: 'bi-file-earmark-pdf', spec: 'PDF (Max 100MB)' }
+                                ].map(m => (
+                                  <button
+                                    key={m.id}
+                                    type="button"
+                                    className={`btn btn-sm flex-fill d-flex flex-column align-items-center justify-content-center py-2 ${headerType === m.id ? 'btn-primary' : 'btn-outline-secondary bg-white'}`}
+                                    onClick={() => handleMediaFormatChange(m.id)}
+                                  >
+                                    <div className="d-flex align-items-center gap-1 fw-bold">
+                                      <i className={`bi ${m.icon}`}></i>
+                                      <span>{m.label}</span>
+                                    </div>
+                                    <span style={{ fontSize: '0.65rem' }} className={headerType === m.id ? 'text-white-50' : 'text-muted'}>
+                                      {m.spec}
+                                    </span>
+                                  </button>
+                                ))}
+                              </div>
+
+                              {/* Meta WhatsApp Manager Notice */}
+                              <div className="alert alert-info py-2 px-3 small mb-3 rounded-2 d-flex align-items-start gap-2" style={{ fontSize: '0.75rem' }}>
+                                <i className="bi bi-info-circle-fill text-info fs-6 mt-1 flex-shrink-0"></i>
+                                <div>
+                                  <strong>Meta Review Sample Content:</strong> Provide sample content for your {headerType.toLowerCase()} header to help Meta review and approve your template. This sample file won't be sent to your customers.
+                                </div>
+                              </div>
+
+                              {mediaError && (
+                                <div className="alert alert-danger py-1 px-2 small mb-2 rounded-2">
+                                  <i className="bi bi-exclamation-triangle-fill me-1"></i>{mediaError}
+                                </div>
+                              )}
+
+                              {/* Choice: Upload Sample File or Provide URL */}
+                              <div className="d-flex align-items-center justify-content-between mb-2">
+                                <span className="small fw-semibold text-secondary">Sample Content Source:</span>
+                                <div className="btn-group btn-group-sm">
+                                  <button
+                                    type="button"
+                                    className={`btn btn-xs py-0 px-2 ${mediaSourceType === 'upload' ? 'btn-secondary' : 'btn-outline-secondary'}`}
+                                    style={{ fontSize: '0.72rem' }}
+                                    onClick={() => setMediaSourceType('upload')}
+                                  >
+                                    <i className="bi bi-upload me-1"></i> Upload File
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className={`btn btn-xs py-0 px-2 ${mediaSourceType === 'url' ? 'btn-secondary' : 'btn-outline-secondary'}`}
+                                    style={{ fontSize: '0.72rem' }}
+                                    onClick={() => setMediaSourceType('url')}
+                                  >
+                                    <i className="bi bi-link-45deg me-1"></i> Enter URL
+                                  </button>
+                                </div>
+                              </div>
+
+                              {mediaSourceType === 'upload' ? (
+                                <div>
+                                  {/* File selected / uploaded card */}
+                                  {mediaFileName || mediaPreviewUrl ? (
+                                    <div className="tpl-media-file-card">
+                                      <div className="d-flex align-items-center gap-2 overflow-hidden">
+                                        <div className="p-2 rounded bg-light border text-primary flex-shrink-0">
+                                          <i className={`bi ${headerType === 'IMAGE' ? 'bi-file-earmark-image' : headerType === 'VIDEO' ? 'bi-file-earmark-play' : 'bi-file-earmark-pdf'} fs-4`}></i>
+                                        </div>
+                                        <div className="overflow-hidden">
+                                          <div className="fw-bold small text-truncate text-dark">{mediaFileName || 'sample-media-file'}</div>
+                                          <div className="small text-muted" style={{ fontSize: '0.72rem' }}>
+                                            {mediaFileSize || 'Sample Media'} · <span className="text-success">✓ Ready for Meta</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        className="btn btn-sm btn-outline-danger p-1 px-2"
+                                        onClick={handleRemoveMedia}
+                                        title="Remove sample media"
+                                      >
+                                        <i className="bi bi-trash3"></i>
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    /* Drag and Drop Upload Area */
+                                    <div>
+                                      <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        className="d-none"
+                                        accept={headerType === 'IMAGE' ? '.jpg,.jpeg,.png' : headerType === 'VIDEO' ? '.mp4' : '.pdf'}
+                                        onChange={handleMediaFileChange}
+                                      />
+                                      <div
+                                        className="tpl-media-dropzone"
+                                        onClick={() => fileInputRef.current?.click()}
+                                      >
+                                        <i className="bi bi-cloud-arrow-up-fill fs-2 text-primary mb-1 d-block"></i>
+                                        <div className="fw-semibold small text-dark">
+                                          {mediaUploading ? 'Uploading to Server...' : `Click to Upload Sample ${headerType}`}
+                                        </div>
+                                        <div className="text-muted" style={{ fontSize: '0.72rem' }}>
+                                          {headerType === 'IMAGE' && 'Supported formats: .jpg, .png (Max 5MB)'}
+                                          {headerType === 'VIDEO' && 'Supported format: .mp4 (Max 16MB)'}
+                                          {headerType === 'DOCUMENT' && 'Supported format: .pdf (Max 100MB)'}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                /* Direct Sample Media URL */
+                                <div>
+                                  <div className="input-group input-group-sm mb-1">
+                                    <span className="input-group-text bg-white"><i className="bi bi-link-45deg"></i></span>
+                                    <input
+                                      type="url"
+                                      className="form-control"
+                                      placeholder={`https://example.com/sample.${headerType === 'IMAGE' ? 'jpg' : headerType === 'VIDEO' ? 'mp4' : 'pdf'}`}
+                                      value={mediaPreviewUrl}
+                                      onChange={(e) => {
+                                        setMediaPreviewUrl(e.target.value);
+                                        setMediaFileName(e.target.value.split('/').pop() || 'sample_media');
+                                        setMediaFileSize('Web URL');
+                                      }}
+                                    />
+                                    {mediaPreviewUrl && (
+                                      <button
+                                        type="button"
+                                        className="btn btn-outline-secondary"
+                                        onClick={handleRemoveMedia}
+                                        title="Clear URL"
+                                      >
+                                        <i className="bi bi-x"></i>
+                                      </button>
+                                    )}
+                                  </div>
+                                  <div className="text-muted" style={{ fontSize: '0.7rem' }}>
+                                    Provide a publicly accessible HTTPS link containing sample {headerType.toLowerCase()} content.
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           )}
                         </div>
 

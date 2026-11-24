@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import AdminSidebar from '../components/AdminSidebar';
+import AIChatWidget from '../components/chatbot/AIChatWidget';
 import '../styles/adminDashboard.css';
 
 export default function AdminLayout() {
@@ -57,6 +58,9 @@ export default function AdminLayout() {
           <Outlet context={{ onToggleSidebar: toggleSidebar, sidebarOpen }} />
         </main>
       </div>
+
+      {/* Floating AI Support Assistant in Super Admin Suite */}
+      <AIChatWidget />
     </div>
   );
 }

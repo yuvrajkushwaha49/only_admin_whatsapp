@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import FloatingLiveProgress from '../components/FloatingLiveProgress';
+import AIChatWidget from '../components/chatbot/AIChatWidget';
 import '../styles/switchClientModal.css';
 
 export default function AppLayout() {
@@ -106,6 +107,9 @@ export default function AppLayout() {
           <Outlet context={{ onToggleSidebar: toggleSidebar, sidebarOpen }} />
         </main>
       </div>
+
+      {/* Floating AI Support Assistant */}
+      <AIChatWidget />
     </div>
   );
 }

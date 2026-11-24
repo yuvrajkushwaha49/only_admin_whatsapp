@@ -270,6 +270,9 @@ export async function createContact(businessId, { phone, name, email, countryCod
   }
 
   const result = await executeQuery(
+    `INSERT INTO contacts (business_id, phone, country_code, name, email, is_opted_in, status, assigned_user_id, custom_fields)
+     VALUES (?, ?, ?, ?, ?, TRUE, 'active', ?, ?)`,
+    [businessId, cleanPhone, countryCode, name || null, email || null, assignedUserId, JSON.stringify(customFields)]
     `INSERT INTO contacts (business_id, phone, country_code, name, email, is_opted_in, status, assigned_user_id, custom_fields, tags)
      VALUES (?, ?, ?, ?, ?, TRUE, 'active', ?, ?, ?)`,
     [businessId, cleanPhone, countryCode, name || null, email || null, assignedUserId, JSON.stringify(customFields), tagList.length > 0 ? JSON.stringify(tagList) : null]
@@ -296,6 +299,7 @@ export async function createContact(businessId, { phone, name, email, countryCod
           tagId = ins.insertId;
         }
         if (tagId) {
+          await executeQuery('INSERT IGNORE INTO contact_tags (contact_id, tag_id) VALUES (?, ?)', [contactId, tagId]);
           await executeQuery('INSERT IGNORE INTO contact_tags (business_id, contact_id, tag_id) VALUES (?, ?, ?)', [businessId, contactId, tagId]);
         }
       } catch (tErr) {

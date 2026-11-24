@@ -9,11 +9,13 @@
     "dev": "node --watch-path=src src/server.js",
     "worker": "node src/workers/index.js",
     "migrate": "node src/database/migrate.js",
+    "index-kb": "node scripts/indexKnowledgeBase.js",
     "seed": "node src/database/seed.js",
     "backup": "node src/database/syncBackup.js",
     "test": "node --test tests/**/*.test.js"
   },
   "dependencies": {
+    "@google/genai": "^3.6.1",
     "axios": "^1.7.9",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.34.8",

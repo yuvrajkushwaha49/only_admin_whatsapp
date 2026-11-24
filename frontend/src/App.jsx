@@ -49,6 +49,7 @@ import AdminLogs from './pages/admin/AdminLogs';
 import AdminMeta from './pages/admin/AdminMeta';
 import AdminMetaMonitoring from './pages/admin/AdminMetaMonitoring';
 import AdminAccounts from './pages/admin/AdminAccounts';
+import AdminAiSupport from './pages/admin/AdminAiSupport';
 
 import WhatsAppOAuthCallback from './pages/WhatsAppOAuthCallback';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -379,6 +380,7 @@ export default function App() {
         <Route path="meta" element={<AdminMeta />} />
         <Route path="meta-monitoring" element={<AdminMetaMonitoring />} />
         <Route path="accounts" element={<AdminAccounts />} />
+        <Route path="ai-support" element={<AdminAiSupport />} />
       </Route>
 
       {/* Fallback */}
