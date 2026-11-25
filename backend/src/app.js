@@ -45,7 +45,11 @@ const allowedOrigins = [
   'https://dxxs3.com',
   'https://www.dxxs3.com',
   'http://dxxs3.com',
-  'http://www.dxxs3.com'
+  'http://www.dxxs3.com',
+  'https://whatsappdrt.cloud',
+  'https://www.whatsappdrt.cloud',
+  'http://whatsappdrt.cloud',
+  'http://www.whatsappdrt.cloud'
 ].filter(Boolean);
 
 export const isCorsOriginAllowed = (origin) => {
