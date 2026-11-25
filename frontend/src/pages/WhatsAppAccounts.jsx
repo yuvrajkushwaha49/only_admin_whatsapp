@@ -56,6 +56,36 @@ export default function WhatsAppAccounts() {
   const [autoConnecting, setAutoConnecting] = useState(false);
   const [readiness, setReadiness] = useState(null);
 
+  // Update Access Token Modal
+  const [updateTokenModal, setUpdateTokenModal] = useState(null);
+  const [newTokenInput, setNewTokenInput] = useState('');
+  const [updatingToken, setUpdatingToken] = useState(false);
+  const [tokenUpdateError, setTokenUpdateError] = useState('');
+
+  const handleUpdateToken = async (e) => {
+    e.preventDefault();
+    if (!newTokenInput.trim()) {
+      setTokenUpdateError('Please enter a valid Meta WhatsApp Access Token');
+      return;
+    }
+    try {
+      setUpdatingToken(true);
+      setTokenUpdateError('');
+      const targetId = updateTokenModal.hash_id || encodeHashId(updateTokenModal.id);
+      const res = await api.post(`/whatsapp/accounts/${targetId}/update-token`, { accessToken: newTokenInput.trim() });
+      if (res.data?.success) {
+        setFeedback({ type: 'success', text: '✅ Meta Access Token updated and verified with Meta Cloud API successfully!' });
+        setUpdateTokenModal(null);
+        setNewTokenInput('');
+        fetchAccounts();
+      }
+    } catch (err) {
+      setTokenUpdateError(err.response?.data?.message || err.response?.data?.error?.message || err.message || 'Failed to update token');
+    } finally {
+      setUpdatingToken(false);
+    }
+  };
+
   const handleCopy = (text, label) => {
     if (!text) return;
     navigator.clipboard.writeText(String(text));
@@ -917,6 +947,19 @@ export default function WhatsAppAccounts() {
                                 <i className="bi bi-eye me-2 text-primary"></i> View Credentials
                               </Link>
                             </li>
+                            <li>
+                              <button
+                                type="button"
+                                className="dropdown-item small text-primary"
+                                onClick={() => {
+                                  setUpdateTokenModal(acc);
+                                  setNewTokenInput('');
+                                  setTokenUpdateError('');
+                                }}
+                              >
+                                <i className="bi bi-key-fill me-2 text-warning"></i> Update Access Token
+                              </button>
+                            </li>
                             {isSuper && (
                               <li>
                                 <button
@@ -1055,6 +1098,21 @@ export default function WhatsAppAccounts() {
                         <i className="bi bi-info-circle"></i>
                         <span>Details</span>
                       </Link>
+
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-warning text-dark py-1 px-2 d-inline-flex align-items-center gap-1"
+                        style={{ borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600 }}
+                        onClick={() => {
+                          setUpdateTokenModal(acc);
+                          setNewTokenInput('');
+                          setTokenUpdateError('');
+                        }}
+                        title="Update Meta Access Token if expired or invalidated"
+                      >
+                        <i className="bi bi-key-fill"></i>
+                        <span>Token</span>
+                      </button>
                     </div>
 
                     {/* Action Buttons: Row 2 (Disconnect & Delete - Only Owner / Admin) */}
@@ -1125,6 +1183,74 @@ export default function WhatsAppAccounts() {
           </div>
         )}
 
+        {/* Update Meta Access Token Modal */}
+        {updateTokenModal && (
+          <div className="modal show d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,0.55)' }}>
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '14px', overflow: 'hidden' }}>
+                <div className="modal-header bg-primary text-white py-3">
+                  <h5 className="modal-title fw-bold d-flex align-items-center gap-2 mb-0">
+                    <i className="bi bi-key-fill"></i>
+                    Update Meta Access Token
+                  </h5>
+                  <button type="button" className="btn-close btn-close-white" onClick={() => setUpdateTokenModal(null)}></button>
+                </div>
+                <form onSubmit={handleUpdateToken}>
+                  <div className="modal-body p-4">
+                    <p className="mb-2">
+                      Update Access Token for <strong>{updateTokenModal.display_name || updateTokenModal.phone_number}</strong> ({updateTokenModal.phone_number}).
+                    </p>
+                    <div className="alert alert-info small mb-3">
+                      <i className="bi bi-info-circle me-1"></i>
+                      Paste a fresh <strong>Permanent System User Token</strong> from Meta Business Suite (or Developers Portal). We will verify the token with Meta immediately.
+                    </div>
+
+                    {tokenUpdateError && (
+                      <div className="alert alert-danger small py-2 mb-3">
+                        <i className="bi bi-exclamation-triangle-fill me-1"></i>
+                        {tokenUpdateError}
+                      </div>
+                    )}
+
+                    <div className="mb-3">
+                      <label className="form-label small fw-bold">New Meta Access Token *</label>
+                      <textarea
+                        className="form-control font-monospace small"
+                        rows="4"
+                        placeholder="EAA..."
+                        value={newTokenInput}
+                        onChange={(e) => setNewTokenInput(e.target.value)}
+                        required
+                      />
+                      <div className="form-text small text-muted">
+                        Must start with <code>EAA...</code> and include <code>whatsapp_business_messaging</code> permissions.
+                      </div>
+                    </div>
+                  </div>
+                  <div className="modal-footer bg-light py-2">
+                    <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setUpdateTokenModal(null)}>
+                      Cancel
+                    </button>
+                    <button type="submit" className="btn btn-sm btn-primary" disabled={updatingToken || !newTokenInput.trim()}>
+                      {updatingToken ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-1" role="status"></span>
+                          Verifying with Meta...
+                        </>
+                      ) : (
+                        <>
+                          <i className="bi bi-check2-circle me-1"></i>
+                          Verify & Save Token
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Delete Account From Database Modal */}
         {deleteModal && (
           <div className="modal show d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,0.55)' }}>
@@ -1181,6 +1307,74 @@ export default function WhatsAppAccounts() {
                     )}
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Update Meta Access Token Modal */}
+        {updateTokenModal && (
+          <div className="modal show d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,0.55)' }}>
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '14px', overflow: 'hidden' }}>
+                <div className="modal-header bg-primary text-white py-3">
+                  <h5 className="modal-title fw-bold d-flex align-items-center gap-2 mb-0">
+                    <i className="bi bi-key-fill"></i>
+                    Update Meta Access Token
+                  </h5>
+                  <button type="button" className="btn-close btn-close-white" onClick={() => setUpdateTokenModal(null)}></button>
+                </div>
+                <form onSubmit={handleUpdateToken}>
+                  <div className="modal-body p-4">
+                    <p className="mb-2">
+                      Update Access Token for <strong>{updateTokenModal.display_name || updateTokenModal.phone_number}</strong> ({updateTokenModal.phone_number}).
+                    </p>
+                    <div className="alert alert-info small mb-3">
+                      <i className="bi bi-info-circle me-1"></i>
+                      Paste a fresh <strong>Permanent System User Token</strong> from Meta Business Suite (or Developers Portal). We will verify the token with Meta immediately.
+                    </div>
+
+                    {tokenUpdateError && (
+                      <div className="alert alert-danger small py-2 mb-3">
+                        <i className="bi bi-exclamation-triangle-fill me-1"></i>
+                        {tokenUpdateError}
+                      </div>
+                    )}
+
+                    <div className="mb-3">
+                      <label className="form-label small fw-bold">New Meta Access Token *</label>
+                      <textarea
+                        className="form-control font-monospace small"
+                        rows="4"
+                        placeholder="EAA..."
+                        value={newTokenInput}
+                        onChange={(e) => setNewTokenInput(e.target.value)}
+                        required
+                      />
+                      <div className="form-text small text-muted">
+                        Must start with <code>EAA...</code> and include <code>whatsapp_business_messaging</code> permissions.
+                      </div>
+                    </div>
+                  </div>
+                  <div className="modal-footer bg-light py-2">
+                    <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setUpdateTokenModal(null)}>
+                      Cancel
+                    </button>
+                    <button type="submit" className="btn btn-sm btn-primary" disabled={updatingToken || !newTokenInput.trim()}>
+                      {updatingToken ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-1" role="status"></span>
+                          Verifying with Meta...
+                        </>
+                      ) : (
+                        <>
+                          <i className="bi bi-check2-circle me-1"></i>
+                          Verify & Save Token
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>

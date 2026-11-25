@@ -2990,10 +2990,87 @@ export async function bulkConnectSystemUserAccounts(businessId, payload = {}, re
   };
 }
 
+/**
+ * Update the Meta Access Token for an existing WhatsApp Account (e.g. when token expires or session is invalidated)
+ */
+export async function updateAccountToken(businessId, accountId, newToken) {
+  const numBusinessId = Number(businessId);
+  let numAccountId = null;
+  if (accountId) {
+    if (typeof accountId === 'string' && !/^\d+$/.test(accountId)) {
+      numAccountId = decodeHashId(accountId);
+    } else {
+      numAccountId = Number(accountId);
+    }
+  }
+  if (!numAccountId || isNaN(numAccountId)) {
+    const err = new Error('Invalid account identifier');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  if (!newToken || typeof newToken !== 'string' || newToken.trim().length < 20) {
+    const err = new Error('Please provide a valid Meta WhatsApp Access Token (starts with EAA...)');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const cleanToken = newToken.trim();
+
+  // Fetch account with credentials
+  const account = await getAccount(numBusinessId, numAccountId);
+  if (!account) {
+    const err = new Error('WhatsApp Account not found or unauthorized for this business');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  // Validate new token with Meta Cloud API
+  const client = new MetaCloudApiClient(cleanToken, account.phone_number_id, account.waba_id);
+  const verification = await client.verifyAccountConnection(account.waba_id, account.phone_number_id);
+  if (!verification.isConnected && verification.status === 'RESTRICTED') {
+    const err = new Error('The provided Meta Access Token could not connect to this WhatsApp Account. Please check permissions.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const encrypted = encryptToken(cleanToken);
+
+  if (isUsingFallback()) {
+    const store = getMemoryStore();
+    const target = store.whatsapp_accounts?.find(a => a.id === numAccountId && a.business_id === numBusinessId);
+    if (target) {
+      target.access_token_encrypted = encrypted;
+      target.status = 'connected';
+      target.connection_status = 'CONNECTED';
+      target.last_verified_at = new Date();
+      target.updated_at = new Date();
+      saveMemoryStore();
+    }
+  } else {
+    await executeQuery(
+      `UPDATE whatsapp_accounts 
+       SET access_token_encrypted = ?, status = 'connected', connection_status = 'CONNECTED', 
+           last_verified_at = NOW(), updated_at = NOW() 
+       WHERE id = ? AND business_id = ?`,
+      [encrypted, numAccountId, numBusinessId]
+    );
+  }
+
+  logger.info(`[WhatsApp] Access token updated successfully for Account #${numAccountId} (${account.phone_number})`);
+
+  return {
+    success: true,
+    message: 'WhatsApp Access Token updated and verified with Meta Cloud API successfully!',
+    account: await getAccount(numBusinessId, numAccountId)
+  };
+}
+
 export default {
   connectAccount,
   listAccounts,
   getAccount,
+  updateAccountToken,
   listTemplates,
   getTemplate,
   createTemplate,

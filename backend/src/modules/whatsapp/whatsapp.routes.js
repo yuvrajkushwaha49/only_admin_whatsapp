@@ -28,6 +28,7 @@ router.get('/accounts/:id', whatsappController.getAccount);
 router.post('/accounts/:id/verify', requireRole(['owner', 'admin', 'marketer']), whatsappController.verifyAccount);
 router.post('/accounts/:id/reconnect', requireRole(['owner', 'admin', 'marketer']), whatsappController.verifyAccount);
 router.post('/accounts/:id/primary', requireRole(['owner', 'admin', 'marketer']), whatsappController.setPrimaryAccount);
+router.post('/accounts/:id/update-token', requireRole(['owner', 'admin', 'marketer']), whatsappController.updateAccountToken);
 router.post('/accounts/:id/test-message', requireRole(['owner', 'admin', 'marketer']), whatsappController.sendTestMessage);
 router.post('/send-test', requireRole(['owner', 'admin', 'marketer']), whatsappController.sendTestMessage);
 router.post('/templates/send-test', requireRole(['owner', 'admin', 'marketer']), whatsappController.sendTestMessage);

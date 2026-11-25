@@ -355,9 +355,22 @@ export async function bulkConnectSystemUserAccounts(req, res, next) {
   }
 }
 
+export async function updateAccountToken(req, res, next) {
+  try {
+    const accountId = req.params.id;
+    const { accessToken, token } = req.body;
+    const result = await whatsappService.updateAccountToken(req.businessId, accountId, accessToken || token);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
 export default {
   connect,
   listAccounts,
+  getAccount,
+  updateAccountToken,
   listTemplates,
   getTemplate,
   createTemplate,
