@@ -450,7 +450,19 @@ export async function verifyAccount(businessId, accountId) {
  */
 export async function sendTestMessage(businessId, accountId, payload = {}) {
   const numBusinessId = Number(businessId);
-  const numAccountId = accountId ? Number(accountId) : (payload.accountId ? Number(payload.accountId) : null);
+  
+  // Safely decode accountId whether passed as number or hash ID
+  let resolvedAccountId = null;
+  const rawAccId = accountId || payload.accountId;
+  if (rawAccId) {
+    if (typeof rawAccId === 'string' && !/^\d+$/.test(rawAccId)) {
+      resolvedAccountId = decodeHashId(rawAccId);
+    } else {
+      resolvedAccountId = Number(rawAccId);
+    }
+  }
+  const numAccountId = resolvedAccountId && !isNaN(resolvedAccountId) ? resolvedAccountId : null;
+
   const rawRecipient = payload.recipientPhone || payload.phoneNumber || payload.to || '';
   const messageType = payload.messageType || (payload.textBody ? 'text' : 'template');
   const textBody = payload.textBody;
@@ -528,7 +540,18 @@ export async function sendTestMessage(businessId, accountId, payload = {}) {
     // Find template if available in local store or db to get exact language and parameters
     let matchedTemplate = null;
     const reqLang = payload.language || payload.languageCode;
-    const reqTplId = payload.templateId || payload.id;
+    
+    // Safely decode templateId whether passed as number or hash ID
+    let resolvedTplId = null;
+    const rawTplId = payload.templateId || payload.id;
+    if (rawTplId) {
+      if (typeof rawTplId === 'string' && !/^\d+$/.test(rawTplId)) {
+        resolvedTplId = decodeHashId(rawTplId);
+      } else {
+        resolvedTplId = Number(rawTplId);
+      }
+    }
+    const reqTplId = resolvedTplId && !isNaN(resolvedTplId) ? resolvedTplId : null;
 
     if (isUsingFallback()) {
       const store = getMemoryStore();
@@ -676,6 +699,7 @@ export async function sendTestMessage(businessId, accountId, payload = {}) {
         customErr.statusCode = 400;
         throw customErr;
       }
+      sendErr.statusCode = sendErr.statusCode || 400;
       throw sendErr;
     }
   }
@@ -1216,7 +1240,15 @@ export async function getRemoteAuthToken() {
  */
 export async function getAccountWithCredentials(businessId, accountId = null) {
   const numBusinessId = Number(businessId);
-  const numAccountId = accountId ? Number(accountId) : null;
+  let numAccountId = null;
+  if (accountId) {
+    if (typeof accountId === 'string' && !/^\d+$/.test(accountId)) {
+      numAccountId = decodeHashId(accountId);
+    } else {
+      numAccountId = Number(accountId);
+    }
+  }
+  if (isNaN(numAccountId)) numAccountId = null;
 
   let account = null;
 
