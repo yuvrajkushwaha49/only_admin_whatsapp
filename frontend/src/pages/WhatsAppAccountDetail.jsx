@@ -83,6 +83,14 @@ export default function WhatsAppAccountDetail() {
   }, [id]);
 
   const fetchAccountDetail = async () => {
+    // Strictly block direct numeric IDs (e.g. /whatsapp/accounts/4) for security
+    const strId = String(id || '').trim();
+    if (/^\d+$/.test(strId)) {
+      setLoading(false);
+      setError('Direct numeric account IDs are disabled for security. Accounts can only be accessed using verified secure links.');
+      return;
+    }
+
     try {
       setLoading(true);
       setError('');
@@ -211,11 +219,13 @@ export default function WhatsAppAccountDetail() {
   }
 
   if (error || !account) {
+    const isDirectNumericBlocked = String(error).toLowerCase().includes('numeric');
+
     return (
       <div className="container py-5">
         <div className="alert alert-danger shadow-sm p-4 text-center rounded-3">
-          <i className="bi bi-exclamation-triangle-fill fs-2 mb-2 d-block"></i>
-          <h4>Unable to Load WhatsApp Account</h4>
+          <i className={`bi ${isDirectNumericBlocked ? 'bi-shield-lock-fill text-warning' : 'bi-exclamation-triangle-fill'} fs-2 mb-2 d-block`}></i>
+          <h4>{isDirectNumericBlocked ? 'Direct ID Access Blocked' : 'Unable to Load WhatsApp Account'}</h4>
           <p className="text-muted">{error || 'This account may have been removed or deactivated by SuperAdmin.'}</p>
           <Link to="/whatsapp" className="btn btn-primary mt-2">
             <i className="bi bi-arrow-left me-1"></i> Back to WhatsApp Accounts

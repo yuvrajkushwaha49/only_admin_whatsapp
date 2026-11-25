@@ -1,6 +1,7 @@
 import { executeQuery, isUsingFallback, getMemoryStore } from '../../database/db.js';
 import { normalizePhone } from '../../utils/phone.js';
 import ExcelJS from 'exceljs';
+import { encodeHashId, decodeHashId } from '../../utils/hashId.js';
 
 export async function listContacts(businessId, { page = 1, limit = 20, search = '', tag = '', status = '', optedIn = '' }, user = null) {
   const offset = (Number(page) - 1) * Number(limit);
@@ -45,7 +46,7 @@ export async function listContacts(businessId, { page = 1, limit = 20, search = 
       // Find associated tags
       const contactTagIds = store.contact_tags.filter(ct => ct.contact_id === c.id).map(ct => ct.tag_id);
       const tags = store.tags.filter(t => contactTagIds.includes(t.id));
-      return { ...c, tags };
+      return { ...c, hash_id: encodeHashId(c.id), tags };
     });
 
     let allTenant = store.contacts.filter(c => c.business_id === Number(businessId));
@@ -169,6 +170,7 @@ export async function listContacts(businessId, { page = 1, limit = 20, search = 
   return {
     contacts: contacts.map(c => ({
       ...c,
+      hash_id: encodeHashId(c.id),
       tags: typeof c.tags === 'string' ? JSON.parse(c.tags) : (c.tags || [])
     })),
     stats,
@@ -399,9 +401,23 @@ export async function deleteContact(businessId, contactId) {
 }
 
 export async function getContactDetails(businessId, contactId, user = null) {
+  const strId = String(contactId || '').trim();
+  if (/^\d+$/.test(strId)) {
+    const error = new Error('Direct numeric contact IDs are disabled for security. Please use the verified secure link from Contacts.');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const numericId = decodeHashId(contactId);
+  if (!numericId) {
+    const error = new Error('Contact not found or invalid identifier.');
+    error.statusCode = 404;
+    throw error;
+  }
+
   if (isUsingFallback()) {
     const store = getMemoryStore();
-    const contact = store.contacts?.find(c => c.id === Number(contactId) && c.business_id === Number(businessId));
+    const contact = store.contacts?.find(c => c.id === Number(numericId) && c.business_id === Number(businessId));
     if (!contact) {
       const error = new Error('Contact not found');
       error.statusCode = 404;
@@ -435,6 +451,7 @@ export async function getContactDetails(businessId, contactId, user = null) {
     return {
       contact: {
         ...contact,
+        hash_id: encodeHashId(contact.id),
         tags
       },
       consents,
@@ -454,7 +471,7 @@ export async function getContactDetails(businessId, contactId, user = null) {
       ) as tags
      FROM contacts c
      WHERE c.business_id = ? AND c.id = ? LIMIT 1`,
-    [businessId, contactId]
+    [businessId, numericId]
   );
 
   if (contacts.length === 0) {
@@ -464,6 +481,7 @@ export async function getContactDetails(businessId, contactId, user = null) {
   }
 
   const rawContact = contacts[0];
+  rawContact.hash_id = encodeHashId(rawContact.id);
 
   if (user?.role === 'agent') {
     const isAssigned = rawContact.assigned_user_id === user.id || (await executeQuery(

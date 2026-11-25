@@ -3,6 +3,7 @@ import { Link, useOutletContext } from 'react-router-dom';
 import api from '../services/api';
 import AiwavoHeader from '../components/AiwavoHeader';
 import { useAuth } from '../hooks/useAuth';
+import { encodeHashId } from '../utils/hashId';
 import '../styles/dashboard.css';
 
 const PRESET_COLORS = [
@@ -452,7 +453,7 @@ export default function ContactGroups() {
                   activeGroupDetail.members.map(member => (
                     <tr key={member.id}>
                       <td>
-                        <Link to={`/contacts/${member.id}`} className="fw-semibold text-dark text-decoration-none">
+                        <Link to={`/contacts/${member.hash_id || encodeHashId(member.id)}`} className="fw-semibold text-dark text-decoration-none">
                           {member.name || 'Anonymous Customer'}
                         </Link>
                       </td>

@@ -3,6 +3,7 @@ import { Link, useOutletContext, useNavigate, useLocation } from 'react-router-d
 import api from '../services/api';
 import AiwavoHeader from '../components/AiwavoHeader';
 import { useAuth } from '../hooks/useAuth';
+import { encodeHashId } from '../utils/hashId';
 
 export default function Contacts() {
   const { user, isSuperAdmin } = useAuth();
@@ -618,7 +619,7 @@ export default function Contacts() {
                             </Link>
 
                             <Link
-                              to={`/contacts/${c.id}`}
+                              to={`/contacts/${c.hash_id || encodeHashId(c.id)}`}
                               className="cnt-btn-view"
                               title="View Contact Profile & History"
                             >

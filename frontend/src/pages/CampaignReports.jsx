@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { encodeHashId } from '../utils/hashId';
 import {
   ResponsiveContainer,
   BarChart,
@@ -485,7 +486,7 @@ export default function CampaignReports() {
                           <td className="text-end">
                             <div className="d-inline-flex align-items-center gap-1">
                               <Link
-                                to={`/campaigns/${c.id}`}
+                                to={`/campaigns/${c.hash_id || encodeHashId(c.id)}`}
                                 className="btn btn-sm btn-outline-secondary"
                                 title="View Campaign Details & Delivery Logs"
                                 style={{ borderRadius: 8, padding: '0.35rem 0.65rem' }}

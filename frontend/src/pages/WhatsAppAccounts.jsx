@@ -6,6 +6,7 @@ import MetaSetupWizardModal from '../components/MetaSetupWizardModal';
 import SystemUserBulkConnectModal from '../components/SystemUserBulkConnectModal';
 import AiwavoHeader from '../components/AiwavoHeader';
 import { useAuth } from '../hooks/useAuth';
+import { encodeHashId } from '../utils/hashId';
 
 export default function WhatsAppAccounts() {
   const { isSuperAdmin, user } = useAuth();
@@ -912,7 +913,7 @@ export default function WhatsAppAccounts() {
                           </button>
                           <ul className="dropdown-menu dropdown-menu-end shadow-sm">
                             <li>
-                              <Link to={`/whatsapp/accounts/${acc.id}`} className="dropdown-item small">
+                              <Link to={`/whatsapp/accounts/${acc.hash_id || encodeHashId(acc.id)}`} className="dropdown-item small">
                                 <i className="bi bi-eye me-2 text-primary"></i> View Credentials
                               </Link>
                             </li>
@@ -1047,7 +1048,7 @@ export default function WhatsAppAccounts() {
                       </Link>
 
                       <Link
-                        to={`/whatsapp/accounts/${acc.id}`}
+                        to={`/whatsapp/accounts/${acc.hash_id || encodeHashId(acc.id)}`}
                         className="wa-btn-details"
                         title="View Details & Credentials"
                       >

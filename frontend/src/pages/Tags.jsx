@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import tagsService from '../services/tags.service';
 import { useAuth } from '../hooks/useAuth';
+import { encodeHashId } from '../utils/hashId';
 import '../styles/dashboard.css';
 
 const PRESET_COLORS = [
@@ -285,7 +286,7 @@ export default function Tags() {
 
                       <div className="cg-group-bottom">
                         <Link
-                          to={`/tags/${tag.id}`}
+                          to={`/tags/${tag.hash_id || encodeHashId(tag.id)}`}
                           className="cg-btn-manage"
                           style={{
                             borderColor: tagColor,

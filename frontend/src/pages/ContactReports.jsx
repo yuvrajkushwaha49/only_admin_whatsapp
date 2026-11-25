@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { encodeHashId } from '../utils/hashId';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -516,7 +517,7 @@ export default function ContactReports() {
                             <td className="text-muted small">{formattedDate}</td>
                             <td className="text-end">
                               <Link
-                                to={`/contacts/${c.id}`}
+                                to={`/contacts/${c.hash_id || encodeHashId(c.id)}`}
                                 className="btn btn-sm btn-outline-secondary"
                                 title="View Contact Details"
                                 style={{ borderRadius: 8, padding: '0.35rem 0.65rem' }}

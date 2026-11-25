@@ -93,6 +93,14 @@ export default function CampaignDetail() {
   };
 
   const fetchCampaignDetails = async (isBackground = false) => {
+    // Strictly block direct numeric IDs (e.g. /campaigns/3) for security
+    const strId = String(id || '').trim();
+    if (/^\d+$/.test(strId)) {
+      if (!isBackground) setLoading(false);
+      setError('Direct numeric campaign IDs are disabled for security. Campaigns can only be accessed using verified secure links.');
+      return;
+    }
+
     try {
       if (!isBackground) setLoading(true);
       const res = await api.get(`/campaigns/${id}`);
@@ -315,12 +323,13 @@ export default function CampaignDetail() {
   }
 
   if (!data && error) {
+    const isDirectNumericBlocked = String(error).toLowerCase().includes('numeric');
     return (
       <div className="text-center py-5">
         <div className="alert alert-light border shadow-sm d-inline-block px-4 py-4 rounded-4 text-start" style={{ maxWidth: '500px' }}>
           <div className="d-flex align-items-center gap-2 mb-2">
-            <i className="bi bi-exclamation-triangle-fill text-warning fs-3"></i>
-            <h5 className="mb-0 fw-bold text-dark">Campaign #{id} Not Found</h5>
+            <i className={`bi ${isDirectNumericBlocked ? 'bi-shield-lock-fill text-warning' : 'bi-exclamation-triangle-fill text-warning'} fs-3`}></i>
+            <h5 className="mb-0 fw-bold text-dark">{isDirectNumericBlocked ? 'Direct ID Access Blocked' : `Campaign #${id} Not Found`}</h5>
           </div>
           <p className="text-muted small mb-3">
             {error || 'This campaign does not exist or may have been removed.'}

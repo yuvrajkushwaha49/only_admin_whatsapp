@@ -28,9 +28,16 @@ export async function listCampaigns(businessId) {
 }
 
 export async function getCampaignDetails(businessId, campaignId) {
+  const strId = String(campaignId || '').trim();
+  if (/^\d+$/.test(strId)) {
+    const error = new Error('Direct numeric campaign IDs are disabled for security. Please use the verified secure link from Campaigns.');
+    error.statusCode = 403;
+    throw error;
+  }
+
   const numericId = decodeHashId(campaignId);
   if (!numericId) {
-    const error = new Error('Campaign not found or invalid identifier');
+    const error = new Error('Campaign not found or invalid identifier.');
     error.statusCode = 404;
     throw error;
   }

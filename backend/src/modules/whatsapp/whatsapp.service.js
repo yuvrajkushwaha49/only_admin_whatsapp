@@ -1097,8 +1097,20 @@ export async function setPrimaryAccount(businessId, accountId) {
  * Get Single Account Details (Sanitized)
  */
 export async function getAccount(businessId, accountId) {
+  const strId = String(accountId || '').trim();
+  if (/^\d+$/.test(strId)) {
+    const err = new Error('Direct numeric account IDs are disabled for security. Please use the verified secure link from WhatsApp Accounts.');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const numAccountId = decodeHashId(accountId);
+  if (!numAccountId) {
+    const err = new Error('WhatsApp Account not found or invalid identifier.');
+    err.statusCode = 404;
+    throw err;
+  }
   const numBusinessId = Number(businessId);
-  const numAccountId = Number(accountId);
 
   if (isUsingFallback()) {
     const store = getMemoryStore();
@@ -1298,6 +1310,7 @@ function sanitizeAccount(acc) {
   const { access_token_encrypted, ...sanitized } = acc;
   return {
     ...sanitized,
+    hash_id: encodeHashId(acc.id),
     is_primary: Boolean(acc.is_primary),
     hasToken: Boolean(access_token_encrypted),
     connection_status: acc.connection_status || (acc.status === 'connected' ? 'CONNECTED' : 'DISCONNECTED')

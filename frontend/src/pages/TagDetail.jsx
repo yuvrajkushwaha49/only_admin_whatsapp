@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import tagsService from '../services/tags.service';
 import api from '../services/api';
 import { useAuth } from '../hooks/useAuth';
+import { encodeHashId } from '../utils/hashId';
 import '../styles/dashboard.css';
 
 const PRESET_COLORS = [
@@ -26,6 +27,7 @@ export default function TagDetail() {
   const [contacts, setContacts] = useState([]);
   const [totalContacts, setTotalContacts] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [toastMsg, setToastMsg] = useState(null);
 
@@ -57,8 +59,17 @@ export default function TagDetail() {
   };
 
   const loadTagDetail = async () => {
+    // Strictly block direct numeric IDs (e.g. /tags/5) for security
+    const strId = String(id || '').trim();
+    if (/^\d+$/.test(strId)) {
+      setLoading(false);
+      setError('Direct numeric tag IDs are disabled for security. Contact tags can only be accessed using verified secure links.');
+      return;
+    }
+
     try {
       setLoading(true);
+      setError('');
       const res = await tagsService.getTagDetail(id, { search });
       if (res.success && res.data) {
         setTag(res.data.tag);
@@ -67,7 +78,9 @@ export default function TagDetail() {
       }
     } catch (err) {
       console.error('[TagDetail] Error loading detail:', err);
-      showToast('danger', err.response?.data?.message || 'Failed to load tag details');
+      const errMsg = err.response?.data?.message || 'Failed to load tag details';
+      setError(errMsg);
+      showToast('danger', errMsg);
     } finally {
       setLoading(false);
     }
@@ -181,12 +194,17 @@ export default function TagDetail() {
   }
 
   if (!tag) {
+    const isDirectNumericBlocked = String(error).toLowerCase().includes('numeric');
     return (
       <div className="contact-groups-page text-center py-5">
-        <h4 className="fw-bold mb-3">Tag Not Found</h4>
-        <Link to="/tags" className="btn btn-outline-primary">
-          &larr; Back to Tags
-        </Link>
+        <div className="alert alert-danger shadow-sm p-4 text-center rounded-3 d-inline-block" style={{ maxWidth: '480px' }}>
+          <i className={`bi ${isDirectNumericBlocked ? 'bi-shield-lock-fill text-warning' : 'bi-exclamation-triangle-fill'} fs-2 mb-2 d-block`}></i>
+          <h4>{isDirectNumericBlocked ? 'Direct ID Access Blocked' : 'Tag Not Found'}</h4>
+          <p className="text-muted small">{error || 'This tag may have been removed or deleted.'}</p>
+          <Link to="/tags" className="btn btn-primary btn-sm mt-2">
+            <i className="bi bi-arrow-left me-1"></i> Back to Tags
+          </Link>
+        </div>
       </div>
     );
   }
@@ -304,7 +322,7 @@ export default function TagDetail() {
                   contacts.map(c => (
                     <tr key={c.id}>
                       <td>
-                        <Link to={`/contacts/${c.id}`} className="fw-semibold text-dark text-decoration-none">
+                        <Link to={`/contacts/${c.hash_id || encodeHashId(c.id)}`} className="fw-semibold text-dark text-decoration-none">
                           {c.name || 'Anonymous Customer'}
                         </Link>
                       </td>

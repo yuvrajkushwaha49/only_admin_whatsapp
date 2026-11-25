@@ -18,13 +18,21 @@ export default function CampaignReport() {
   }, [id]);
 
   const fetchReport = async () => {
+    // Strictly block direct numeric IDs (e.g. /campaigns/3/report) for security
+    const strId = String(id || '').trim();
+    if (/^\d+$/.test(strId)) {
+      setLoading(false);
+      setError('Direct numeric campaign IDs are disabled for security. Campaign reports can only be accessed using verified secure links.');
+      return;
+    }
+
     try {
       const res = await api.get(`/campaigns/${id}`);
       if (res.data?.success) {
         setData(res.data.data);
       }
     } catch (err) {
-      setError('Failed to fetch campaign report');
+      setError(err.response?.data?.message || 'Failed to fetch campaign report');
     } finally {
       setLoading(false);
     }
@@ -40,15 +48,16 @@ export default function CampaignReport() {
   }
 
   if (!data && error) {
+    const isDirectNumericBlocked = String(error).toLowerCase().includes('numeric');
     return (
       <div className="text-center py-5">
         <div className="alert alert-light border shadow-sm d-inline-block px-4 py-4 rounded-4 text-start" style={{ maxWidth: '480px' }}>
           <div className="d-flex align-items-center gap-2 mb-2">
-            <i className="bi bi-exclamation-triangle-fill text-warning fs-3"></i>
-            <h5 className="mb-0 fw-bold text-dark">Campaign #{id} Not Found</h5>
+            <i className={`bi ${isDirectNumericBlocked ? 'bi-shield-lock-fill text-warning' : 'bi-exclamation-triangle-fill text-warning'} fs-3`}></i>
+            <h5 className="mb-0 fw-bold text-dark">{isDirectNumericBlocked ? 'Direct ID Access Blocked' : `Campaign #${id} Not Found`}</h5>
           </div>
           <p className="text-muted small mb-3">
-            This campaign report is not available. It might have been deleted or created prior to a server restart.
+            {error || 'This campaign report is not available. It might have been deleted or created prior to a server restart.'}
           </p>
           <div className="d-flex gap-2">
             <Link to="/campaigns" className="btn btn-sm btn-outline-secondary">

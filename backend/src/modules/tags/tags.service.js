@@ -1,4 +1,5 @@
 import { executeQuery, isUsingFallback, getMemoryStore } from '../../database/db.js';
+import { encodeHashId, decodeHashId } from '../../utils/hashId.js';
 
 export async function listTags(businessId) {
   const numBizId = Number(businessId);
@@ -11,7 +12,7 @@ export async function listTags(businessId) {
       .filter(t => t.business_id === numBizId)
       .map(t => {
         const count = store.contact_tags.filter(ct => ct.tag_id === t.id).length;
-        return { ...t, contact_count: count };
+        return { ...t, hash_id: encodeHashId(t.id), contact_count: count };
       })
       .sort((a, b) => b.id - a.id);
   }
@@ -29,6 +30,7 @@ export async function listTags(businessId) {
 
   return rows.map(r => ({
     ...r,
+    hash_id: encodeHashId(r.id),
     contact_count: Number(r.contact_count || 0)
   }));
 }
@@ -75,8 +77,21 @@ export async function getTagStats(businessId) {
 }
 
 export async function getTag(businessId, tagId, { search = '', page = 1, limit = 50 } = {}) {
+  const strId = String(tagId || '').trim();
+  if (/^\d+$/.test(strId)) {
+    const err = new Error('Direct numeric tag IDs are disabled for security. Please use the verified secure link from Tags.');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const numTagId = decodeHashId(tagId);
+  if (!numTagId) {
+    const err = new Error('Tag not found or invalid identifier.');
+    err.statusCode = 404;
+    throw err;
+  }
+
   const numBizId = Number(businessId);
-  const numTagId = Number(tagId);
 
   let tag = null;
   if (isUsingFallback()) {
@@ -155,9 +170,10 @@ export async function getTag(businessId, tagId, { search = '', page = 1, limit =
   return {
     tag: {
       ...tag,
+      hash_id: encodeHashId(tag.id),
       contact_count: Number(tag.contact_count || totalContacts)
     },
-    contacts,
+    contacts: contacts.map(c => ({ ...c, hash_id: encodeHashId(c.id) })),
     totalContacts,
     page: Number(page),
     limit: Number(limit)

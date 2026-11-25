@@ -64,6 +64,14 @@ export default function ContactDetail() {
   };
 
   const fetchContactDetails = async () => {
+    // Strictly block direct numeric IDs (e.g. /contacts/123) for security
+    const strId = String(id || '').trim();
+    if (/^\d+$/.test(strId)) {
+      setLoading(false);
+      setError('Direct numeric contact IDs are disabled for security. Contacts can only be accessed using verified secure links.');
+      return;
+    }
+
     try {
       setLoading(true);
       const res = await api.get(`/contacts/${id}`);
@@ -211,18 +219,20 @@ export default function ContactDetail() {
   }
 
   if (!data && error) {
+    const isDirectNumericBlocked = String(error).toLowerCase().includes('numeric');
+
     return (
       <div className="text-center py-5">
         <div className="alert alert-light border shadow-sm d-inline-block px-4 py-4 rounded-4 text-start" style={{ maxWidth: '480px' }}>
           <div className="d-flex align-items-center gap-2 mb-2">
-            <i className="bi bi-exclamation-triangle-fill text-warning fs-3"></i>
-            <h5 className="mb-0 fw-bold text-dark">Contact Not Found</h5>
+            <i className={`bi ${isDirectNumericBlocked ? 'bi-shield-lock-fill text-warning' : 'bi-exclamation-triangle-fill text-warning'} fs-3`}></i>
+            <h5 className="mb-0 fw-bold text-dark">{isDirectNumericBlocked ? 'Direct ID Access Blocked' : 'Contact Not Found'}</h5>
           </div>
           <p className="text-muted small mb-3">
             {error || 'This contact does not exist or may have been deleted.'}
           </p>
           <div className="d-flex gap-2">
-            <Link to="/contacts" className="btn btn-sm btn-outline-secondary">
+            <Link to="/contacts" className="btn btn-sm btn-primary">
               <i className="bi bi-arrow-left me-1"></i> Back to Contacts
             </Link>
           </div>
@@ -756,7 +766,7 @@ export default function ContactDetail() {
                               </td>
                               <td className="text-end">
                                 <Link
-                                  to={`/campaigns/${ch.campaign_id}`}
+                                  to={`/campaigns/${ch.campaign_hash_id || encodeHashId(ch.campaign_id)}`}
                                   className="btn btn-sm btn-outline-secondary"
                                   title="View Campaign Details"
                                 >
