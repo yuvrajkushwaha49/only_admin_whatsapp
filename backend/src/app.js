@@ -42,14 +42,14 @@ const allowedOrigins = [
   'https://www.aiveexa.com',
   'http://aiveexa.com',
   'http://www.aiveexa.com',
-  'https://dxxs3.com',
-  'https://www.dxxs3.com',
-  'http://dxxs3.com',
-  'http://www.dxxs3.com',
   'https://whatsappdrt.cloud',
   'https://www.whatsappdrt.cloud',
   'http://whatsappdrt.cloud',
-  'http://www.whatsappdrt.cloud'
+  'http://www.whatsappdrt.cloud',
+  'https://dxxs3.com',
+  'https://www.dxxs3.com',
+  'http://dxxs3.com',
+  'http://www.dxxs3.com'
 ].filter(Boolean);
 
 export const isCorsOriginAllowed = (origin) => {
@@ -108,7 +108,7 @@ uploadsDirs.forEach(dir => {
       app.use('/uploads', express.static(dir));
       app.use('/api/uploads', express.static(dir));
     }
-  } catch (_) {}
+  } catch (_) { }
 });
 app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 app.use('/api/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
