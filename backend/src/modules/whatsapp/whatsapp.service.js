@@ -9,6 +9,18 @@ import { emitToTenant } from '../../socket.js';
 import { encodeHashId, decodeHashId } from '../../utils/hashId.js';
 
 /**
+ * Robustly resolve account identifier from either raw numeric ID or encrypted hashId
+ */
+export function resolveAccountId(accountId) {
+  if (!accountId) return null;
+  const strId = String(accountId).trim();
+  if (/^\d+$/.test(strId)) {
+    return Number(strId);
+  }
+  return decodeHashId(strId);
+}
+
+/**
  * Return Meta Embedded Signup configuration required by the frontend Facebook JS SDK
  */
 export async function getConnectConfig(businessId) {
@@ -358,7 +370,12 @@ export async function completeEmbeddedSignup(businessId, payload = {}) {
  */
 export async function verifyAccount(businessId, accountId) {
   const numBusinessId = Number(businessId);
-  const numAccountId = Number(accountId);
+  const numAccountId = resolveAccountId(accountId);
+  if (!numAccountId || isNaN(numAccountId)) {
+    const err = new Error('WhatsApp Account not found or invalid identifier');
+    err.statusCode = 404;
+    throw err;
+  }
 
   let account = null;
 
@@ -939,7 +956,12 @@ export async function testWebhookPing(businessId) {
  */
 export async function disconnectAccount(businessId, accountId) {
   const numBusinessId = Number(businessId);
-  const numAccountId = Number(accountId);
+  const numAccountId = resolveAccountId(accountId);
+  if (!numAccountId || isNaN(numAccountId)) {
+    const err = new Error('WhatsApp Account not found or invalid identifier');
+    err.statusCode = 404;
+    throw err;
+  }
 
   if (isUsingFallback()) {
     const store = getMemoryStore();
@@ -998,7 +1020,12 @@ export async function disconnectAccount(businessId, accountId) {
  */
 export async function deleteAccount(businessId, accountId) {
   const numBusinessId = Number(businessId);
-  const numAccountId = Number(accountId);
+  const numAccountId = resolveAccountId(accountId);
+  if (!numAccountId || isNaN(numAccountId)) {
+    const err = new Error('WhatsApp Account not found or invalid identifier');
+    err.statusCode = 404;
+    throw err;
+  }
 
   if (isUsingFallback()) {
     const store = getMemoryStore();
@@ -1067,7 +1094,12 @@ export async function deleteAccount(businessId, accountId) {
  */
 export async function setPrimaryAccount(businessId, accountId) {
   const numBusinessId = Number(businessId);
-  const numAccountId = Number(accountId);
+  const numAccountId = resolveAccountId(accountId);
+  if (!numAccountId || isNaN(numAccountId)) {
+    const err = new Error('WhatsApp Account not found or invalid identifier');
+    err.statusCode = 404;
+    throw err;
+  }
 
   if (isUsingFallback()) {
     const store = getMemoryStore();
@@ -2160,14 +2192,15 @@ export async function createTemplate(businessId, userId, templateData) {
  * Synchronize all templates from Meta Cloud API for a business
  */
 export async function syncTemplates(businessId, accountId = null) {
+  const numAccountId = accountId ? resolveAccountId(accountId) : null;
   let targetAccounts = [];
   if (isUsingFallback()) {
     const store = getMemoryStore();
     targetAccounts = (store.whatsapp_accounts || []).filter(a => a.business_id === Number(businessId) && a.status === 'connected');
-    if (accountId) targetAccounts = targetAccounts.filter(a => a.id === Number(accountId));
+    if (numAccountId) targetAccounts = targetAccounts.filter(a => a.id === numAccountId);
   } else {
-    if (accountId) {
-      targetAccounts = await executeQuery('SELECT * FROM whatsapp_accounts WHERE business_id = ? AND id = ?', [businessId, accountId]);
+    if (numAccountId) {
+      targetAccounts = await executeQuery('SELECT * FROM whatsapp_accounts WHERE business_id = ? AND id = ?', [businessId, numAccountId]);
     } else {
       targetAccounts = await executeQuery('SELECT * FROM whatsapp_accounts WHERE business_id = ? AND status = "connected"', [businessId]);
     }
