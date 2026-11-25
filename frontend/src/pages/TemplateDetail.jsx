@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate, useOutletContext } from 'react-router-dom
 import api from '../services/api';
 import AiwavoHeader from '../components/AiwavoHeader';
 import { useAuth } from '../hooks/useAuth';
+import { encodeHashId } from '../utils/hashId';
 import '../styles/templates.css';
 
 export default function TemplateDetail() {
@@ -868,6 +869,13 @@ export default function TemplateDetail() {
                       <tr>
                         <td className="fw-semibold text-secondary">Local Database ID</td>
                         <td><code>#{template.id}</code></td>
+                      </tr>
+                      <tr>
+                        <td className="fw-semibold text-secondary">Secure Hash ID (URL)</td>
+                        <td>
+                          <code>{template.hash_id || encodeHashId(template.id)}</code>
+                          <span className="badge bg-success-subtle text-success ms-2 small">Protected Salt</span>
+                        </td>
                       </tr>
                       <tr>
                         <td className="fw-semibold text-secondary">Template Name</td>

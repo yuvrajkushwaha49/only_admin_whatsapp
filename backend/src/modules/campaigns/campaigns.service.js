@@ -4,14 +4,18 @@ import { createAuditLog } from '../logs/logs.service.js';
 import { createNotification } from '../notifications/notifications.service.js';
 import { emitToTenant } from '../../socket.js';
 import logger from '../../utils/logger.js';
+import { encodeHashId, decodeHashId } from '../../utils/hashId.js';
 
 export async function listCampaigns(businessId) {
   if (isUsingFallback()) {
     const store = getMemoryStore();
-    return store.campaigns.filter(c => c.business_id === Number(businessId)).sort((a, b) => b.id - a.id);
+    return store.campaigns
+      .filter(c => c.business_id === Number(businessId))
+      .sort((a, b) => b.id - a.id)
+      .map(c => ({ ...c, hash_id: encodeHashId(c.id) }));
   }
 
-  return executeQuery(
+  const rows = await executeQuery(
     `SELECT c.*, t.name as template_name, wa.display_name as account_name 
      FROM campaigns c
      LEFT JOIN templates t ON c.template_id = t.id
@@ -20,12 +24,20 @@ export async function listCampaigns(businessId) {
      ORDER BY c.created_at DESC`,
     [businessId]
   );
+  return rows.map(c => ({ ...c, hash_id: encodeHashId(c.id) }));
 }
 
 export async function getCampaignDetails(businessId, campaignId) {
+  const numericId = decodeHashId(campaignId);
+  if (!numericId) {
+    const error = new Error('Campaign not found or invalid identifier');
+    error.statusCode = 404;
+    throw error;
+  }
+
   if (isUsingFallback()) {
     const store = getMemoryStore();
-    const campaign = store.campaigns.find(c => c.id === Number(campaignId) && c.business_id === Number(businessId));
+    const campaign = store.campaigns.find(c => c.id === Number(numericId) && c.business_id === Number(businessId));
     if (!campaign) {
       const error = new Error('Campaign not found');
       error.statusCode = 404;
@@ -33,10 +45,11 @@ export async function getCampaignDetails(businessId, campaignId) {
     }
     const template = store.templates.find(t => t.id === campaign.template_id);
     const account = store.whatsapp_accounts.find(a => a.id === campaign.whatsapp_account_id);
-    const recipients = store.campaign_recipients.filter(r => r.campaign_id === Number(campaignId));
+    const recipients = store.campaign_recipients.filter(r => r.campaign_id === Number(numericId));
     return {
       campaign: {
         ...campaign,
+        hash_id: encodeHashId(campaign.id),
         template_name: template?.name || 'welcome_msg',
         template_components: template?.components || [],
         account_name: account?.display_name || account?.phone_number || 'Primary WhatsApp Account',
@@ -52,7 +65,7 @@ export async function getCampaignDetails(businessId, campaignId) {
      LEFT JOIN templates t ON c.template_id = t.id
      LEFT JOIN whatsapp_accounts wa ON c.whatsapp_account_id = wa.id
      WHERE c.business_id = ? AND c.id = ? LIMIT 1`,
-    [businessId, campaignId]
+    [businessId, numericId]
   );
 
   if (campaigns.length === 0) {
@@ -67,10 +80,12 @@ export async function getCampaignDetails(businessId, campaignId) {
      LEFT JOIN contacts c ON cr.contact_id = c.id
      WHERE cr.business_id = ? AND cr.campaign_id = ?
      ORDER BY cr.id ASC LIMIT 100`,
-    [businessId, campaignId]
+    [businessId, numericId]
   );
 
-  return { campaign: campaigns[0], recipients };
+  const camp = campaigns[0];
+  camp.hash_id = encodeHashId(camp.id);
+  return { campaign: camp, recipients };
 }
 
 export async function previewAudience(businessId, { tagIds = [], contactIds = [], groupIds = [], excludeTagIds = [] } = {}) {
@@ -414,14 +429,20 @@ export async function createCampaign(businessId, { name, purpose, whatsappAccoun
 }
 
 export async function startCampaign(businessId, campaignId, userId = null, ipAddress = '127.0.0.1') {
-  const preflight = await preflightCheck(businessId, { campaignId });
-  await enqueueCampaign(campaignId, businessId);
+  const cId = decodeHashId(campaignId);
+  if (!cId) {
+    const error = new Error('Campaign not found or invalid identifier');
+    error.statusCode = 404;
+    throw error;
+  }
+  const preflight = await preflightCheck(businessId, { campaignId: cId });
+  await enqueueCampaign(cId, businessId);
   createAuditLog({
     businessId,
     userId: userId || null,
     action: 'CAMPAIGN_LAUNCH',
     entityType: 'CAMPAIGNS',
-    entityId: campaignId,
+    entityId: cId,
     details: { message: `Campaign broadcast launched` },
     ipAddress
   }).catch(() => {});
@@ -430,7 +451,12 @@ export async function startCampaign(businessId, campaignId, userId = null, ipAdd
 
 export async function pauseCampaign(businessId, campaignId) {
   const bId = Number(businessId);
-  const cId = Number(campaignId);
+  const cId = decodeHashId(campaignId);
+  if (!cId) {
+    const error = new Error('Campaign not found or invalid identifier');
+    error.statusCode = 404;
+    throw error;
+  }
 
   if (isUsingFallback()) {
     const store = getMemoryStore();
@@ -450,7 +476,12 @@ export async function pauseCampaign(businessId, campaignId) {
 
 export async function cancelCampaign(businessId, campaignId) {
   const bId = Number(businessId);
-  const cId = Number(campaignId);
+  const cId = decodeHashId(campaignId);
+  if (!cId) {
+    const error = new Error('Campaign not found or invalid identifier');
+    error.statusCode = 404;
+    throw error;
+  }
 
   if (isUsingFallback()) {
     const store = getMemoryStore();
@@ -470,7 +501,12 @@ export async function cancelCampaign(businessId, campaignId) {
 
 export async function resendCampaign(businessId, campaignId, { target = 'all', mode = 'new', name = null } = {}, userId = null, ipAddress = '127.0.0.1') {
   const bId = Number(businessId);
-  const cId = Number(campaignId);
+  const cId = decodeHashId(campaignId);
+  if (!cId) {
+    const error = new Error('Campaign not found or invalid identifier');
+    error.statusCode = 404;
+    throw error;
+  }
 
   if (isUsingFallback()) {
     const store = getMemoryStore();

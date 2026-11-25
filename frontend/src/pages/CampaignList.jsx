@@ -4,6 +4,7 @@ import api from '../services/api';
 import AiwavoHeader from '../components/AiwavoHeader';
 import ResendCampaignModal from '../components/ResendCampaignModal';
 import { useAuth } from '../hooks/useAuth';
+import { encodeHashId } from '../utils/hashId';
 import '../styles/dashboard.css';
 import '../styles/campaigns.css';
 
@@ -65,7 +66,7 @@ export default function CampaignList() {
 
   const handleDuplicate = (camp) => {
     if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(`${window.location.origin}/campaigns/${camp.id}`);
+      navigator.clipboard.writeText(`${window.location.origin}/campaigns/${camp.hash_id || encodeHashId(camp.id)}`);
     }
     alert(`Campaign "${camp.name}" link copied to clipboard.`);
   };
@@ -358,7 +359,7 @@ export default function CampaignList() {
                         <td>
                           <div className="mc-actions-group">
                             <Link
-                              to={`/campaigns/${camp.id}`}
+                              to={`/campaigns/${camp.hash_id || encodeHashId(camp.id)}`}
                               className="mc-action-btn-blue"
                               title="View Details"
                             >

@@ -4,6 +4,7 @@ import api from '../services/api';
 import interactiveButtonsService from '../services/interactiveButtons.service';
 import AiwavoHeader from '../components/AiwavoHeader';
 import { useAuth } from '../hooks/useAuth';
+import { encodeHashId } from '../utils/hashId';
 import '../styles/templates.css';
 
 const LANGUAGES = [
@@ -1118,7 +1119,7 @@ export default function Templates() {
                     {/* Header: Name and Status */}
                     <div className="mt-card-header">
                       <Link
-                        to={`/templates/${tpl.id}`}
+                        to={`/templates/${tpl.hash_id || encodeHashId(tpl.id)}`}
                         className="mt-tpl-name"
                         title={tpl.name}
                       >
@@ -1215,7 +1216,7 @@ export default function Templates() {
                     </button>
 
                     <Link
-                      to={`/templates/${tpl.id}`}
+                      to={`/templates/${tpl.hash_id || encodeHashId(tpl.id)}`}
                       className="mt-btn-studio"
                       title="Open full template studio & parameters"
                     >
@@ -1296,7 +1297,7 @@ export default function Templates() {
                   return (
                     <tr key={tpl.id}>
                       <td>
-                        <Link to={`/templates/${tpl.id}`} className="fw-bold text-dark text-decoration-none font-monospace">
+                        <Link to={`/templates/${tpl.hash_id || encodeHashId(tpl.id)}`} className="fw-bold text-dark text-decoration-none font-monospace">
                           {tpl.name}
                         </Link>
                       </td>
@@ -1341,7 +1342,7 @@ export default function Templates() {
                             <i className="bi bi-send-fill me-1"></i> Test
                           </button>
                           <Link
-                            to={`/templates/${tpl.id}`}
+                            to={`/templates/${tpl.hash_id || encodeHashId(tpl.id)}`}
                             className="btn btn-sm btn-outline-secondary py-1 px-2"
                             title="Open Details & Studio"
                           >

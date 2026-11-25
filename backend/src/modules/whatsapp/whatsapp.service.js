@@ -6,6 +6,7 @@ import { encryptToken, decryptToken } from '../../utils/crypto.js';
 import { ensureAllowedNumbersColumn } from '../admin/admin.service.js';
 import logger from '../../utils/logger.js';
 import { emitToTenant } from '../../socket.js';
+import { encodeHashId, decodeHashId } from '../../utils/hashId.js';
 
 /**
  * Return Meta Embedded Signup configuration required by the frontend Facebook JS SDK
@@ -1563,6 +1564,7 @@ export async function listTemplates(businessId, query = {}) {
 
   const templates = rows.map(t => ({
     ...t,
+    hash_id: encodeHashId(t.id),
     components: typeof t.components === 'string' ? JSON.parse(t.components) : t.components
   }));
 
@@ -1579,12 +1581,19 @@ export async function listTemplates(businessId, query = {}) {
 }
 
 /**
- * Get single template by ID with tenant verification
+ * Get single template by ID with tenant verification and salted hash decoding
  */
 export async function getTemplate(businessId, templateId) {
+  const numericId = decodeHashId(templateId);
+  if (!numericId) {
+    const err = new Error('Template not found or invalid identifier');
+    err.statusCode = 404;
+    throw err;
+  }
+
   if (isUsingFallback()) {
     const store = getMemoryStore();
-    const tpl = store.templates.find(t => t.id === Number(templateId) && t.business_id === Number(businessId));
+    const tpl = store.templates.find(t => t.id === Number(numericId) && t.business_id === Number(businessId));
     if (!tpl) {
       const err = new Error('Template not found');
       err.statusCode = 404;
@@ -1594,6 +1603,7 @@ export async function getTemplate(businessId, templateId) {
     const campaigns = store.campaigns?.filter(c => c.template_id === tpl.id || c.template_name === tpl.name) || [];
     return {
       ...tpl,
+      hash_id: encodeHashId(tpl.id),
       account,
       campaigns
     };
@@ -1601,7 +1611,7 @@ export async function getTemplate(businessId, templateId) {
 
   const rows = await executeQuery(
     'SELECT * FROM templates WHERE id = ? AND business_id = ? LIMIT 1',
-    [templateId, businessId]
+    [numericId, businessId]
   );
   if (!rows || rows.length === 0) {
     const err = new Error('Template not found');
@@ -1610,6 +1620,7 @@ export async function getTemplate(businessId, templateId) {
   }
 
   const tpl = rows[0];
+  tpl.hash_id = encodeHashId(tpl.id);
   tpl.components = typeof tpl.components === 'string' ? JSON.parse(tpl.components) : tpl.components;
 
   let account = null;
@@ -2239,7 +2250,7 @@ export async function checkTemplateStatus(businessId, templateId) {
 
     if (isUsingFallback()) {
       const store = getMemoryStore();
-      const stored = store.templates.find(t => t.id === Number(templateId));
+      const stored = store.templates.find(t => t.id === Number(tpl.id));
       if (stored) {
         stored.status = newStatus;
         stored.meta_template_id = realMetaId;
@@ -2248,17 +2259,20 @@ export async function checkTemplateStatus(businessId, templateId) {
         stored.last_synced_at = new Date();
       }
       saveMemoryStore();
-      return stored;
+      return {
+        ...stored,
+        hash_id: encodeHashId(stored.id)
+      };
     }
 
     await executeQuery(
       `UPDATE templates 
        SET status = ?, meta_template_id = ?, rejection_reason = ?, quality_rating = ?, last_synced_at = NOW(), updated_at = NOW()
        WHERE id = ? AND business_id = ?`,
-      [newStatus, realMetaId, rejectionReason, qualityRating, templateId, businessId]
+      [newStatus, realMetaId, rejectionReason, qualityRating, tpl.id, businessId]
     );
 
-    return getTemplate(businessId, templateId);
+    return getTemplate(businessId, tpl.id);
   } catch (err) {
     logger.warn(`[WhatsApp] Failed to refresh status for template #${templateId}: ${err.message}`);
     const error = new Error(`Meta Live Status: ${err.message}`);
@@ -2290,12 +2304,12 @@ export async function deleteTemplate(businessId, templateId) {
 
   if (isUsingFallback()) {
     const store = getMemoryStore();
-    store.templates = store.templates.filter(t => t.id !== Number(templateId));
+    store.templates = store.templates.filter(t => t.id !== Number(tpl.id));
     saveMemoryStore();
     return { success: true, message: `Template "${tpl.name}" deleted successfully` };
   }
 
-  await executeQuery('DELETE FROM templates WHERE id = ? AND business_id = ?', [templateId, businessId]);
+  await executeQuery('DELETE FROM templates WHERE id = ? AND business_id = ?', [tpl.id, businessId]);
   return { success: true, message: `Template "${tpl.name}" deleted successfully` };
 }
 
