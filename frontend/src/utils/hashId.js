@@ -17,17 +17,20 @@ export function encodeHashId(id) {
 
 /**
  * Decodes a salted hash string from a URL into the original numeric database ID.
- * Returns null if the hash is invalid or tampered.
- * Allows pure numeric strings for backwards compatibility.
+ * Direct numeric IDs (e.g. "80", "79") are strictly rejected unless allowDirectNumeric is true.
  * @param {string|number} hashOrId 
+ * @param {boolean} [allowDirectNumeric=false]
  * @returns {number|null}
  */
-export function decodeHashId(hashOrId) {
+export function decodeHashId(hashOrId, allowDirectNumeric = false) {
   if (hashOrId === null || hashOrId === undefined || hashOrId === '') return null;
   const str = String(hashOrId).trim();
   
   if (/^\d+$/.test(str)) {
-    return parseInt(str, 10);
+    if (allowDirectNumeric) {
+      return parseInt(str, 10);
+    }
+    return null;
   }
 
   try {

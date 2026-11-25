@@ -41,6 +41,14 @@ export default function TemplateDetail() {
   }, [id]);
 
   const fetchTemplate = async () => {
+    // Strictly block direct numeric IDs (e.g. /templates/80 or /templates/79) for security
+    const strId = String(id || '').trim();
+    if (/^\d+$/.test(strId)) {
+      setLoading(false);
+      setError('Direct numeric template IDs are disabled for security. Templates can only be accessed using verified secure links.');
+      return;
+    }
+
     try {
       setLoading(true);
       setError('');
@@ -290,21 +298,27 @@ export default function TemplateDetail() {
   }
 
   if (error || !template) {
+    const isDirectNumericBlocked = String(error).toLowerCase().includes('numeric');
+
     return (
       <div className="container-fluid py-5">
         <div className="card border-0 shadow-sm p-5 text-center" style={{ maxWidth: '600px', margin: '0 auto', borderRadius: '18px' }}>
           <div className="display-4 text-danger mb-3">
-            <i className="bi bi-exclamation-triangle-fill"></i>
+            <i className={`bi ${isDirectNumericBlocked ? 'bi-shield-lock-fill text-warning' : 'bi-exclamation-triangle-fill'}`}></i>
           </div>
-          <h4 className="fw-bold text-dark">Template Not Found</h4>
+          <h4 className="fw-bold text-dark">
+            {isDirectNumericBlocked ? 'Direct ID Access Blocked' : 'Template Not Found'}
+          </h4>
           <p className="text-muted mb-4">{error || 'The requested template could not be loaded.'}</p>
           <div className="d-flex justify-content-center gap-2">
-            <Link to="/templates" className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left me-1"></i> Back to Templates
+            <Link to="/templates" className="btn btn-primary">
+              <i className="bi bi-arrow-left me-1"></i> Go to Templates Studio
             </Link>
-            <button onClick={fetchTemplate} className="btn btn-success">
-              <i className="bi bi-arrow-repeat me-1"></i> Retry
-            </button>
+            {!isDirectNumericBlocked && (
+              <button onClick={fetchTemplate} className="btn btn-outline-secondary">
+                <i className="bi bi-arrow-repeat me-1"></i> Retry
+              </button>
+            )}
           </div>
         </div>
       </div>

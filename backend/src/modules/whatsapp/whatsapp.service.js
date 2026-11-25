@@ -1584,9 +1584,16 @@ export async function listTemplates(businessId, query = {}) {
  * Get single template by ID with tenant verification and salted hash decoding
  */
 export async function getTemplate(businessId, templateId) {
+  const strId = String(templateId || '').trim();
+  if (/^\d+$/.test(strId)) {
+    const err = new Error('Direct numeric template IDs are disabled for security. Please use the verified secure link from Templates Studio.');
+    err.statusCode = 403;
+    throw err;
+  }
+
   const numericId = decodeHashId(templateId);
   if (!numericId) {
-    const err = new Error('Template not found or invalid identifier');
+    const err = new Error('Template not found or invalid identifier.');
     err.statusCode = 404;
     throw err;
   }
