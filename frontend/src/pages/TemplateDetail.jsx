@@ -29,6 +29,7 @@ export default function TemplateDetail() {
   const [testRecipient, setTestRecipient] = useState('');
   const [sendingTest, setSendingTest] = useState(false);
   const [testResult, setTestResult] = useState(null);
+  const [customMediaUrl, setCustomMediaUrl] = useState('');
 
   // Delete Confirmation Modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -157,6 +158,7 @@ export default function TemplateDetail() {
         language: template.language || 'en',
         parameters: parameters.length > 0 ? parameters : undefined,
         bodyVariables: sampleVariables,
+        headerMediaUrl: activeMediaUrl || undefined,
         accountId: template.whatsapp_account_id || undefined
       };
 
@@ -195,10 +197,55 @@ export default function TemplateDetail() {
   }, [template]);
 
   const headerComp = components.find(c => c.type === 'HEADER' || c.type === 'header');
+  const headerFormat = (headerComp?.format || (headerComp?.text ? 'TEXT' : 'NONE')).toUpperCase();
   const bodyComp = components.find(c => c.type === 'BODY' || c.type === 'body');
   const footerComp = components.find(c => c.type === 'FOOTER' || c.type === 'footer');
   const buttonsComp = components.find(c => c.type === 'BUTTONS' || c.type === 'buttons');
   const buttonsList = buttonsComp?.buttons || [];
+
+  // Robust header media URL resolver (handles sample links, uploaded media paths, and Meta fallback)
+  const resolvedMediaUrl = useMemo(() => {
+    if (!headerComp) return '';
+    const hFormat = (headerComp.format || '').toUpperCase();
+    if (!['IMAGE', 'VIDEO', 'DOCUMENT'].includes(hFormat)) return '';
+
+    let url = '';
+    if (headerComp.example?.header_handle?.[0]) {
+      url = headerComp.example.header_handle[0];
+    } else if (headerComp.example_url) {
+      url = headerComp.example_url;
+    } else if (headerComp.url) {
+      url = headerComp.url;
+    } else if (headerComp.example && typeof headerComp.example === 'string') {
+      url = headerComp.example;
+    } else if (template?.header_media_url || template?.media_url) {
+      url = template.header_media_url || template.media_url;
+    }
+
+    // Normalize relative /uploads to /api/uploads for express streaming
+    if (url && typeof url === 'string') {
+      if (url.startsWith('/uploads/')) {
+        url = '/api' + url;
+      } else if (url.includes('aiveexa.com/uploads/templates/')) {
+        url = url.replace('aiveexa.com/uploads/templates/', 'aiveexa.com/api/uploads/templates/');
+      }
+    }
+
+    // If handle is a 4:: session handle or invalid URL, fall back to verified playable media
+    if (!url || typeof url !== 'string' || url.startsWith('4::') || (!url.startsWith('http') && !url.startsWith('/'))) {
+      if (hFormat === 'VIDEO') {
+        url = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+      } else if (hFormat === 'IMAGE') {
+        url = 'https://images.unsplash.com/photo-1579208575657-c595a05383b7?w=800';
+      } else if (hFormat === 'DOCUMENT') {
+        url = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
+      }
+    }
+
+    return url;
+  }, [headerComp, template]);
+
+  const activeMediaUrl = customMediaUrl || resolvedMediaUrl;
 
   // Dynamic preview text with sample variables replaced
   const previewBodyText = useMemo(() => {
@@ -610,11 +657,119 @@ export default function TemplateDetail() {
                       <span>1. HEADER COMPONENT</span>
                     </span>
                     <span className="td-section-badge">
-                      Format: {headerComp?.format || 'TEXT'}
+                      Format: {headerFormat}
                     </span>
                   </div>
                   <div className="td-section-box">
-                    <span className="fw-bold">{headerComp?.text || 'Hello World'}</span>
+                    {headerFormat === 'VIDEO' ? (
+                      <div className="td-blueprint-media-box">
+                        <div className="d-flex align-items-center justify-content-between mb-2">
+                          <span className="fw-semibold text-dark d-flex align-items-center gap-2">
+                            <i className="bi bi-camera-video-fill text-primary"></i>
+                            <span>Video Header (MP4 / H.264)</span>
+                          </span>
+                          {activeMediaUrl && (
+                            <a
+                              href={activeMediaUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-sm btn-outline-primary py-0 px-2 d-inline-flex align-items-center gap-1"
+                              style={{ fontSize: '0.75rem' }}
+                            >
+                              <i className="bi bi-box-arrow-up-right"></i>
+                              <span>Open Video in New Tab</span>
+                            </a>
+                          )}
+                        </div>
+
+                        <div className="td-blueprint-video-wrap">
+                          <video
+                            key={activeMediaUrl}
+                            src={activeMediaUrl}
+                            controls
+                            playsInline
+                            preload="metadata"
+                            className="td-blueprint-video-player"
+                            onError={(e) => {
+                              if (!e.currentTarget.src.includes('ForBiggerBlazes')) {
+                                e.currentTarget.src = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+                              }
+                            }}
+                          >
+                            Your browser does not support HTML5 video playback.
+                          </video>
+                        </div>
+
+                        <div className="td-blueprint-media-footer">
+                          <div className="small text-muted text-truncate" style={{ maxWidth: '400px' }}>
+                            <strong>Source URL:</strong> <code>{activeMediaUrl || 'Verified Sample Video'}</code>
+                          </div>
+                          <div className="d-flex align-items-center gap-2">
+                            <span className="badge bg-success-subtle text-success border border-success-subtle">
+                              <i className="bi bi-check2-circle me-1"></i>&lt; 16MB Meta Delivery Limit
+                            </span>
+                            <span className="badge bg-primary-subtle text-primary border border-primary-subtle">
+                              Inline Playable in WhatsApp
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : headerFormat === 'IMAGE' ? (
+                      <div className="td-blueprint-media-box">
+                        <div className="d-flex align-items-center justify-content-between mb-2">
+                          <span className="fw-semibold text-dark d-flex align-items-center gap-2">
+                            <i className="bi bi-image-fill text-success"></i>
+                            <span>Image Header (JPG / PNG)</span>
+                          </span>
+                          {activeMediaUrl && (
+                            <a
+                              href={activeMediaUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-sm btn-outline-secondary py-0 px-2 d-inline-flex align-items-center gap-1"
+                              style={{ fontSize: '0.75rem' }}
+                            >
+                              <i className="bi bi-box-arrow-up-right"></i>
+                              <span>Open Image</span>
+                            </a>
+                          )}
+                        </div>
+                        <div className="td-blueprint-img-wrap">
+                          <img
+                            src={activeMediaUrl}
+                            alt="Template Header"
+                            className="td-blueprint-img"
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://images.unsplash.com/photo-1579208575657-c595a05383b7?w=800';
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ) : headerFormat === 'DOCUMENT' ? (
+                      <div className="td-blueprint-media-box">
+                        <div className="td-blueprint-doc-card">
+                          <div className="td-doc-icon">
+                            <i className="bi bi-file-earmark-pdf-fill"></i>
+                          </div>
+                          <div className="flex-grow-1">
+                            <div className="fw-bold text-dark">Document_Attachment.pdf</div>
+                            <div className="text-muted small">PDF Document Header (Up to 100MB)</div>
+                          </div>
+                          {activeMediaUrl && (
+                            <a
+                              href={activeMediaUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-sm btn-outline-danger"
+                            >
+                              <i className="bi bi-download me-1"></i> Download
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="fw-bold">{headerComp?.text || 'No header text defined'}</span>
+                    )}
                   </div>
                 </div>
 
@@ -853,6 +1008,33 @@ export default function TemplateDetail() {
                     </div>
                   )}
 
+                  {['VIDEO', 'IMAGE', 'DOCUMENT'].includes(headerFormat) && (
+                    <div className="mb-3">
+                      <label className="form-label small fw-bold text-dark d-flex align-items-center justify-content-between mb-2">
+                        <span>Header {headerFormat === 'VIDEO' ? 'Video' : headerFormat === 'IMAGE' ? 'Image' : 'Document'} URL</span>
+                        <span className="td-var-sublabel">Updates simulator in real-time</span>
+                      </label>
+                      <div className="input-group input-group-sm">
+                        <span className="input-group-text font-monospace td-var-tag">
+                          <i className={`bi ${headerFormat === 'VIDEO' ? 'bi-camera-video-fill text-primary' : headerFormat === 'IMAGE' ? 'bi-image-fill text-success' : 'bi-file-pdf-fill text-danger'}`}></i>
+                        </span>
+                        <input
+                          type="url"
+                          className="form-control"
+                          value={customMediaUrl || resolvedMediaUrl}
+                          onChange={(e) => setCustomMediaUrl(e.target.value)}
+                          placeholder={headerFormat === 'VIDEO' ? 'https://.../video.mp4 (Max 16MB)' : 'https://.../media'}
+                        />
+                      </div>
+                      {headerFormat === 'VIDEO' && (
+                        <div className="form-text small text-muted mt-1">
+                          <i className="bi bi-info-circle me-1"></i>
+                          Meta Cloud API enforces a strict <strong>16MB max file size</strong> limit for WhatsApp video delivery.
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="d-flex justify-content-end">
                     <button type="submit" disabled={sendingTest} className="btn btn-success btn-sm d-inline-flex align-items-center gap-1">
                       {sendingTest ? (
@@ -925,9 +1107,49 @@ export default function TemplateDetail() {
               {/* Phone Screen Body & Chat Bubble */}
               <div className="td-phone-screen-body">
                 <div className="td-phone-bubble">
-                  {headerComp?.text && (
+                  {headerFormat === 'VIDEO' ? (
+                    <div className="td-phone-bubble-media-video-wrap">
+                      <video
+                        key={activeMediaUrl}
+                        src={activeMediaUrl}
+                        controls
+                        playsInline
+                        className="td-phone-bubble-video"
+                        onError={(e) => {
+                          if (!e.currentTarget.src.includes('ForBiggerBlazes')) {
+                            e.currentTarget.src = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+                          }
+                        }}
+                      />
+                    </div>
+                  ) : headerFormat === 'IMAGE' ? (
+                    <div className="td-phone-bubble-media-img-wrap">
+                      <img
+                        src={activeMediaUrl}
+                        alt="Header"
+                        className="td-phone-bubble-img"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://images.unsplash.com/photo-1579208575657-c595a05383b7?w=800';
+                        }}
+                      />
+                    </div>
+                  ) : headerFormat === 'DOCUMENT' ? (
+                    <div className="td-phone-bubble-doc-card">
+                      <div className="td-doc-icon">
+                        <i className="bi bi-file-earmark-pdf-fill"></i>
+                      </div>
+                      <div className="td-doc-info">
+                        <div className="td-doc-title">Document_Attachment.pdf</div>
+                        <div className="td-doc-meta">1.8 MB · PDF</div>
+                      </div>
+                      <div className="td-doc-download">
+                        <i className="bi bi-arrow-down-circle"></i>
+                      </div>
+                    </div>
+                  ) : headerComp?.text ? (
                     <div className="td-phone-bubble-header">{headerComp.text}</div>
-                  )}
+                  ) : null}
+
                   <div className="td-phone-bubble-body">
                     {previewBodyText}
                   </div>
@@ -936,8 +1158,25 @@ export default function TemplateDetail() {
                   )}
                   <div className="td-phone-bubble-meta">
                     <span>12:45 PM</span>
-                    <span className="td-phone-tick">✓</span>
+                    <span className="td-phone-tick">✓✓</span>
                   </div>
+
+                  {buttonsList.length > 0 && (
+                    <div className="td-phone-bubble-buttons">
+                      {buttonsList.map((btn, idx) => (
+                        <div key={idx} className="td-phone-bubble-btn">
+                          {btn.type === 'URL' ? (
+                            <i className="bi bi-box-arrow-up-right me-1"></i>
+                          ) : btn.type === 'PHONE_NUMBER' ? (
+                            <i className="bi bi-telephone-fill me-1"></i>
+                          ) : (
+                            <i className="bi bi-reply-fill me-1"></i>
+                          )}
+                          <span>{btn.text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

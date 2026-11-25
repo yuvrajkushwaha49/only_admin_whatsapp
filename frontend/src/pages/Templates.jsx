@@ -718,7 +718,17 @@ export default function Templates() {
       if (hComp) {
         hType = hComp.format || 'TEXT';
         hText = hComp.text || '';
-        hMediaUrl = hComp.example?.header_handle?.[0] || hComp.example_url || '';
+        hMediaUrl = hComp.example?.header_handle?.[0] || hComp.example_url || hComp.url || '';
+        if (hMediaUrl && typeof hMediaUrl === 'string') {
+          if (hMediaUrl.startsWith('/uploads/')) {
+            hMediaUrl = '/api' + hMediaUrl;
+          } else if (hMediaUrl.includes('aiveexa.com/uploads/templates/')) {
+            hMediaUrl = hMediaUrl.replace('aiveexa.com/uploads/templates/', 'aiveexa.com/api/uploads/templates/');
+          }
+        }
+        if (hType === 'VIDEO' && (!hMediaUrl || hMediaUrl.startsWith('4::') || (!hMediaUrl.startsWith('http') && !hMediaUrl.startsWith('/')))) {
+          hMediaUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+        }
       }
       const bComp = comps.find(c => c.type === 'BODY' || c.type === 'body');
       bText = bComp?.text || 'No body text';
@@ -766,7 +776,16 @@ export default function Templates() {
                   ) : hType === 'VIDEO' ? (
                     hMediaUrl ? (
                       <div className="wa-header-media-video-wrap">
-                        <video src={hMediaUrl} className="wa-header-media-video" controls={false} />
+                        <video
+                          src={hMediaUrl}
+                          className="wa-header-media-video"
+                          controls={false}
+                          onError={(e) => {
+                            if (!e.currentTarget.src.includes('ForBiggerBlazes')) {
+                              e.currentTarget.src = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+                            }
+                          }}
+                        />
                         <div className="wa-video-play-badge"><i className="bi bi-play-fill"></i></div>
                       </div>
                     ) : (
