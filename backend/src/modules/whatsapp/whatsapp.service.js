@@ -1121,15 +1121,17 @@ export async function setPrimaryAccount(businessId, accountId) {
 /**
  * Get Single Account Details (Sanitized)
  */
-export async function getAccount(businessId, accountId) {
+export async function getAccount(businessId, accountId, allowDirectNumeric = false) {
   const strId = String(accountId || '').trim();
   if (/^\d+$/.test(strId)) {
-    const err = new Error('Direct numeric account IDs are disabled for security. Please use the verified secure link from WhatsApp Accounts.');
-    err.statusCode = 403;
-    throw err;
+    if (!allowDirectNumeric) {
+      const err = new Error('Direct numeric account IDs are disabled for security. Please use the verified secure link from WhatsApp Accounts.');
+      err.statusCode = 403;
+      throw err;
+    }
   }
 
-  const numAccountId = decodeHashId(accountId);
+  const numAccountId = /^\d+$/.test(strId) ? Number(strId) : decodeHashId(accountId);
   if (!numAccountId) {
     const err = new Error('WhatsApp Account not found or invalid identifier.');
     err.statusCode = 404;
@@ -1629,15 +1631,17 @@ export async function listTemplates(businessId, query = {}) {
 /**
  * Get single template by ID with tenant verification and salted hash decoding
  */
-export async function getTemplate(businessId, templateId) {
+export async function getTemplate(businessId, templateId, allowDirectNumeric = false) {
   const strId = String(templateId || '').trim();
   if (/^\d+$/.test(strId)) {
-    const err = new Error('Direct numeric template IDs are disabled for security. Please use the verified secure link from Templates Studio.');
-    err.statusCode = 403;
-    throw err;
+    if (!allowDirectNumeric) {
+      const err = new Error('Direct numeric template IDs are disabled for security. Please use the verified secure link from Templates Studio.');
+      err.statusCode = 403;
+      throw err;
+    }
   }
 
-  const numericId = decodeHashId(templateId);
+  const numericId = /^\d+$/.test(strId) ? Number(strId) : decodeHashId(templateId);
   if (!numericId) {
     const err = new Error('Template not found or invalid identifier.');
     err.statusCode = 404;
@@ -3017,8 +3021,19 @@ export async function updateAccountToken(businessId, accountId, newToken) {
 
   const cleanToken = newToken.trim();
 
-  // Fetch account with credentials
-  const account = await getAccount(numBusinessId, numAccountId);
+  // Fetch account directly with credentials
+  let account = null;
+  if (isUsingFallback()) {
+    const store = getMemoryStore();
+    account = store.whatsapp_accounts?.find(a => a.id === numAccountId && a.business_id === numBusinessId);
+  } else {
+    const rows = await executeQuery(
+      'SELECT * FROM whatsapp_accounts WHERE id = ? AND business_id = ? LIMIT 1',
+      [numAccountId, numBusinessId]
+    );
+    account = rows?.[0] || null;
+  }
+
   if (!account) {
     const err = new Error('WhatsApp Account not found or unauthorized for this business');
     err.statusCode = 404;
@@ -3037,16 +3052,12 @@ export async function updateAccountToken(businessId, accountId, newToken) {
   const encrypted = encryptToken(cleanToken);
 
   if (isUsingFallback()) {
-    const store = getMemoryStore();
-    const target = store.whatsapp_accounts?.find(a => a.id === numAccountId && a.business_id === numBusinessId);
-    if (target) {
-      target.access_token_encrypted = encrypted;
-      target.status = 'connected';
-      target.connection_status = 'CONNECTED';
-      target.last_verified_at = new Date();
-      target.updated_at = new Date();
-      saveMemoryStore();
-    }
+    account.access_token_encrypted = encrypted;
+    account.status = 'connected';
+    account.connection_status = 'CONNECTED';
+    account.last_verified_at = new Date();
+    account.updated_at = new Date();
+    saveMemoryStore();
   } else {
     await executeQuery(
       `UPDATE whatsapp_accounts 
@@ -3062,7 +3073,7 @@ export async function updateAccountToken(businessId, accountId, newToken) {
   return {
     success: true,
     message: 'WhatsApp Access Token updated and verified with Meta Cloud API successfully!',
-    account: await getAccount(numBusinessId, numAccountId)
+    account: sanitizeAccount(account)
   };
 }
 
