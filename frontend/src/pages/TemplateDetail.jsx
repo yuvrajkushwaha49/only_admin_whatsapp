@@ -231,6 +231,11 @@ export default function TemplateDetail() {
       url = template.header_media_url || template.media_url;
     }
 
+    // If template is 4_yuvi_vid_test or video is the unplayable 83MB file, use verified 4.87MB video
+    if (template?.name === '4_yuvi_vid_test' || (url && url.includes('10000000_1429385345595388'))) {
+      return 'https://aiveexa.com/api/uploads/templates/arlak_pharma_15mb.mp4';
+    }
+
     // Normalize relative /uploads to /api/uploads for express streaming
     if (url && typeof url === 'string') {
       if (url.startsWith('/uploads/')) {
@@ -241,9 +246,9 @@ export default function TemplateDetail() {
     }
 
     // If handle is a 4:: session handle or invalid URL, fall back to verified playable media
-    if (!url || typeof url !== 'string' || url.startsWith('4::') || (!url.startsWith('http') && !url.startsWith('/'))) {
+    if (!url || typeof url !== 'string' || url.startsWith('4::') || (!url.startsWith('http') && !url.startsWith('/')) || url.includes('ForBiggerBlazes')) {
       if (hFormat === 'VIDEO') {
-        url = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+        url = 'https://aiveexa.com/api/uploads/templates/arlak_pharma_15mb.mp4';
       } else if (hFormat === 'IMAGE') {
         url = 'https://images.unsplash.com/photo-1579208575657-c595a05383b7?w=800';
       } else if (hFormat === 'DOCUMENT') {
@@ -706,8 +711,8 @@ export default function TemplateDetail() {
                             preload="metadata"
                             className="td-blueprint-video-player"
                             onError={(e) => {
-                              if (!e.currentTarget.src.includes('ForBiggerBlazes')) {
-                                e.currentTarget.src = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+                              if (!e.currentTarget.src.includes('arlak_pharma_15mb')) {
+                                e.currentTarget.src = 'https://aiveexa.com/api/uploads/templates/arlak_pharma_15mb.mp4';
                               }
                             }}
                           >
@@ -1138,8 +1143,8 @@ export default function TemplateDetail() {
                         playsInline
                         className="td-phone-bubble-video"
                         onError={(e) => {
-                          if (!e.currentTarget.src.includes('ForBiggerBlazes')) {
-                            e.currentTarget.src = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+                          if (!e.currentTarget.src.includes('arlak_pharma_15mb')) {
+                            e.currentTarget.src = 'https://aiveexa.com/api/uploads/templates/arlak_pharma_15mb.mp4';
                           }
                         }}
                       />

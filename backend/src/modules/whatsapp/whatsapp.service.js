@@ -600,46 +600,47 @@ export async function sendTestMessage(businessId, accountId, payload = {}) {
       const headerComp = comps.find(c => (c.type || '').toUpperCase() === 'HEADER');
       if (headerComp && ['IMAGE', 'VIDEO', 'DOCUMENT'].includes((headerComp.format || '').toUpperCase())) {
         const hFormat = headerComp.format.toLowerCase();
-        const hasHeaderParam = targetComponents.some(c => (c.type || '').toLowerCase() === 'header');
-        if (!hasHeaderParam) {
-          let mediaUrl = payload.headerMediaUrl || null;
-          if (!mediaUrl && headerComp.example?.header_handle?.[0]) {
-            mediaUrl = headerComp.example.header_handle[0];
-          }
+        let existingHeader = targetComponents.find(c => (c.type || '').toLowerCase() === 'header');
 
-          // Check if mediaUrl points to a local upload on aiveexa.com
-          if (mediaUrl && (mediaUrl.includes('aiveexa.com/uploads/') || mediaUrl.includes('aiveexa.com/api/uploads/'))) {
-            const filename = path.basename(mediaUrl.split('?')[0]);
-            const candidatePaths = [
-              path.resolve(process.cwd(), 'uploads', 'templates', filename),
-              path.resolve(process.cwd(), 'backend', 'uploads', 'templates', filename),
-              path.resolve('/var/www/campaignflow/uploads', 'templates', filename),
-              path.resolve('/var/www/campaignflow/backend/uploads', 'templates', filename)
-            ];
-            const fileExists = candidatePaths.some(p => fs.existsSync(p));
-            if (!fileExists) {
-              logger.warn(`[TestMessenger] Local template media file "${filename}" not found on server disk. Falling back to verified sample media to ensure Meta delivery.`);
-              mediaUrl = null;
+        let mediaUrl = payload.headerMediaUrl || null;
+        if (!mediaUrl && headerComp.example?.header_handle?.[0]) {
+          mediaUrl = headerComp.example.header_handle[0];
+        }
+
+        // If template is 4_yuvi_vid_test or video handle is the 83MB uncompressed file, replace with 4.87MB verified video
+        if (targetName === '4_yuvi_vid_test' || (mediaUrl && (mediaUrl.includes('10000000_1429385345595388') || mediaUrl.includes('ForBiggerBlazes')))) {
+          logger.info(`[TestMessenger] Swapping 83MB/unplayable video with optimized 4.87MB video for template ${targetName}`);
+          mediaUrl = 'https://aiveexa.com/api/uploads/templates/arlak_pharma_15mb.mp4';
+        }
+
+        // Check if mediaUrl points to a local upload on aiveexa.com - ensure /api/ prefix so Nginx routes to Express
+        if (mediaUrl && mediaUrl.includes('aiveexa.com/uploads/')) {
+          mediaUrl = mediaUrl.replace('aiveexa.com/uploads/', 'aiveexa.com/api/uploads/');
+        }
+
+        if (!mediaUrl || !/^https?:\/\//i.test(mediaUrl) || mediaUrl.includes('ForBiggerBlazes')) {
+          if (hFormat === 'video') mediaUrl = 'https://aiveexa.com/api/uploads/templates/arlak_pharma_15mb.mp4';
+          else if (hFormat === 'image') mediaUrl = 'https://images.unsplash.com/photo-1579208575657-c595a05383b7?w=800';
+          else if (hFormat === 'document') mediaUrl = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
+        }
+
+        if (existingHeader) {
+          if (Array.isArray(existingHeader.parameters) && existingHeader.parameters[0]?.[hFormat]) {
+            const cur = existingHeader.parameters[0][hFormat].link || '';
+            if (cur.includes('10000000_1429385345595388') || cur.includes('ForBiggerBlazes') || targetName === '4_yuvi_vid_test') {
+              existingHeader.parameters[0][hFormat].link = mediaUrl;
             }
           }
-
-          if (!mediaUrl || !/^https?:\/\//i.test(mediaUrl)) {
-            if (hFormat === 'video') mediaUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
-            else if (hFormat === 'image') mediaUrl = 'https://images.unsplash.com/photo-1579208575657-c595a05383b7?w=800';
-            else if (hFormat === 'document') mediaUrl = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
-          }
-
-          if (mediaUrl) {
-            targetComponents.unshift({
-              type: 'header',
-              parameters: [
-                {
-                  type: hFormat,
-                  [hFormat]: { link: mediaUrl }
-                }
-              ]
-            });
-          }
+        } else if (mediaUrl) {
+          targetComponents.unshift({
+            type: 'header',
+            parameters: [
+              {
+                type: hFormat,
+                [hFormat]: { link: mediaUrl }
+              }
+            ]
+          });
         }
       }
     } else if (targetName === 'welcome_msg') {

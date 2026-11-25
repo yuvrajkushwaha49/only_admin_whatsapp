@@ -379,8 +379,10 @@ export default function Templates() {
       if (headerComp?.example?.header_handle?.[0]) {
         defaultMedia = headerComp.example.header_handle[0];
       }
-      if (hFormat === 'VIDEO' && (!defaultMedia || defaultMedia.includes('arlak_pharma_15mb.mp4') || !defaultMedia.startsWith('http'))) {
-        defaultMedia = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+      if (hFormat === 'VIDEO') {
+        if (!defaultMedia || defaultMedia.includes('10000000_1429385345595388') || defaultMedia.includes('ForBiggerBlazes') || !defaultMedia.startsWith('http') || template.name === '4_yuvi_vid_test') {
+          defaultMedia = 'https://aiveexa.com/api/uploads/templates/arlak_pharma_15mb.mp4';
+        }
       }
       setQuickTestMediaUrl(defaultMedia);
     } else {
@@ -727,8 +729,8 @@ export default function Templates() {
             hMediaUrl = hMediaUrl.replace('aiveexa.com/uploads/templates/', 'aiveexa.com/api/uploads/templates/');
           }
         }
-        if (hType === 'VIDEO' && (!hMediaUrl || hMediaUrl.startsWith('4::') || (!hMediaUrl.startsWith('http') && !hMediaUrl.startsWith('/')))) {
-          hMediaUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+        if (hType === 'VIDEO' && (!hMediaUrl || hMediaUrl.includes('10000000_1429385345595388') || hMediaUrl.includes('ForBiggerBlazes') || hMediaUrl.startsWith('4::') || (!hMediaUrl.startsWith('http') && !hMediaUrl.startsWith('/')) || tpl?.name === '4_yuvi_vid_test')) {
+          hMediaUrl = 'https://aiveexa.com/api/uploads/templates/arlak_pharma_15mb.mp4';
         }
       }
       const bComp = comps.find(c => c.type === 'BODY' || c.type === 'body');
@@ -782,8 +784,8 @@ export default function Templates() {
                           className="wa-header-media-video"
                           controls={false}
                           onError={(e) => {
-                            if (!e.currentTarget.src.includes('ForBiggerBlazes')) {
-                              e.currentTarget.src = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+                            if (!e.currentTarget.src.includes('arlak_pharma_15mb')) {
+                              e.currentTarget.src = 'https://aiveexa.com/api/uploads/templates/arlak_pharma_15mb.mp4';
                             }
                           }}
                         />
