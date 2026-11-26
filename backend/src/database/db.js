@@ -256,7 +256,7 @@ async function initFallbackStore() {
       console.error('⚠️ [Database] Failed to parse existing dev_store.json:', e.message);
       try {
         fs.copyFileSync(DEV_STORE_PATH, `${DEV_STORE_PATH}.corrupted_${Date.now()}`);
-      } catch (_) {}
+      } catch (_) { }
     }
   }
 
@@ -724,7 +724,7 @@ export async function checkConnection() {
       if (logCount[0]?.count === 0) {
         await seedMySqlAuditLogs(p);
       }
-    } catch (_) {}
+    } catch (_) { }
 
     // Check and seed notifications if empty
     try {
@@ -745,7 +745,7 @@ export async function checkConnection() {
       if (notifCount[0]?.count === 0) {
         await seedMySqlNotifications(p);
       }
-    } catch (_) {}
+    } catch (_) { }
 
     // Check and create password_resets table if not exists
     try {
@@ -761,7 +761,38 @@ export async function checkConnection() {
         INDEX idx_email (email),
         INDEX idx_reset_token (reset_token)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`);
-    } catch (_) {}
+    } catch (_) { }
+
+    // Auto-create product_categories and products if not exists
+    try {
+      await p.execute(`CREATE TABLE IF NOT EXISTS product_categories (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        business_id BIGINT UNSIGNED NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        description VARCHAR(255) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_cat_business (business_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`);
+
+      await p.execute(`CREATE TABLE IF NOT EXISTS products (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        business_id BIGINT UNSIGNED NOT NULL,
+        category_id BIGINT UNSIGNED NULL,
+        name VARCHAR(150) NOT NULL,
+        sku VARCHAR(64) NULL,
+        price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+        currency VARCHAR(10) DEFAULT 'INR',
+        description TEXT NULL,
+        image_url TEXT NULL,
+        whatsapp_message_text TEXT NULL,
+        stock_status ENUM('in_stock', 'low_stock', 'out_of_stock') DEFAULT 'in_stock',
+        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_prod_business (business_id, is_active),
+        INDEX idx_prod_cat (category_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`);
+    } catch (_) { }
 
     // Ensure live Indian WhatsApp account has active encrypted access token matching its real WABA & Phone ID
     try {
@@ -777,7 +808,7 @@ export async function checkConnection() {
             access_token_encrypted = ?, status = 'connected', connection_status = 'CONNECTED'
         WHERE business_id = 1 AND (id IN (45, 94, 85) OR is_primary = 1)
       `, [encToken]);
-    } catch (_) {}
+    } catch (_) { }
 
     return true;
   } catch (err) {
@@ -1019,24 +1050,6 @@ function executeFallbackQuery(sql, params = []) {
         newRecord.status = 'draft';
         newRecord.draft_definition = typeof params[5] === 'string' ? JSON.parse(params[5]) : params[5];
         newRecord.created_by = params[6] || null;
-      }
-      if (insertTable === 'product_categories') {
-        newRecord.business_id = Number(params[0]);
-        newRecord.name = params[1];
-        newRecord.description = params[2] || '';
-      }
-      if (insertTable === 'products') {
-        newRecord.business_id = Number(params[0]);
-        newRecord.category_id = params[1] ? Number(params[1]) : null;
-        newRecord.name = params[2];
-        newRecord.sku = params[3] || '';
-        newRecord.price = Number(params[4]) || 0;
-        newRecord.currency = params[5] || 'INR';
-        newRecord.description = params[6] || '';
-        newRecord.image_url = params[7] || '';
-        newRecord.whatsapp_message_text = params[8] || '';
-        newRecord.stock_status = params[9] || 'in_stock';
-        newRecord.is_active = 1;
       }
       memoryStore[insertTable].push(newRecord);
       return { insertId: newId, affectedRows: 1 };
