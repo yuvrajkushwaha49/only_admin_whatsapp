@@ -716,6 +716,11 @@ export async function sendTestMessage(businessId, accountId, payload = {}) {
         customErr.statusCode = 400;
         throw customErr;
       }
+      if (errMsg.includes('Unsupported post request') || errMsg.includes('does not exist') || errMsg.includes('missing permissions')) {
+        const customErr = new Error(`Meta Cloud API Error: Phone Number ID '${account.phone_number_id}' for sender '${account.phone_number}' does not exist on Meta or lacks permissions. This occurs when an expired test number or WABA ID is selected. Please select a valid WhatsApp number or delete this invalid account from WhatsApp Accounts.`);
+        customErr.statusCode = 400;
+        throw customErr;
+      }
       sendErr.statusCode = sendErr.statusCode || 400;
       throw sendErr;
     }
