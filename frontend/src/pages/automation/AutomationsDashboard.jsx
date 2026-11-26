@@ -381,9 +381,18 @@ export default function AutomationsDashboard() {
                             type="button"
                             className="btn btn-outline-secondary"
                             onClick={() => navigate(`/automations/${auto.hashId || auto.id}/builder`)}
-                            title="Edit Automation"
+                            title="Edit in Classic Builder"
                           >
                             <i className="bi bi-pencil"></i>
+                          </button>
+
+                          <button
+                            type="button"
+                            className="btn btn-outline-success"
+                            onClick={() => navigate(`/automations/${auto.hashId || auto.id}/canvas`)}
+                            title="Open in Visual Flow Canvas (Beta)"
+                          >
+                            <i className="bi bi-diagram-3"></i>
                           </button>
 
                           <button

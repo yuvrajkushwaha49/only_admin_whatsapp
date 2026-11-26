@@ -25,6 +25,7 @@ import TemplateDetail from './pages/TemplateDetail';
 import InteractiveButtons from './pages/InteractiveButtons';
 import AutomationsDashboard from './pages/automation/AutomationsDashboard';
 import AutomationBuilder from './pages/automation/AutomationBuilder';
+import FlowCanvasBuilder from './pages/automation/flow/FlowCanvasBuilder';
 import ProductLibrary from './pages/products/ProductLibrary';
 import Inbox from './pages/Inbox';
 import CampaignList from './pages/CampaignList';
@@ -233,6 +234,14 @@ export default function App() {
           element={
             <ProtectedRoute allowedRoles={['owner', 'admin', 'marketer']}>
               <AutomationBuilder />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/automations/:id/canvas"
+          element={
+            <ProtectedRoute allowedRoles={['owner', 'admin', 'marketer']}>
+              <FlowCanvasBuilder />
             </ProtectedRoute>
           }
         />

@@ -1,0 +1,541 @@
+/* ========================================================================
+   Visual Flow Canvas Builder Stylesheet
+   Modern Interactive n8n / Aisency Style Canvas
+   ======================================================================== */
+
+.flow-builder-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 72px);
+  background: #f8fafc;
+  overflow: hidden;
+  position: relative;
+  user-select: none;
+}
+
+/* 1. Canvas Top Header Bar */
+.flow-canvas-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 20;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.flow-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.flow-back-btn {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.flow-back-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.flow-title-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.flow-auto-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.flow-status-pill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.flow-status-pill.published {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.flow-status-pill.draft {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+/* Mode Switcher Toggle */
+.flow-view-switcher {
+  display: flex;
+  align-items: center;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.flow-view-btn {
+  border: none;
+  background: transparent;
+  padding: 0.4rem 0.85rem;
+  border-radius: 7px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.15s ease;
+}
+
+.flow-view-btn:hover {
+  color: #0f172a;
+}
+
+.flow-view-btn.active {
+  background: #ffffff;
+  color: #059669;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.flow-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+/* 2. Main Workspace Layout */
+.flow-canvas-workspace {
+  display: flex;
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Left Node Palette / Library */
+.flow-palette-sidebar {
+  width: 250px;
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.02);
+}
+
+.flow-palette-header {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  font-weight: 700;
+  font-size: 0.84rem;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flow-palette-items {
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  overflow-y: auto;
+}
+
+.flow-palette-item {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.75rem 0.85rem;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all 0.15s ease;
+}
+
+.flow-palette-item:hover {
+  border-color: #10b981;
+  background: #f0fdf4;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(16, 185, 129, 0.1);
+}
+
+.flow-palette-item:active {
+  cursor: grabbing;
+}
+
+.flow-palette-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.flow-palette-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.15rem;
+}
+
+.flow-palette-desc {
+  font-size: 0.72rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.25;
+}
+
+/* 3. The Interactive Infinite Dot Canvas */
+.flow-canvas-viewport {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  cursor: grab;
+  background-color: #f8fafc;
+  background-image: radial-gradient(#cbd5e1 1.2px, transparent 1.2px);
+  background-size: 24px 24px;
+}
+
+.flow-canvas-viewport:active {
+  cursor: grabbing;
+}
+
+.flow-canvas-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5000px;
+  height: 5000px;
+  transform-origin: 0 0;
+}
+
+/* Floating Zoom & Canvas Controls */
+.flow-canvas-controls {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  gap: 4px;
+  z-index: 15;
+}
+
+.flow-control-btn {
+  background: transparent;
+  border: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.flow-control-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.flow-zoom-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #475569;
+  padding: 0 0.5rem;
+}
+
+/* SVG Connection Lines Overlay */
+.flow-wires-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.flow-wire-path {
+  fill: none;
+  stroke: #94a3b8;
+  stroke-width: 2.5px;
+  stroke-linecap: round;
+  transition: stroke 0.2s ease, stroke-width 0.2s ease;
+}
+
+.flow-wire-path.active {
+  stroke: #10b981;
+  stroke-width: 3px;
+  filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.4));
+}
+
+.flow-wire-path.btn-wire {
+  stroke: #6366f1;
+}
+
+/* 4. Canvas Node Cards */
+.flow-node-card {
+  position: absolute;
+  width: 280px;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(0, 0, 0, 0.02);
+  cursor: move;
+  z-index: 5;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+}
+
+.flow-node-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.12);
+}
+
+.flow-node-card.selected {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2), 0 10px 28px -4px rgba(16, 185, 129, 0.15);
+  z-index: 8;
+}
+
+/* Node Header */
+.flow-node-header {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.flow-node-header.trigger {
+  background: #f0fdf4;
+  border-bottom-color: #dcfce7;
+}
+
+.flow-node-header.message {
+  background: #f8fafc;
+}
+
+.flow-node-header.action {
+  background: #fef3c7;
+  border-bottom-color: #fde68a;
+}
+
+.flow-node-title-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.flow-node-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  color: #ffffff;
+}
+
+.flow-node-name {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  max-width: 170px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.flow-node-body {
+  padding: 0.85rem 1rem;
+}
+
+.flow-node-preview-text {
+  font-size: 0.8rem;
+  color: #475569;
+  line-height: 1.35;
+  background: #f8fafc;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
+  max-height: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0.65rem;
+  white-space: pre-wrap;
+}
+
+/* Buttons inside node card */
+.flow-node-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.flow-node-btn-row {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+.flow-node-btn-row:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+/* Connector Ports (Dots on card edges) */
+.flow-port-input {
+  position: absolute;
+  top: 50%;
+  left: -9px;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #94a3b8;
+  cursor: crosshair;
+  transition: all 0.15s ease;
+  z-index: 10;
+}
+
+.flow-port-input:hover {
+  border-color: #10b981;
+  background: #10b981;
+  transform: translateY(-50%) scale(1.2);
+}
+
+.flow-port-output {
+  position: absolute;
+  top: 50%;
+  right: -9px;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #10b981;
+  cursor: crosshair;
+  transition: all 0.15s ease;
+  z-index: 10;
+}
+
+.flow-port-output:hover {
+  background: #10b981;
+  transform: translateY(-50%) scale(1.25);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+
+.flow-port-btn-output {
+  position: absolute;
+  right: -7px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2.5px solid #6366f1;
+  cursor: crosshair;
+  transition: all 0.15s ease;
+}
+
+.flow-port-btn-output:hover {
+  background: #6366f1;
+  transform: translateY(-50%) scale(1.25);
+}
+
+/* 5. Right Slide-out Step Inspector Drawer */
+.flow-inspector-drawer {
+  width: 380px;
+  background: #ffffff;
+  border-left: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.04);
+}
+
+.flow-inspector-header {
+  padding: 1.15rem 1.35rem;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flow-inspector-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.flow-inspector-body {
+  padding: 1.25rem 1.35rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.flow-form-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}

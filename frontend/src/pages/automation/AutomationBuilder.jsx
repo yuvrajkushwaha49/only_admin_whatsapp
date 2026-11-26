@@ -166,6 +166,26 @@ export default function AutomationBuilder() {
         </div>
 
         <div className="d-flex align-items-center gap-2">
+          {/* Mode Switcher */}
+          <div className="d-flex align-items-center bg-light border rounded-3 p-1 me-2">
+            <button 
+              type="button" 
+              className="btn btn-sm bg-white shadow-sm fw-bold text-success py-1 px-2.5 rounded-2"
+              style={{ fontSize: '0.78rem' }}
+            >
+              <i className="bi bi-list-check me-1"></i> Classic Editor
+            </button>
+            <button 
+              type="button" 
+              className="btn btn-sm text-muted fw-semibold py-1 px-2.5 rounded-2"
+              style={{ fontSize: '0.78rem' }}
+              onClick={() => navigate(`/automations/${id}/canvas`)}
+              title="Try modern Drag & Drop Flow Canvas"
+            >
+              <i className="bi bi-diagram-3 me-1"></i> Visual Canvas (Beta)
+            </button>
+          </div>
+
           {automation.status === 'published' && (
             <button
               type="button"
