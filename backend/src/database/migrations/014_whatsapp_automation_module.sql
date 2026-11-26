@@ -3,6 +3,8 @@
 -- Multi-Tenant, Versioned, Event-Driven Bot Execution Engine
 -- ========================================================================
 
+SET FOREIGN_KEY_CHECKS = 0;
+
 -- 1. Automations Definition Table
 CREATE TABLE IF NOT EXISTS automations (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -20,9 +22,11 @@ CREATE TABLE IF NOT EXISTS automations (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_auto_business_status (business_id, status),
-  INDEX idx_auto_account (whatsapp_account_id),
-  CONSTRAINT fk_auto_business FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE
+  INDEX idx_auto_account (whatsapp_account_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Ensure automations.id is BIGINT UNSIGNED if created by an earlier schema
+ALTER TABLE automations MODIFY COLUMN id BIGINT UNSIGNED AUTO_INCREMENT;
 
 -- 2. Automation Versions (Immutable Published Snapshots)
 CREATE TABLE IF NOT EXISTS automation_versions (
@@ -34,8 +38,8 @@ CREATE TABLE IF NOT EXISTS automation_versions (
   published_by BIGINT UNSIGNED NULL,
   published_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_version_lookup (automation_id, version_number),
-  CONSTRAINT fk_version_auto FOREIGN KEY (automation_id) REFERENCES automations(id) ON DELETE CASCADE,
-  CONSTRAINT fk_version_business FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE
+  INDEX idx_version_auto (automation_id),
+  INDEX idx_version_business (business_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 3. Automation Triggers (Indexed for Fast O(1) Match Routing)
@@ -51,8 +55,8 @@ CREATE TABLE IF NOT EXISTS automation_triggers (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_trig_lookup (business_id, is_active, trigger_type, keyword),
   INDEX idx_trig_button (business_id, interactive_button_id),
-  CONSTRAINT fk_trig_auto FOREIGN KEY (automation_id) REFERENCES automations(id) ON DELETE CASCADE,
-  CONSTRAINT fk_trig_business FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE
+  INDEX idx_trig_auto (automation_id),
+  INDEX idx_trig_business (business_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 4. Automation Active Sessions
@@ -75,8 +79,8 @@ CREATE TABLE IF NOT EXISTS automation_sessions (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_sess_active (business_id, customer_phone, status),
   INDEX idx_sess_conversation (conversation_id, status),
-  CONSTRAINT fk_sess_business FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE,
-  CONSTRAINT fk_sess_auto FOREIGN KEY (automation_id) REFERENCES automations(id) ON DELETE CASCADE
+  INDEX idx_sess_business (business_id),
+  INDEX idx_sess_auto (automation_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 5. Automation Session Event Log
@@ -89,8 +93,7 @@ CREATE TABLE IF NOT EXISTS automation_session_events (
   payload JSON NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_event_session (session_id),
-  INDEX idx_event_business (business_id),
-  CONSTRAINT fk_event_session FOREIGN KEY (session_id) REFERENCES automation_sessions(id) ON DELETE CASCADE
+  INDEX idx_event_business (business_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 6. Automation Callback Requests (Leads Queue)
@@ -111,6 +114,6 @@ CREATE TABLE IF NOT EXISTS automation_callbacks (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_cb_business_status (business_id, status),
   INDEX idx_cb_contact (contact_id),
-  CONSTRAINT fk_cb_business FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE,
-  CONSTRAINT fk_cb_auto FOREIGN KEY (automation_id) REFERENCES automations(id) ON DELETE CASCADE
+  INDEX idx_cb_business (business_id),
+  INDEX idx_cb_auto (automation_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

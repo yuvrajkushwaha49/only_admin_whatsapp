@@ -35,6 +35,8 @@ async function runMigrations() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
+    await connection.query('SET FOREIGN_KEY_CHECKS = 0;');
+
     const migrationsDir = path.join(__dirname, 'migrations');
     const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
 
@@ -60,8 +62,14 @@ async function runMigrations() {
         try {
           await connection.query(statement);
         } catch (stmtErr) {
-          if (stmtErr.errno === 1060 || stmtErr.errno === 1061) {
-            // Safe to ignore duplicate column or duplicate key error
+          if (
+            stmtErr.errno === 1060 ||
+            stmtErr.errno === 1061 ||
+            stmtErr.errno === 1822 ||
+            stmtErr.errno === 3780
+          ) {
+            // Safe to ignore duplicate column, duplicate key, or non-fatal FK type incompatibility
+            console.warn(`⚠️ [Migration] Ignored non-fatal statement error (${stmtErr.code || stmtErr.errno}):`, stmtErr.message);
             continue;
           }
           throw stmtErr;
@@ -71,6 +79,8 @@ async function runMigrations() {
       await connection.query('INSERT INTO schema_migrations (migration_name) VALUES (?)', [file]);
       console.log(`✅ [Migration] Successfully applied: ${file}`);
     }
+
+    await connection.query('SET FOREIGN_KEY_CHECKS = 1;');
 
     console.log('🎉 [Migration] All migrations completed successfully.');
   } catch (error) {

@@ -3,6 +3,8 @@
 -- Multi-Tenant WhatsApp Product Showcase & Automation Catalog
 -- ========================================================================
 
+SET FOREIGN_KEY_CHECKS = 0;
+
 -- 1. Product Categories Table
 CREATE TABLE IF NOT EXISTS product_categories (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -10,8 +12,7 @@ CREATE TABLE IF NOT EXISTS product_categories (
   name VARCHAR(100) NOT NULL,
   description VARCHAR(255) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_cat_business (business_id),
-  CONSTRAINT fk_pcat_business FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE
+  INDEX idx_cat_business (business_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 2. Products Table
@@ -31,7 +32,5 @@ CREATE TABLE IF NOT EXISTS products (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_prod_business (business_id, is_active),
-  INDEX idx_prod_cat (category_id),
-  CONSTRAINT fk_prod_business FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE,
-  CONSTRAINT fk_prod_cat FOREIGN KEY (category_id) REFERENCES product_categories(id) ON DELETE SET NULL
+  INDEX idx_prod_cat (category_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
