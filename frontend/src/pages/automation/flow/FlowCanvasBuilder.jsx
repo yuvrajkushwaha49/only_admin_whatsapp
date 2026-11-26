@@ -271,7 +271,7 @@ export default function FlowCanvasBuilder() {
 
       setDefinition(prev => ({
         ...prev,
-        steps: prev.steps.map(step => 
+        steps: prev.steps.map(step =>
           step.id === draggingNodeId
             ? { ...step, position: { x: Math.max(20, newX), y: Math.max(20, newY) } }
             : step
@@ -353,7 +353,7 @@ export default function FlowCanvasBuilder() {
   const updateStepField = (stepId, field, value) => {
     setDefinition(prev => ({
       ...prev,
-      steps: prev.steps.map(step => 
+      steps: prev.steps.map(step =>
         step.id === stepId ? { ...step, [field]: value } : step
       )
     }));
@@ -486,7 +486,7 @@ export default function FlowCanvasBuilder() {
                 <g key={`btn_${step.id}_${btn.id || bIdx}`} className="flow-wire-group">
                   <path d={d} className="flow-wire-path btn-wire" markerEnd="url(#arrowhead-blue)" />
                   {/* Disconnect Badge on Wire */}
-                  <g 
+                  <g
                     className="flow-wire-delete-badge"
                     transform={`translate(${midX}, ${midY})`}
                     onClick={(e) => {
@@ -520,7 +520,7 @@ export default function FlowCanvasBuilder() {
           lines.push(
             <g key={`node_${step.id}`} className="flow-wire-group">
               <path d={d} className="flow-wire-path active" markerEnd="url(#arrowhead-green)" />
-              <g 
+              <g
                 className="flow-wire-delete-badge"
                 transform={`translate(${midX}, ${midY})`}
                 onClick={(e) => {
@@ -557,11 +557,11 @@ export default function FlowCanvasBuilder() {
       const d = `M ${startX} ${startY} C ${startX + deltaX} ${startY}, ${endX - deltaX} ${endY}, ${endX} ${endY}`;
 
       lines.push(
-        <path 
-          key="dynamic_connecting_wire" 
-          d={d} 
-          className="flow-wire-temp" 
-          markerEnd="url(#arrowhead-green)" 
+        <path
+          key="dynamic_connecting_wire"
+          d={d}
+          className="flow-wire-temp"
+          markerEnd="url(#arrowhead-green)"
         />
       );
     }
@@ -582,13 +582,13 @@ export default function FlowCanvasBuilder() {
 
   return (
     <div className="flow-builder-container">
-      
+
       {/* 1. Canvas Top Header */}
       <header className="flow-canvas-header">
         <div className="flow-header-left">
-          <button 
-            type="button" 
-            className="flow-back-btn" 
+          <button
+            type="button"
+            className="flow-back-btn"
             onClick={() => navigate('/automations')}
             title="Back to Automations Dashboard"
           >
@@ -608,16 +608,16 @@ export default function FlowCanvasBuilder() {
 
         {/* View Switcher: Classic Builder vs Visual Canvas */}
         <div className="flow-view-switcher">
-          <button 
-            type="button" 
-            className="flow-view-btn" 
+          <button
+            type="button"
+            className="flow-view-btn"
             onClick={() => navigate(`/automations/${id}/builder`)}
           >
             <i className="bi bi-list-check"></i>
             <span>Classic Editor</span>
           </button>
-          <button 
-            type="button" 
+          <button
+            type="button"
             className="flow-view-btn active"
           >
             <i className="bi bi-diagram-3"></i>
@@ -633,10 +633,10 @@ export default function FlowCanvasBuilder() {
             </span>
           )}
 
-          <button 
-            type="button" 
-            className="btn btn-outline-secondary btn-sm px-3 fw-semibold rounded-3" 
-            onClick={handleSaveDraft} 
+          <button
+            type="button"
+            className="btn btn-outline-secondary btn-sm px-3 fw-semibold rounded-3"
+            onClick={handleSaveDraft}
             disabled={saving}
           >
             {saving ? (
@@ -651,10 +651,10 @@ export default function FlowCanvasBuilder() {
             )}
           </button>
 
-          <button 
-            type="button" 
-            className="btn btn-emerald-brand btn-sm px-3 py-1.5" 
-            onClick={handlePublish} 
+          <button
+            type="button"
+            className="btn btn-emerald-brand btn-sm px-3 py-1.5"
+            onClick={handlePublish}
             disabled={publishing}
           >
             {publishing ? (
@@ -673,7 +673,7 @@ export default function FlowCanvasBuilder() {
 
       {/* 2. Main Workspace Layout */}
       <div className="flow-canvas-workspace">
-        
+
         {/* Left Palette / Node Toolbox */}
         <aside className="flow-palette-sidebar">
           <div className="flow-palette-header">
@@ -683,8 +683,8 @@ export default function FlowCanvasBuilder() {
 
           <div className="flow-palette-items">
             {PALETTE_TEMPLATES.map((tpl) => (
-              <div 
-                key={tpl.type} 
+              <div
+                key={tpl.type}
                 className="flow-palette-item"
                 onClick={() => handleAddNodeFromPalette(tpl)}
               >
@@ -709,7 +709,7 @@ export default function FlowCanvasBuilder() {
         </aside>
 
         {/* Center: The Infinite Dot Canvas */}
-        <main 
+        <main
           className="flow-canvas-viewport"
           onMouseDown={handleCanvasMouseDown}
           onMouseMove={handleMouseMove}
@@ -731,7 +731,7 @@ export default function FlowCanvasBuilder() {
           </div>
 
           {/* Canvas Transform Content */}
-          <div 
+          <div
             className="flow-canvas-content"
             style={{
               transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`
@@ -754,7 +754,7 @@ export default function FlowCanvasBuilder() {
             </svg>
 
             {/* Trigger Start Node (Static Anchor on Canvas) */}
-            <div 
+            <div
               className="flow-node-card"
               style={{ left: 70, top: 180, width: 240 }}
             >
@@ -776,8 +776,8 @@ export default function FlowCanvasBuilder() {
                 </p>
               </div>
               {/* Trigger Output Port */}
-              <div 
-                className="flow-port-output" 
+              <div
+                className="flow-port-output"
                 title="Drag to connect first message"
                 onMouseDown={(e) => handlePortMouseDown(e, 'trigger', 'trigger')}
               ></div>
@@ -812,7 +812,7 @@ export default function FlowCanvasBuilder() {
                   }}
                 >
                   {/* Left Input Port (Drop target for wires!) */}
-                  <div 
+                  <div
                     className={`flow-port-input ${isTargetHovered ? 'highlight-target' : ''}`}
                     title="Release wire here to connect!"
                     onMouseUp={(e) => handlePortMouseUp(e, step.id)}
@@ -826,9 +826,9 @@ export default function FlowCanvasBuilder() {
                       </div>
                       <h6 className="flow-node-name">{step.name || `Step ${idx + 1}`}</h6>
                     </div>
-                    <button 
-                      type="button" 
-                      className="btn-close" 
+                    <button
+                      type="button"
+                      className="btn-close"
                       style={{ fontSize: '0.65rem' }}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -853,8 +853,8 @@ export default function FlowCanvasBuilder() {
                               <i className="bi bi-hand-index-thumb text-primary me-1"></i> {btn.text}
                             </span>
                             {/* Button Output Port (Drag from here to connect this button to another block!) */}
-                            <div 
-                              className="flow-port-btn-output" 
+                            <div
+                              className="flow-port-btn-output"
                               title={`Drag arrow from button "${btn.text}" to next step`}
                               onMouseDown={(e) => handlePortMouseDown(e, step.id, 'button', bIdx)}
                             ></div>
@@ -865,8 +865,8 @@ export default function FlowCanvasBuilder() {
                   </div>
 
                   {/* Right Output Port (Drag from here to connect entire step to next step!) */}
-                  <div 
-                    className="flow-port-output" 
+                  <div
+                    className="flow-port-output"
                     title="Drag arrow to next step"
                     onMouseDown={(e) => handlePortMouseDown(e, step.id, 'node')}
                   ></div>
@@ -885,9 +885,9 @@ export default function FlowCanvasBuilder() {
                 <i className="bi bi-sliders text-success"></i>
                 <span>Edit Step: {selectedStep.name}</span>
               </h6>
-              <button 
-                type="button" 
-                className="btn-close" 
+              <button
+                type="button"
+                className="btn-close"
                 onClick={() => setSelectedNodeId(null)}
               ></button>
             </div>
@@ -896,8 +896,8 @@ export default function FlowCanvasBuilder() {
               {/* Step Name */}
               <div className="mb-3">
                 <label className="flow-form-label">Step Name</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   className="form-control form-control-sm"
                   value={selectedStep.name || ''}
                   onChange={(e) => updateSelectedStep('name', e.target.value)}
@@ -908,7 +908,7 @@ export default function FlowCanvasBuilder() {
               {/* Message Type */}
               <div className="mb-3">
                 <label className="flow-form-label">Message Type</label>
-                <select 
+                <select
                   className="form-select form-select-sm"
                   value={selectedStep.messageType || 'text'}
                   onChange={(e) => updateSelectedStep('messageType', e.target.value)}
@@ -926,20 +926,20 @@ export default function FlowCanvasBuilder() {
                   <label className="flow-form-label mb-0">Message Content</label>
                   <span className="text-muted small">Supports emojis & variables</span>
                 </div>
-                <textarea 
+                <textarea
                   className="form-control form-control-sm"
                   rows="4"
                   value={selectedStep.content || ''}
                   onChange={(e) => updateSelectedStep('content', e.target.value)}
                   placeholder="Type your WhatsApp message..."
                 ></textarea>
-                
+
                 {/* Dynamic Variables Chips */}
                 <div className="d-flex flex-wrap gap-1 mt-2">
                   {['{{name}}', '{{phone}}', '{{city}}'].map(tag => (
-                    <button 
+                    <button
                       key={tag}
-                      type="button" 
+                      type="button"
                       className="btn btn-sm btn-light border py-0 px-2 font-monospace"
                       style={{ fontSize: '0.72rem' }}
                       onClick={() => updateSelectedStep('content', (selectedStep.content || '') + ' ' + tag)}
@@ -956,8 +956,8 @@ export default function FlowCanvasBuilder() {
                   <div className="d-flex justify-content-between align-items-center mb-2">
                     <label className="flow-form-label mb-0">Quick Reply Buttons ({selectedStep.buttons?.length || 0}/3)</label>
                     {(selectedStep.buttons?.length || 0) < 3 && (
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         className="btn btn-outline-primary btn-sm py-0 px-2"
                         style={{ fontSize: '0.75rem' }}
                         onClick={handleAddButton}
@@ -971,7 +971,7 @@ export default function FlowCanvasBuilder() {
                     {(selectedStep.buttons || []).map((btn, bIdx) => (
                       <div key={btn.id || bIdx} className="bg-light p-2 rounded-3 border">
                         <div className="d-flex align-items-center gap-1 mb-1.5">
-                          <input 
+                          <input
                             type="text"
                             className="form-control form-control-sm"
                             value={btn.text}
@@ -979,8 +979,8 @@ export default function FlowCanvasBuilder() {
                             placeholder="Button label..."
                             maxLength={20}
                           />
-                          <button 
-                            type="button" 
+                          <button
+                            type="button"
                             className="btn btn-outline-danger btn-sm p-1"
                             onClick={() => handleDeleteButton(bIdx)}
                           >
@@ -991,7 +991,7 @@ export default function FlowCanvasBuilder() {
                         {/* Action when button is tapped */}
                         <div className="row g-1">
                           <div className="col-5">
-                            <select 
+                            <select
                               className="form-select form-select-sm"
                               value={btn.action}
                               onChange={(e) => handleUpdateButton(bIdx, 'action', e.target.value)}
@@ -1004,7 +1004,7 @@ export default function FlowCanvasBuilder() {
                           </div>
                           {btn.action === 'go_to_step' && (
                             <div className="col-7">
-                              <select 
+                              <select
                                 className="form-select form-select-sm"
                                 value={btn.targetStepId || ''}
                                 onChange={(e) => handleUpdateButton(bIdx, 'targetStepId', e.target.value)}
@@ -1030,7 +1030,7 @@ export default function FlowCanvasBuilder() {
               {selectedStep.messageType !== 'interactive_buttons' && (
                 <div className="mb-3 border-top pt-3">
                   <label className="flow-form-label">After Sending Message</label>
-                  <select 
+                  <select
                     className="form-select form-select-sm mb-2"
                     value={selectedStep.nextAction || 'go_to_next'}
                     onChange={(e) => updateSelectedStep('nextAction', e.target.value)}
@@ -1042,7 +1042,7 @@ export default function FlowCanvasBuilder() {
                   </select>
 
                   {selectedStep.nextAction === 'go_to_step' && (
-                    <select 
+                    <select
                       className="form-select form-select-sm"
                       value={selectedStep.targetStepId || ''}
                       onChange={(e) => updateSelectedStep('targetStepId', e.target.value)}
