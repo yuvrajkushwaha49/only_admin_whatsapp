@@ -1,0 +1,626 @@
+/* ========================================================================
+   WhatsApp Conversational Automation Module Stylesheet
+   Modern, Clean White Interface with Emerald Green (#059669 / #25D366) Accents
+   ======================================================================== */
+
+.automation-container {
+  padding: 1.75rem 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* Page Header & Stats */
+.automation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.automation-title {
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.automation-subtitle {
+  color: #6b7280;
+  font-size: 0.95rem;
+  margin: 0;
+  max-width: 700px;
+}
+
+.automation-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-emerald {
+  background-color: #059669;
+  border-color: #059669;
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  padding: 0.55rem 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.15s ease-in-out;
+}
+
+.btn-emerald:hover, .btn-emerald:focus {
+  background-color: #047857;
+  border-color: #047857;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+}
+
+/* Expandable Info Panel */
+.how-it-works-card {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 0.75rem;
+  margin-bottom: 1.75rem;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.how-it-works-toggle {
+  padding: 0.85rem 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  color: #065f46;
+}
+
+.how-it-works-content {
+  padding: 0 1.25rem 1rem 1.25rem;
+  color: #047857;
+  font-size: 0.925rem;
+}
+
+.how-it-works-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.hiw-step-box {
+  background: #ffffff;
+  padding: 0.85rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #dcfce7;
+}
+
+.hiw-step-num {
+  font-weight: 700;
+  color: #059669;
+  margin-bottom: 0.25rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+/* Stats Row */
+.automation-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.auto-stat-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.auto-stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.auto-stat-val {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.2;
+}
+
+.auto-stat-label {
+  font-size: 0.825rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Automations Table Card */
+.automations-table-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.table-toolbar {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.search-input-wrap {
+  position: relative;
+  min-width: 280px;
+}
+
+.search-input-wrap i {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+}
+
+.search-input-wrap input {
+  padding-left: 2.35rem;
+  border-radius: 0.5rem;
+  border: 1px solid #d1d5db;
+}
+
+.status-badge {
+  padding: 0.35rem 0.75rem;
+  border-radius: 2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.status-badge.published {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-badge.draft {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.status-badge.paused {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+/* Template Selection Cards in Modal */
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  max-height: 480px;
+  overflow-y: auto;
+  padding: 0.25rem;
+}
+
+.template-card {
+  border: 2px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  cursor: pointer;
+  background: #ffffff;
+  transition: all 0.15s ease-in-out;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.template-card:hover {
+  border-color: #10b981;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12);
+  transform: translateY(-2px);
+}
+
+.template-card.selected {
+  border-color: #059669;
+  background: #f0fdf4;
+}
+
+.template-badge {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 1rem;
+  background: #ecfdf5;
+  color: #059669;
+  font-weight: 600;
+}
+
+.template-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 0.5rem;
+  background: #ecfdf5;
+  color: #059669;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  margin-bottom: 0.75rem;
+}
+
+/* ========================================================================
+   Automation Builder Styles
+   ======================================================================== */
+
+.builder-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 65px);
+  background: #f9fafb;
+}
+
+.builder-topbar {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.85rem 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+.builder-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.builder-name-input {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #111827;
+  border: 1px solid transparent;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.35rem;
+  background: transparent;
+  transition: all 0.15s ease;
+}
+
+.builder-name-input:hover, .builder-name-input:focus {
+  border-color: #d1d5db;
+  background: #ffffff;
+}
+
+/* 5 Navigation Tabs */
+.builder-tabs-bar {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0 1.75rem;
+  display: flex;
+  gap: 2rem;
+  overflow-x: auto;
+}
+
+.builder-tab-btn {
+  padding: 0.85rem 0.25rem;
+  font-weight: 600;
+  font-size: 0.925rem;
+  color: #6b7280;
+  border: none;
+  background: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.builder-tab-btn:hover {
+  color: #111827;
+}
+
+.builder-tab-btn.active {
+  color: #059669;
+  border-bottom-color: #059669;
+}
+
+.builder-tab-pane {
+  padding: 1.5rem 1.75rem;
+  flex: 1;
+}
+
+/* Messages Builder 3-Panel Grid */
+.messages-3panel-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr 360px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 1200px) {
+  .messages-3panel-grid {
+    grid-template-columns: 240px 1fr;
+  }
+  .preview-panel-col {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .messages-3panel-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Left Panel: Step List */
+.step-list-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.step-list-header {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.step-items-container {
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 520px;
+  overflow-y: auto;
+}
+
+.step-item-row {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.15s ease;
+}
+
+.step-item-row:hover {
+  background: #f9fafb;
+}
+
+.step-item-row.active {
+  border-color: #059669;
+  background: #ecfdf5;
+}
+
+.step-number-pill {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  color: #374151;
+  font-size: 0.725rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-item-row.active .step-number-pill {
+  background: #059669;
+  color: #ffffff;
+}
+
+/* Center Panel: Step Editor */
+.step-editor-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.dynamic-tag-pill {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: monospace;
+}
+
+.dynamic-tag-pill:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+/* Right Panel: WhatsApp Live Preview Phone */
+.whatsapp-preview-frame {
+  background: #eae6df;
+  border: 12px solid #1f2937;
+  border-radius: 36px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 580px;
+  position: sticky;
+  top: 90px;
+}
+
+.whatsapp-phone-notch {
+  background: #1f2937;
+  height: 18px;
+  width: 140px;
+  margin: 0 auto;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+.whatsapp-header-bar {
+  background: #075e54;
+  color: #ffffff;
+  padding: 0.65rem 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.whatsapp-header-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #25d366;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  color: #ffffff;
+}
+
+.whatsapp-chat-body {
+  flex: 1;
+  padding: 1rem 0.75rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background-image: radial-gradient(#d4cdbe 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.whatsapp-bubble-out {
+  background: #d9fdd3;
+  color: #111827;
+  padding: 0.6rem 0.85rem;
+  border-radius: 0.5rem 0.5rem 0 0.5rem;
+  max-width: 88%;
+  align-self: flex-end;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+  font-size: 0.875rem;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  position: relative;
+}
+
+.whatsapp-bubble-in {
+  background: #ffffff;
+  color: #111827;
+  padding: 0.6rem 0.85rem;
+  border-radius: 0.5rem 0.5rem 0.5rem 0;
+  max-width: 88%;
+  align-self: flex-start;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+  font-size: 0.875rem;
+  line-height: 1.35;
+  white-space: pre-wrap;
+}
+
+.whatsapp-time {
+  font-size: 0.65rem;
+  color: #6b7280;
+  text-align: right;
+  margin-top: 0.25rem;
+}
+
+.whatsapp-quick-reply-btn {
+  background: #ffffff;
+  color: #00a884;
+  font-weight: 600;
+  font-size: 0.825rem;
+  border: 1px solid #e5e7eb;
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.4rem;
+  text-align: center;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  margin-top: 0.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+/* Tag / Keyword Input Box */
+.keyword-tags-box {
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  background: #ffffff;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.keyword-tag-badge {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  padding: 0.3rem 0.6rem;
+  border-radius: 1rem;
+  font-size: 0.825rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.keyword-tag-badge button {
+  background: none;
+  border: none;
+  color: #047857;
+  padding: 0;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.keyword-input-bare {
+  border: none;
+  outline: none;
+  flex: 1;
+  min-width: 140px;
+  font-size: 0.9rem;
+  padding: 0.25rem;
+}

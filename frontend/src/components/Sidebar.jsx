@@ -89,6 +89,12 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
         }
       ]
     },
+    {
+      heading: 'AUTOMATION',
+      items: [
+        { to: '/automations', label: 'Automations', icon: 'bi-robot' }
+      ]
+    },
     /*
     {
       heading: 'LEADS',

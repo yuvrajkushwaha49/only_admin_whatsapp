@@ -293,6 +293,120 @@ export class MetaCloudApiClient {
   }
 
   /**
+   * Send WhatsApp Interactive Buttons Message (Quick Replies up to 3 buttons)
+   */
+  async sendInteractiveButtons({ recipientPhone, bodyText, buttons = [], header = null, footer = null }) {
+    if (this.isMock) {
+      const mockMsgId = `wamid.mock_btn_${Date.now().toString(36)}${Math.random().toString(36).substring(2, 6)}`;
+      logger.info(`[MetaClient:Mock] Sent interactive buttons message to ${recipientPhone} -> ${mockMsgId}`);
+      return {
+        messaging_product: 'whatsapp',
+        contacts: [{ input: recipientPhone, wa_id: recipientPhone.replace(/\D/g, '') }],
+        messages: [{ id: mockMsgId, message_status: 'accepted' }]
+      };
+    }
+
+    try {
+      const formattedButtons = buttons.slice(0, 3).map((btn, idx) => ({
+        type: 'reply',
+        reply: {
+          id: String(btn.id || `btn_${idx + 1}`),
+          title: String(btn.title || btn.text || `Option ${idx + 1}`).substring(0, 20)
+        }
+      }));
+
+      const interactiveObj = {
+        type: 'button',
+        body: { text: bodyText },
+        action: { buttons: formattedButtons }
+      };
+
+      if (header && typeof header === 'object') {
+        interactiveObj.header = header;
+      } else if (header && typeof header === 'string') {
+        interactiveObj.header = { type: 'text', text: header };
+      }
+
+      if (footer) {
+        interactiveObj.footer = { text: footer };
+      }
+
+      const payload = {
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: recipientPhone.replace(/\D/g, ''),
+        type: 'interactive',
+        interactive: interactiveObj
+      };
+
+      const response = await axios.post(`${META_BASE_URL}/${this.phoneNumberId}/messages`, payload, {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      return response.data;
+    } catch (error) {
+      const errData = error.response ? error.response.data : error.message;
+      logger.error(`[MetaClient] Send interactive buttons message failed to ${recipientPhone}`, error, { response: errData });
+      throw new Error(errData?.error?.message || error.message);
+    }
+  }
+
+  /**
+   * Send WhatsApp Interactive List Message (Up to 10 items across sections)
+   */
+  async sendInteractiveList({ recipientPhone, bodyText, buttonText = 'Select Option', sections = [], title = null, footer = null }) {
+    if (this.isMock) {
+      const mockMsgId = `wamid.mock_list_${Date.now().toString(36)}${Math.random().toString(36).substring(2, 6)}`;
+      logger.info(`[MetaClient:Mock] Sent interactive list message to ${recipientPhone} -> ${mockMsgId}`);
+      return {
+        messaging_product: 'whatsapp',
+        contacts: [{ input: recipientPhone, wa_id: recipientPhone.replace(/\D/g, '') }],
+        messages: [{ id: mockMsgId, message_status: 'accepted' }]
+      };
+    }
+
+    try {
+      const interactiveObj = {
+        type: 'list',
+        body: { text: bodyText },
+        action: {
+          button: buttonText.substring(0, 20),
+          sections: sections
+        }
+      };
+
+      if (title) {
+        interactiveObj.header = { type: 'text', text: title };
+      }
+      if (footer) {
+        interactiveObj.footer = { text: footer };
+      }
+
+      const payload = {
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: recipientPhone.replace(/\D/g, ''),
+        type: 'interactive',
+        interactive: interactiveObj
+      };
+
+      const response = await axios.post(`${META_BASE_URL}/${this.phoneNumberId}/messages`, payload, {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      return response.data;
+    } catch (error) {
+      const errData = error.response ? error.response.data : error.message;
+      logger.error(`[MetaClient] Send interactive list message failed to ${recipientPhone}`, error, { response: errData });
+      throw new Error(errData?.error?.message || error.message);
+    }
+  }
+
+  /**
    * Fetch temporary media URL for incoming media ID
    */
   async getMediaUrl(mediaId) {

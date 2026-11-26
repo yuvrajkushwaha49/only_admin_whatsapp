@@ -38,6 +38,12 @@ const memoryStore = {
   subscriptions: [],
   usage_ledger: [],
   audit_logs: [],
+  automations: [],
+  automation_versions: [],
+  automation_triggers: [],
+  automation_sessions: [],
+  automation_session_events: [],
+  automation_callbacks: [],
   notifications: [],
   contact_groups: [],
   contact_group_members: [],
@@ -197,6 +203,13 @@ async function initFallbackStore() {
       if (!memoryStore.meta_onboarding_sessions) {
         memoryStore.meta_onboarding_sessions = [];
       }
+
+      if (!memoryStore.automations) memoryStore.automations = [];
+      if (!memoryStore.automation_versions) memoryStore.automation_versions = [];
+      if (!memoryStore.automation_triggers) memoryStore.automation_triggers = [];
+      if (!memoryStore.automation_sessions) memoryStore.automation_sessions = [];
+      if (!memoryStore.automation_session_events) memoryStore.automation_session_events = [];
+      if (!memoryStore.automation_callbacks) memoryStore.automation_callbacks = [];
 
       // Guarantee recipient +919565763089 is present in contacts
       if (Array.isArray(memoryStore.contacts) && !memoryStore.contacts.some(c => c.phone === '+919565763089')) {
@@ -939,6 +952,13 @@ function executeFallbackQuery(sql, params = []) {
   const table = fromMatch ? fromMatch[1] : '';
   const storeList = memoryStore[table] || [];
 
+  if (upper.includes('WHERE A.ID = ? AND A.BUSINESS_ID = ?') || upper.includes('WHERE ID = ? AND BUSINESS_ID = ?')) {
+    const targetId = Number(params[0]);
+    const bizId = Number(params[1]);
+    const item = storeList.find(x => x.id === targetId && x.business_id === bizId);
+    return item ? [item] : [];
+  }
+
   if (upper.includes('WHERE BUSINESS_ID = ?') || upper.includes('WHERE C.BUSINESS_ID = ?')) {
     const businessId = Number(params[0]);
     let filtered = storeList.filter(item => item.business_id === businessId || item.business_id === null);
@@ -987,6 +1007,16 @@ function executeFallbackQuery(sql, params = []) {
         newRecord.failed_rows = 0;
         newRecord.duplicate_rows = 0;
         newRecord.status = 'processing';
+      }
+      if (insertTable === 'automations') {
+        newRecord.business_id = Number(params[0]);
+        newRecord.whatsapp_account_id = params[1] ? Number(params[1]) : null;
+        newRecord.name = params[2];
+        newRecord.purpose = params[3];
+        newRecord.template_type = params[4];
+        newRecord.status = 'draft';
+        newRecord.draft_definition = typeof params[5] === 'string' ? JSON.parse(params[5]) : params[5];
+        newRecord.created_by = params[6] || null;
       }
       memoryStore[insertTable].push(newRecord);
       return { insertId: newId, affectedRows: 1 };

@@ -481,6 +481,23 @@ export async function processWebhookPayload(payload) {
 
               emitToTenant(matchedBusinessId, 'inbox:new_message', payloadData);
               emitToTenant(matchedBusinessId, 'inbox:conversation_updated', { conversation: payloadData.conversation });
+
+              // Trigger Conversational Automation Engine if not opted-out
+              if (!isOptOut) {
+                try {
+                  const { handleInboundEvent } = await import('../automations/automationEngine.service.js');
+                  await handleInboundEvent({
+                    businessId: matchedBusinessId,
+                    accountId: matchedAccountId,
+                    contact,
+                    conversation,
+                    message: newMsg,
+                    rawMsg: msg
+                  });
+                } catch (autoErr) {
+                  logger.error('[Webhook:Fallback] Automation execution notice:', autoErr);
+                }
+              }
             }
 
             saveMemoryStore();
@@ -620,6 +637,23 @@ export async function processWebhookPayload(payload) {
 
                 emitToTenant(matchedBusinessId, 'inbox:new_message', socketPayload);
                 emitToTenant(matchedBusinessId, 'inbox:conversation_updated', { conversation: socketPayload.conversation });
+
+                // Trigger Conversational Automation Engine if not opted-out
+                if (!isOptOut) {
+                  try {
+                    const { handleInboundEvent } = await import('../automations/automationEngine.service.js');
+                    await handleInboundEvent({
+                      businessId: matchedBusinessId,
+                      accountId: matchedAccountId,
+                      contact: contactObj,
+                      conversation,
+                      message: socketPayload.message,
+                      rawMsg: msg
+                    });
+                  } catch (autoErr) {
+                    logger.error('[Webhook:MySQL] Automation execution notice:', autoErr);
+                  }
+                }
               }
             } catch (dbErr) {
               logger.error('[Webhook] Failed to persist incoming WhatsApp message to DB:', dbErr);
