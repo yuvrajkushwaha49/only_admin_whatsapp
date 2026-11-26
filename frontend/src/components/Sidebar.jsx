@@ -95,6 +95,13 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
         { to: '/automations', label: 'Automations', icon: 'bi-robot' }
       ]
     },
+    {
+      heading: 'CATALOGUE & PRODUCTS',
+      items: [
+        { to: '/products', label: 'Product Library', icon: 'bi-box-seam' },
+        { to: '/products?tab=categories', label: 'Categories', icon: 'bi-grid-3x3-gap' }
+      ]
+    },
     /*
     {
       heading: 'LEADS',

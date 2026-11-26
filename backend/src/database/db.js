@@ -44,6 +44,8 @@ const memoryStore = {
   automation_sessions: [],
   automation_session_events: [],
   automation_callbacks: [],
+  products: [],
+  product_categories: [],
   notifications: [],
   contact_groups: [],
   contact_group_members: [],
@@ -1017,6 +1019,24 @@ function executeFallbackQuery(sql, params = []) {
         newRecord.status = 'draft';
         newRecord.draft_definition = typeof params[5] === 'string' ? JSON.parse(params[5]) : params[5];
         newRecord.created_by = params[6] || null;
+      }
+      if (insertTable === 'product_categories') {
+        newRecord.business_id = Number(params[0]);
+        newRecord.name = params[1];
+        newRecord.description = params[2] || '';
+      }
+      if (insertTable === 'products') {
+        newRecord.business_id = Number(params[0]);
+        newRecord.category_id = params[1] ? Number(params[1]) : null;
+        newRecord.name = params[2];
+        newRecord.sku = params[3] || '';
+        newRecord.price = Number(params[4]) || 0;
+        newRecord.currency = params[5] || 'INR';
+        newRecord.description = params[6] || '';
+        newRecord.image_url = params[7] || '';
+        newRecord.whatsapp_message_text = params[8] || '';
+        newRecord.stock_status = params[9] || 'in_stock';
+        newRecord.is_active = 1;
       }
       memoryStore[insertTable].push(newRecord);
       return { insertId: newId, affectedRows: 1 };

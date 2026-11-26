@@ -25,6 +25,7 @@ import TemplateDetail from './pages/TemplateDetail';
 import InteractiveButtons from './pages/InteractiveButtons';
 import AutomationsDashboard from './pages/automation/AutomationsDashboard';
 import AutomationBuilder from './pages/automation/AutomationBuilder';
+import ProductLibrary from './pages/products/ProductLibrary';
 import Inbox from './pages/Inbox';
 import CampaignList from './pages/CampaignList';
 import CampaignBuilder from './pages/CampaignBuilder';
@@ -238,6 +239,14 @@ export default function App() {
         <Route
           path="/automations/:id"
           element={<Navigate to="/automations/:id/builder" replace />}
+        />
+        <Route
+          path="/products"
+          element={
+            <ProtectedRoute allowedRoles={['owner', 'admin', 'marketer']}>
+              <ProductLibrary />
+            </ProtectedRoute>
+          }
         />
         <Route
           path="/campaigns"

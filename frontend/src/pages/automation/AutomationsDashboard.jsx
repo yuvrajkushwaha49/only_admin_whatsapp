@@ -111,10 +111,10 @@ export default function AutomationsDashboard() {
           <button
             type="button"
             className="btn btn-outline-secondary d-flex align-items-center gap-2"
-            onClick={() => navigate('/templates')}
-            title="Browse Approved Message Templates"
+            onClick={() => navigate('/products')}
+            title="Browse Product Catalogue & Library"
           >
-            <i className="bi bi-collection"></i> Product Library
+            <i className="bi bi-box-seam text-success"></i> Product Library
           </button>
 
           <button
