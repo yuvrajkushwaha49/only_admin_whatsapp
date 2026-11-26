@@ -74,6 +74,9 @@ export default function FlowCanvasBuilder() {
   const [publishing, setPublishing] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
+  // Viewport Container Ref (for exact bounding box calculations)
+  const viewportRef = useRef(null);
+
   // Canvas Pan & Zoom
   const [pan, setPan] = useState({ x: 50, y: 50 });
   const [zoom, setZoom] = useState(1);
@@ -92,6 +95,75 @@ export default function FlowCanvasBuilder() {
   const [connectingFrom, setConnectingFrom] = useState(null);
   const [connectingMouse, setConnectingMouse] = useState({ x: 0, y: 0 });
   const [hoveredTargetStepId, setHoveredTargetStepId] = useState(null);
+
+  // Touch / Pinch Zoom Ref State
+  const touchStateRef = useRef({
+    initialDistance: 0,
+    initialZoom: 1,
+    initialPan: { x: 0, y: 0 },
+    initialCenter: { x: 0, y: 0 }
+  });
+
+  // Native non-passive Wheel Event Listener for Smooth Trackpad Pinch & Mouse Wheel Zoom
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const onWheel = (e) => {
+      // Don't intercept scroll if cursor is inside sidebar or inspector drawer
+      if (e.target.closest('.flow-palette-sidebar') || e.target.closest('.flow-inspector-drawer')) {
+        return;
+      }
+      e.preventDefault();
+
+      const rect = viewport.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      // Trackpad pinch-to-zoom (or Ctrl+wheel on Windows/Mac) sends e.ctrlKey = true
+      let zoomDelta = 0;
+      if (e.ctrlKey) {
+        zoomDelta = -e.deltaY * 0.01;
+      } else {
+        zoomDelta = -e.deltaY * 0.0015;
+      }
+
+      setZoom((curZoom) => {
+        const nextZoom = Math.max(0.4, Math.min(2.2, +(curZoom + zoomDelta).toFixed(3)));
+        if (nextZoom === curZoom) return curZoom;
+
+        // Zoom centered around current mouse cursor position!
+        setPan((curPan) => {
+          const scaleChange = nextZoom / curZoom;
+          const newPanX = mouseX - (mouseX - curPan.x) * scaleChange;
+          const newPanY = mouseY - (mouseY - curPan.y) * scaleChange;
+          return {
+            x: Math.round(newPanX),
+            y: Math.round(newPanY)
+          };
+        });
+
+        return nextZoom;
+      });
+    };
+
+    viewport.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      viewport.removeEventListener('wheel', onWheel);
+    };
+  }, []);
+
+  // Accurate Coordinate Converter: Translates Client Screen (x, y) into Canvas Space
+  const getCanvasCoords = (clientX, clientY) => {
+    if (!viewportRef.current) return { x: clientX, y: clientY };
+    const rect = viewportRef.current.getBoundingClientRect();
+    const relX = clientX - rect.left;
+    const relY = clientY - rect.top;
+    return {
+      x: Math.round((relX - pan.x) / zoom),
+      y: Math.round((relY - pan.y) / zoom)
+    };
+  };
 
   // Load automation data
   useEffect(() => {
@@ -140,10 +212,11 @@ export default function FlowCanvasBuilder() {
 
     const node = definition.steps.find(s => s.id === nodeId);
     const pos = node?.position || { x: 0, y: 0 };
+    const coords = getCanvasCoords(e.clientX, e.clientY);
 
     dragOffsetRef.current = {
-      x: (e.clientX / zoom) - pos.x,
-      y: (e.clientY / zoom) - pos.y
+      x: coords.x - pos.x,
+      y: coords.y - pos.y
     };
   };
 
@@ -179,24 +252,12 @@ export default function FlowCanvasBuilder() {
     setConnectingMouse({ x: startX, y: startY });
   };
 
-  // Wire Connection: Mouse Up on a Target Input Port (Completes the Wire!)
-  const handlePortMouseUp = (e, targetStepId) => {
-    e.stopPropagation();
-    if (!connectingFrom) return;
-
+  // Complete Connection Logic (Works seamlessly with Port Drop OR Card Drop)
+  const completeConnection = (source, targetStepId) => {
     const targetStep = definition.steps.find(s => s.id === targetStepId);
-    if (!targetStep) {
-      setConnectingFrom(null);
-      return;
-    }
+    if (!targetStep) return;
 
-    // Do not connect to self
-    if (connectingFrom.sourceId === targetStepId) {
-      setConnectingFrom(null);
-      return;
-    }
-
-    if (connectingFrom.type === 'trigger') {
+    if (source.type === 'trigger') {
       // Connect Trigger -> targetStep (move targetStep to index 0)
       const reordered = [
         targetStep,
@@ -204,36 +265,34 @@ export default function FlowCanvasBuilder() {
       ];
       setDefinition(prev => ({ ...prev, steps: reordered }));
       setFeedback({ type: 'success', message: `Trigger now starts with "${targetStep.name}"!` });
-    } else if (connectingFrom.type === 'button') {
+    } else if (source.type === 'button') {
       // Connect Button -> targetStep
-      const sourceStep = definition.steps.find(s => s.id === connectingFrom.sourceId);
+      const sourceStep = definition.steps.find(s => s.id === source.sourceId);
       if (sourceStep && Array.isArray(sourceStep.buttons)) {
         const btns = [...sourceStep.buttons];
-        if (btns[connectingFrom.btnIndex]) {
-          btns[connectingFrom.btnIndex] = {
-            ...btns[connectingFrom.btnIndex],
+        if (btns[source.btnIndex]) {
+          btns[source.btnIndex] = {
+            ...btns[source.btnIndex],
             action: 'go_to_step',
             targetStepId
           };
-          updateStepField(connectingFrom.sourceId, 'buttons', btns);
+          updateStepField(source.sourceId, 'buttons', btns);
           setFeedback({
             type: 'success',
-            message: `Connected "${btns[connectingFrom.btnIndex].text}" → "${targetStep.name}"!`
+            message: `Connected "${btns[source.btnIndex].text}" → "${targetStep.name}"!`
           });
         }
       }
-    } else if (connectingFrom.type === 'node') {
+    } else if (source.type === 'node') {
       // Connect Step Output -> targetStep
-      updateStepField(connectingFrom.sourceId, 'nextAction', 'go_to_step');
-      updateStepField(connectingFrom.sourceId, 'targetStepId', targetStepId);
+      const sourceStep = definition.steps.find(s => s.id === source.sourceId);
+      updateStepField(source.sourceId, 'nextAction', 'go_to_step');
+      updateStepField(source.sourceId, 'targetStepId', targetStepId);
       setFeedback({
         type: 'success',
-        message: `Connected step to "${targetStep.name}"!`
+        message: `Connected "${sourceStep?.name || 'Step'}" → "${targetStep.name}"!`
       });
     }
-
-    setConnectingFrom(null);
-    setHoveredTargetStepId(null);
   };
 
   // Disconnect an existing wire
@@ -261,13 +320,23 @@ export default function FlowCanvasBuilder() {
   // Canvas Mouse Move (Handles node dragging, canvas panning & dynamic connecting wire)
   const handleMouseMove = (e) => {
     if (connectingFrom) {
-      // Compute mouse coordinate relative to canvas content
-      const canvasX = Math.round((e.clientX - pan.x) / zoom);
-      const canvasY = Math.round((e.clientY - pan.y) / zoom);
-      setConnectingMouse({ x: canvasX, y: canvasY });
+      // Exact canvas coordinates matching mouse tip
+      const coords = getCanvasCoords(e.clientX, e.clientY);
+      setConnectingMouse(coords);
+
+      // Check which card is currently hovered under the cursor
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const targetCard = el?.closest('[data-node-id]');
+      const hoverId = targetCard?.getAttribute('data-node-id');
+      if (hoverId && hoverId !== connectingFrom.sourceId) {
+        setHoveredTargetStepId(hoverId);
+      } else {
+        setHoveredTargetStepId(null);
+      }
     } else if (draggingNodeId) {
-      const newX = Math.round((e.clientX / zoom) - dragOffsetRef.current.x);
-      const newY = Math.round((e.clientY / zoom) - dragOffsetRef.current.y);
+      const coords = getCanvasCoords(e.clientX, e.clientY);
+      const newX = Math.round(coords.x - dragOffsetRef.current.x);
+      const newY = Math.round(coords.y - dragOffsetRef.current.y);
 
       setDefinition(prev => ({
         ...prev,
@@ -285,10 +354,20 @@ export default function FlowCanvasBuilder() {
     }
   };
 
-  const handleMouseUp = () => {
+  // Universal Mouse Up (Completes wire drop OR node drag)
+  const handleMouseUp = (e) => {
     setDraggingNodeId(null);
     setIsPanning(false);
+
     if (connectingFrom) {
+      // Detect card under the cursor anywhere when released!
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const targetCard = el?.closest('[data-node-id]');
+      const targetStepId = targetCard?.getAttribute('data-node-id');
+
+      if (targetStepId && targetStepId !== connectingFrom.sourceId) {
+        completeConnection(connectingFrom, targetStepId);
+      }
       setConnectingFrom(null);
       setHoveredTargetStepId(null);
     }
@@ -304,6 +383,70 @@ export default function FlowCanvasBuilder() {
       x: e.clientX - pan.x,
       y: e.clientY - pan.y
     };
+  };
+
+  // Touchscreen 2-Finger Pinch to Zoom & 1-Finger Pan Handlers
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 2) {
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const dist = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
+      const centerX = (touch1.clientX + touch2.clientX) / 2;
+      const centerY = (touch1.clientY + touch2.clientY) / 2;
+
+      touchStateRef.current = {
+        initialDistance: dist,
+        initialZoom: zoom,
+        initialPan: { ...pan },
+        initialCenter: { x: centerX, y: centerY }
+      };
+    } else if (e.touches.length === 1) {
+      if (!e.target.closest('.flow-node-card') && !e.target.closest('.flow-palette-sidebar') && !e.target.closest('.flow-inspector-drawer')) {
+        setIsPanning(true);
+        panStartRef.current = {
+          x: e.touches[0].clientX - pan.x,
+          y: e.touches[0].clientY - pan.y
+        };
+      }
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.touches.length === 2 && touchStateRef.current.initialDistance > 0) {
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const currentDist = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
+      const scaleMultiplier = currentDist / touchStateRef.current.initialDistance;
+
+      const newZoom = Math.max(0.4, Math.min(2.2, +(touchStateRef.current.initialZoom * scaleMultiplier).toFixed(2)));
+      setZoom(newZoom);
+
+      if (viewportRef.current) {
+        const rect = viewportRef.current.getBoundingClientRect();
+        const centerX = touchStateRef.current.initialCenter.x - rect.left;
+        const centerY = touchStateRef.current.initialCenter.y - rect.top;
+
+        const scaleChange = newZoom / touchStateRef.current.initialZoom;
+        const newPanX = centerX - (centerX - touchStateRef.current.initialPan.x) * scaleChange;
+        const newPanY = centerY - (centerY - touchStateRef.current.initialPan.y) * scaleChange;
+
+        setPan({ x: Math.round(newPanX), y: Math.round(newPanY) });
+      }
+    } else if (e.touches.length === 1 && isPanning) {
+      setPan({
+        x: e.touches[0].clientX - panStartRef.current.x,
+        y: e.touches[0].clientY - panStartRef.current.y
+      });
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (e.touches.length < 2) {
+      touchStateRef.current.initialDistance = 0;
+    }
+    if (e.touches.length === 0) {
+      setIsPanning(false);
+    }
   };
 
   // Zoom controls
@@ -548,13 +691,20 @@ export default function FlowCanvasBuilder() {
       }
     });
 
-    // 3. Dynamic Interactive Wire while dragging from an Output Port
+    // 3. Dynamic Interactive Wire while dragging from an Output Port (Sleek curve to mouse tip)
     if (connectingFrom) {
       const { startX, startY } = connectingFrom;
       const endX = connectingMouse.x;
       const endY = connectingMouse.y;
-      const deltaX = Math.max(50, Math.abs(endX - startX) * 0.5);
-      const d = `M ${startX} ${startY} C ${startX + deltaX} ${startY}, ${endX - deltaX} ${endY}, ${endX} ${endY}`;
+
+      const dx = endX - startX;
+      const curvature = Math.max(30, Math.min(120, Math.abs(dx) * 0.45));
+      const cx1 = startX + (dx >= 0 ? curvature : -curvature * 0.4);
+      const cy1 = startY;
+      const cx2 = endX - (dx >= 0 ? curvature : -curvature * 0.4);
+      const cy2 = endY;
+
+      const d = `M ${startX} ${startY} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${endX} ${endY}`;
 
       lines.push(
         <path
@@ -704,16 +854,20 @@ export default function FlowCanvasBuilder() {
             <div className="fw-bold text-dark mb-1">
               <i className="bi bi-lightning-charge-fill text-warning me-1"></i> How to Connect Arrows:
             </div>
-            Drag from any <strong>Circle Dot (Port)</strong> on the right of a block/button and drop it onto the <strong>Input Dot</strong> of another block to connect them!
+            Drag from any <strong>Circle Dot (Port)</strong> and drop it onto the next block to connect them!
           </div>
         </aside>
 
         {/* Center: The Infinite Dot Canvas */}
         <main
+          ref={viewportRef}
           className="flow-canvas-viewport"
           onMouseDown={handleCanvasMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           style={{ cursor: connectingFrom ? 'crosshair' : (isPanning ? 'grabbing' : 'grab') }}
         >
           {/* Zoom & Canvas Controls */}
@@ -740,14 +894,14 @@ export default function FlowCanvasBuilder() {
             {/* SVG Connecting Wires */}
             <svg className="flow-wires-svg" width="5000" height="5000">
               <defs>
-                <marker id="arrowhead-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-                  <polygon points="0 0, 8 3, 0 6" fill="#10b981" />
+                <marker id="arrowhead-green" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                  <polygon points="0 0, 6 3, 0 6" fill="#10b981" />
                 </marker>
-                <marker id="arrowhead-blue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-                  <polygon points="0 0, 8 3, 0 6" fill="#6366f1" />
+                <marker id="arrowhead-blue" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                  <polygon points="0 0, 6 3, 0 6" fill="#6366f1" />
                 </marker>
-                <marker id="arrowhead-slate" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-                  <polygon points="0 0, 8 3, 0 6" fill="#94a3b8" />
+                <marker id="arrowhead-slate" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                  <polygon points="0 0, 6 3, 0 6" fill="#94a3b8" />
                 </marker>
               </defs>
               {renderConnections()}
@@ -792,30 +946,15 @@ export default function FlowCanvasBuilder() {
               return (
                 <div
                   key={step.id}
+                  data-node-id={step.id}
                   className={`flow-node-card ${isSelected ? 'selected' : ''} ${isTargetHovered ? 'selected' : ''}`}
                   style={{ left: pos.x, top: pos.y }}
                   onMouseDown={(e) => handleNodeMouseDown(e, step.id)}
-                  onMouseEnter={() => {
-                    if (connectingFrom && connectingFrom.sourceId !== step.id) {
-                      setHoveredTargetStepId(step.id);
-                    }
-                  }}
-                  onMouseLeave={() => {
-                    if (hoveredTargetStepId === step.id) {
-                      setHoveredTargetStepId(null);
-                    }
-                  }}
-                  onMouseUp={(e) => {
-                    if (connectingFrom && connectingFrom.sourceId !== step.id) {
-                      handlePortMouseUp(e, step.id);
-                    }
-                  }}
                 >
-                  {/* Left Input Port (Drop target for wires!) */}
+                  {/* Left Input Port */}
                   <div
                     className={`flow-port-input ${isTargetHovered ? 'highlight-target' : ''}`}
                     title="Release wire here to connect!"
-                    onMouseUp={(e) => handlePortMouseUp(e, step.id)}
                   ></div>
 
                   {/* Card Header */}

@@ -225,6 +225,7 @@
   background-color: #f8fafc;
   background-image: radial-gradient(#cbd5e1 1.2px, transparent 1.2px);
   background-size: 24px 24px;
+  touch-action: none;
 }
 
 .flow-canvas-viewport:active {
