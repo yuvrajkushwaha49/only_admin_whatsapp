@@ -218,7 +218,7 @@ export default function ProductLibrary() {
   };
 
   const copyWhatsAppShare = (prod) => {
-    const text = prod.whatsapp_message_text || 
+    const text = prod.whatsapp_message_text ||
       `*${prod.name}*\nPrice: ₹${prod.price}\n${prod.description ? prod.description + '\n' : ''}Reply YES to order or enquire!`;
     navigator.clipboard.writeText(text);
     setFeedback({ type: 'success', message: 'WhatsApp message text copied to clipboard!' });
@@ -244,14 +244,14 @@ export default function ProductLibrary() {
         </div>
 
         <div className="prod-hero-actions">
-          <button
+          {/* <button
             type="button"
             className="btn btn-outline-secondary d-flex align-items-center gap-2"
             onClick={() => navigate('/automations')}
           >
             <i className="bi bi-robot text-success"></i>
             <span>Automation Messages</span>
-          </button>
+          </button> */}
           <button
             type="button"
             className="btn btn-outline-primary d-flex align-items-center gap-2"
@@ -459,11 +459,10 @@ export default function ProductLibrary() {
                           </div>
                         )}
                         <span
-                          className={`badge position-absolute top-0 end-0 m-2 ${
-                            prod.stock_status === 'in_stock'
-                              ? 'bg-success text-white'
-                              : 'bg-danger text-white'
-                          }`}
+                          className={`badge position-absolute top-0 end-0 m-2 ${prod.stock_status === 'in_stock'
+                            ? 'bg-success text-white'
+                            : 'bg-danger text-white'
+                            }`}
                         >
                           {prod.stock_status === 'in_stock' ? 'In Stock' : 'Out of Stock'}
                         </span>
@@ -587,11 +586,10 @@ export default function ProductLibrary() {
                       </td>
                       <td>
                         <span
-                          className={`badge ${
-                            prod.stock_status === 'in_stock'
-                              ? 'bg-success-subtle text-success'
-                              : 'bg-danger-subtle text-danger'
-                          }`}
+                          className={`badge ${prod.stock_status === 'in_stock'
+                            ? 'bg-success-subtle text-success'
+                            : 'bg-danger-subtle text-danger'
+                            }`}
                         >
                           {prod.stock_status === 'in_stock' ? 'In Stock' : 'Out of Stock'}
                         </span>

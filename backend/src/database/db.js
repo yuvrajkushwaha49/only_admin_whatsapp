@@ -235,6 +235,7 @@ async function initFallbackStore() {
       seedInboxData(memoryStore);
       seedAuditLogsData(memoryStore);
       seedNotificationsData(memoryStore);
+      seedProductData(memoryStore);
 
       // Ensure Business 2 and users exist in loaded store
       if (!memoryStore.businesses.find(b => b.id === 2)) {
@@ -792,6 +793,11 @@ export async function checkConnection() {
         INDEX idx_prod_business (business_id, is_active),
         INDEX idx_prod_cat (category_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`);
+
+      const [prodCount] = await p.execute('SELECT COUNT(*) as count FROM products WHERE business_id = 1');
+      if (prodCount[0]?.count === 0) {
+        await seedMySqlProducts(p);
+      }
     } catch (_) { }
 
     // Ensure live Indian WhatsApp account has active encrypted access token matching its real WABA & Phone ID
@@ -888,6 +894,148 @@ async function seedMySqlNotifications(p) {
     console.log('✅ [Database] Seeded MySQL notifications successfully!');
   } catch (err) {
     console.error('⚠️ [Database] Failed to seed MySQL notifications:', err.message);
+  }
+}
+
+async function seedMySqlProducts(p) {
+  try {
+    console.log('🌱 [Database] Seeding dummy products and categories for Business #1 (owner@acmeretail.com)...');
+    await p.execute(`
+      INSERT INTO product_categories (id, business_id, name, description)
+      VALUES 
+      (1, 1, 'Electronics & Smart Gadgets', 'Audio devices, smart watches, chargers, and accessories'),
+      (2, 1, 'Apparel & Lifestyle', 'Premium cotton t-shirts, hoodies, and everyday bags')
+      ON DUPLICATE KEY UPDATE name=VALUES(name)
+    `);
+
+    await p.execute(`
+      INSERT INTO products 
+        (id, business_id, category_id, name, sku, price, currency, description, image_url, whatsapp_message_text, stock_status, is_active)
+      VALUES
+      (1, 1, 1, 'Wireless Noise-Cancelling Headphones Pro', 'WNC-8800', 2499.00, 'INR', 
+       'High-fidelity audio with active noise cancellation, 35-hour battery life, and ultra-fast type-C charging.', 
+       'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800', 
+       '🎧 *Wireless Headphones Pro*\\nSpecial Price: ₹2,499 (M.R.P: ₹4,999)\\n⚡ 35-Hour Battery + Active Noise Cancellation.\\nReply *BUY* to order or *CALLBACK* to speak with our product expert!', 
+       'in_stock', 1),
+      (2, 1, 1, 'Smart Fitness Watch Ultra S2', 'SFW-4200', 3199.00, 'INR', 
+       '1.96-inch AMOLED display, Bluetooth calling, heart rate & SpO2 tracking with IP68 water resistance.', 
+       'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800', 
+       '⌚ *Smart Fitness Watch Ultra S2*\\nPrice: ₹3,199\\n✨ AMOLED Display + Bluetooth Calling + 100+ Sports Modes.\\nReply *ORDER* to get free shipping!', 
+       'in_stock', 1),
+      (3, 1, 2, 'Classic Cotton Crewneck T-Shirt', 'TSH-102', 699.00, 'INR', 
+       '100% bio-washed combed cotton, breathable, pre-shrunk fabric available in S, M, L, XL.', 
+       'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800', 
+       '👕 *Classic Cotton Crewneck T-Shirt*\\nOnly ₹699\\n100% premium bio-washed cotton. Available in Black, White, Navy & Olive.\\nReply with your size (S/M/L/XL) to reserve yours!', 
+       'in_stock', 1),
+      (4, 1, 2, 'Waterproof Everyday Backpack 25L', 'BPK-901', 1299.00, 'INR', 
+       'Ergonomic laptop sleeve fits up to 15.6-inch laptop with anti-theft hidden pocket and USB charging port.', 
+       'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800', 
+       '🎒 *Everyday Laptop Backpack 25L*\\nPrice: ₹1,299\\nCurrently restocking. Reply *NOTIFY* to get alerted as soon as fresh stock arrives!', 
+       'out_of_stock', 1)
+      ON DUPLICATE KEY UPDATE name=VALUES(name)
+    `);
+    console.log('✅ [Database] Seeded MySQL dummy products successfully!');
+  } catch (err) {
+    console.error('⚠️ [Database] Failed to seed MySQL dummy products:', err.message);
+  }
+}
+
+function seedProductData(store) {
+  if (!store.product_categories) store.product_categories = [];
+  if (!store.products) store.products = [];
+
+  let cat1 = store.product_categories.find(c => Number(c.business_id) === 1 && c.name === 'Electronics & Smart Gadgets');
+  if (!cat1) {
+    cat1 = {
+      id: 1,
+      business_id: 1,
+      name: 'Electronics & Smart Gadgets',
+      description: 'Audio devices, smart watches, chargers, and accessories',
+      created_at: new Date()
+    };
+    store.product_categories.push(cat1);
+  }
+
+  let cat2 = store.product_categories.find(c => Number(c.business_id) === 1 && c.name === 'Apparel & Lifestyle');
+  if (!cat2) {
+    cat2 = {
+      id: 2,
+      business_id: 1,
+      name: 'Apparel & Lifestyle',
+      description: 'Premium cotton t-shirts, hoodies, and everyday bags',
+      created_at: new Date()
+    };
+    store.product_categories.push(cat2);
+  }
+
+  if (store.products.filter(p => Number(p.business_id) === 1).length === 0) {
+    const now = Date.now();
+    store.products.push(
+      {
+        id: 1,
+        business_id: 1,
+        category_id: cat1.id,
+        name: 'Wireless Noise-Cancelling Headphones Pro',
+        sku: 'WNC-8800',
+        price: 2499.00,
+        currency: 'INR',
+        description: 'High-fidelity audio with active noise cancellation, 35-hour battery life, and ultra-fast type-C charging.',
+        image_url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800',
+        whatsapp_message_text: '🎧 *Wireless Headphones Pro*\nSpecial Price: ₹2,499 (M.R.P: ₹4,999)\n⚡ 35-Hour Battery + Active Noise Cancellation.\nReply *BUY* to order or *CALLBACK* to speak with our product expert!',
+        stock_status: 'in_stock',
+        is_active: 1,
+        created_at: new Date(now - 3 * 86400000),
+        updated_at: new Date(now - 3 * 86400000)
+      },
+      {
+        id: 2,
+        business_id: 1,
+        category_id: cat1.id,
+        name: 'Smart Fitness Watch Ultra S2',
+        sku: 'SFW-4200',
+        price: 3199.00,
+        currency: 'INR',
+        description: '1.96-inch AMOLED display, Bluetooth calling, heart rate & SpO2 tracking with IP68 water resistance.',
+        image_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800',
+        whatsapp_message_text: '⌚ *Smart Fitness Watch Ultra S2*\nPrice: ₹3,199\n✨ AMOLED Display + Bluetooth Calling + 100+ Sports Modes.\nReply *ORDER* to get free shipping!',
+        stock_status: 'in_stock',
+        is_active: 1,
+        created_at: new Date(now - 2 * 86400000),
+        updated_at: new Date(now - 2 * 86400000)
+      },
+      {
+        id: 3,
+        business_id: 1,
+        category_id: cat2.id,
+        name: 'Classic Cotton Crewneck T-Shirt',
+        sku: 'TSH-102',
+        price: 699.00,
+        currency: 'INR',
+        description: '100% bio-washed combed cotton, breathable, pre-shrunk fabric available in S, M, L, XL.',
+        image_url: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
+        whatsapp_message_text: '👕 *Classic Cotton Crewneck T-Shirt*\nOnly ₹699\n100% premium bio-washed cotton. Available in Black, White, Navy & Olive.\nReply with your size (S/M/L/XL) to reserve yours!',
+        stock_status: 'in_stock',
+        is_active: 1,
+        created_at: new Date(now - 1 * 86400000),
+        updated_at: new Date(now - 1 * 86400000)
+      },
+      {
+        id: 4,
+        business_id: 1,
+        category_id: cat2.id,
+        name: 'Waterproof Everyday Backpack 25L',
+        sku: 'BPK-901',
+        price: 1299.00,
+        currency: 'INR',
+        description: 'Ergonomic laptop sleeve fits up to 15.6-inch laptop with anti-theft hidden pocket and USB charging port.',
+        image_url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800',
+        whatsapp_message_text: '🎒 *Everyday Laptop Backpack 25L*\nPrice: ₹1,299\nCurrently restocking. Reply *NOTIFY* to get alerted as soon as fresh stock arrives!',
+        stock_status: 'out_of_stock',
+        is_active: 1,
+        created_at: new Date(now - 12 * 3600000),
+        updated_at: new Date(now - 12 * 3600000)
+      }
+    );
   }
 }
 

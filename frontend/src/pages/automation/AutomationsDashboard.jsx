@@ -108,7 +108,7 @@ export default function AutomationsDashboard() {
               <span className="auto-role-tag">Live Bot Engine</span>
             </h1>
             <p className="auto-hero-subtitle">
-              Automatic WhatsApp conversations that explain products, answer common questions, and collect call-back requests.
+              Automate WhatsApp chats, answer FAQs, showcase products, and collect callback requests.
             </p>
           </div>
         </div>
@@ -120,7 +120,6 @@ export default function AutomationsDashboard() {
             onClick={() => setShowHowItWorks(!showHowItWorks)}
           >
             <i className="bi bi-lightbulb text-warning"></i>
-            <span>How This Works</span>
           </button>
           <button
             type="button"
