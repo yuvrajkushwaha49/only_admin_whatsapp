@@ -201,51 +201,25 @@
   background: #ffffff;
   border: 1px solid #e5eaf2;
   border-radius: 14px;
-  padding: 1.15rem 1.35rem;
+  padding: 1.25rem 1.5rem;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 1.15rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 .auto-kpi-card:hover {
+  border-color: #cbd5e1;
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.auto-kpi-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.auto-kpi-label {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 0.35rem;
-}
-
-.auto-kpi-val {
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: #172033;
-  line-height: 1.1;
-}
-
-.auto-kpi-sub {
-  font-size: 0.75rem;
-  color: #94a3b8;
-  margin-top: 0.3rem;
-  font-weight: 500;
-}
-
+.auto-kpi-icon-circle,
 .auto-kpi-icon-box {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -253,32 +227,58 @@
   flex-shrink: 0;
 }
 
+.auto-kpi-icon-circle.green,
 .auto-kpi-icon-box.emerald {
   background: #ecfdf5;
-  color: #059669;
+  color: #10b981;
 }
 
-.auto-kpi-icon-box.blue {
-  background: #eff6ff;
-  color: #2563eb;
-}
-
+.auto-kpi-icon-circle.purple,
 .auto-kpi-icon-box.purple {
-  background: #faf5ff;
+  background: #f5f0ff;
   color: #7c3aed;
 }
 
+.auto-kpi-icon-circle.blue,
+.auto-kpi-icon-box.blue {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.auto-kpi-icon-circle.amber,
 .auto-kpi-icon-box.amber {
   background: #fffbeb;
   color: #d97706;
 }
 
+.auto-kpi-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.auto-kpi-value,
+.auto-kpi-val {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #172033;
+  line-height: 1.1;
+}
+
+.auto-kpi-label {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 500;
+  margin-top: 0.25rem;
+  letter-spacing: 0.02em;
+}
+
 /* 3. Filter Toolbar & Search */
+.auto-filter-bar,
 .auto-toolbar-card {
   background: #ffffff;
   border: 1px solid #e5eaf2;
   border-radius: 14px;
-  padding: 1rem 1.35rem;
+  padding: 0.9rem 1.25rem;
   margin-bottom: 1.5rem;
   display: flex;
   align-items: center;
@@ -288,16 +288,18 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
+.auto-search-box,
 .auto-search-wrap {
   position: relative;
-  min-width: 290px;
-  flex-grow: 1;
+  flex: 1 1 280px;
   max-width: 420px;
+  margin: 0;
 }
 
+.auto-search-box i,
 .auto-search-icon {
   position: absolute;
-  left: 1rem;
+  left: 0.95rem;
   top: 50%;
   transform: translateY(-50%);
   color: #94a3b8;
@@ -307,14 +309,14 @@
 
 .auto-search-input {
   width: 100%;
-  height: 42px;
-  padding-left: 2.5rem;
-  padding-right: 1rem;
+  height: 40px;
+  padding: 0.5rem 0.9rem 0.5rem 2.45rem;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border-radius: 8px;
   font-size: 0.88rem;
   color: #1e293b;
+  outline: none;
   transition: all 0.15s ease;
 }
 
@@ -325,35 +327,51 @@
   outline: none;
 }
 
+.auto-filter-tabs,
 .auto-filter-group {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
+.auto-tab-btn,
 .auto-filter-btn {
-  height: 38px;
-  padding: 0 1rem;
-  border-radius: 8px;
+  background: #f8fafc;
   border: 1px solid #e2e8f0;
-  background: #ffffff;
-  color: #64748b;
+  color: #475569;
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 500;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 38px;
+  text-decoration: none;
 }
 
+.auto-tab-btn:hover,
 .auto-filter-btn:hover {
-  background: #f8fafc;
+  background: #f1f5f9;
   color: #1e293b;
   border-color: #cbd5e1;
 }
 
+.auto-tab-btn.active,
 .auto-filter-btn.active {
-  background: #059669;
-  border-color: #059669;
-  color: #ffffff;
+  background: #ecfdf5;
+  border-color: #10b981;
+  color: #059669;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(16, 185, 129, 0.12);
+}
+
+.auto-tab-btn.active .badge {
+  background: #059669 !important;
+  color: #ffffff !important;
 }
 
 /* 4. How It Works Accordion */
