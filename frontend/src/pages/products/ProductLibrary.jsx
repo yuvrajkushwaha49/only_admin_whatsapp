@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
+import '../../styles/products.css';
 
 export default function ProductLibrary() {
   const navigate = useNavigate();
@@ -224,41 +225,35 @@ export default function ProductLibrary() {
   };
 
   return (
-    <div className="container-fluid py-4 px-md-4">
-      {/* Top Banner Alert / Feedback */}
-      {feedback && (
-        <div className={`alert alert-${feedback.type} alert-dismissible fade show d-flex align-items-center mb-4`} role="alert">
-          <i className={`bi ${feedback.type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'} me-2 fs-5`}></i>
-          <div className="flex-grow-1">{feedback.message}</div>
-          <button type="button" className="btn-close" onClick={() => setFeedback(null)}></button>
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-        <div>
-          <div className="d-flex align-items-center gap-2">
-            <span className="badge bg-primary-subtle text-primary p-2 rounded-3">
-              <i className="bi bi-box-seam fs-4"></i>
-            </span>
-            <div>
-              <h1 className="h3 mb-0 fw-bold">Product Library & Catalogue</h1>
-              <p className="text-muted small mb-0">
-                Organize your product catalogue, track stock levels, and power automated WhatsApp sales conversations.
-              </p>
-            </div>
+    <div className="products-page-container">
+      {/* 1. Hero Title Banner (Matching Aiveexa Brand Style) */}
+      <div className="prod-hero-banner">
+        <div className="prod-hero-left">
+          <div className="prod-brand-square">
+            <i className="bi bi-box-seam"></i>
+          </div>
+          <div>
+            <h1 className="prod-hero-title">
+              <span>Product Library & Catalogue</span>
+              <span className="prod-role-tag">WhatsApp Catalogue</span>
+            </h1>
+            <p className="prod-hero-subtitle">
+              Organize your product catalogue, track inventory status, and power automated WhatsApp sales conversations.
+            </p>
           </div>
         </div>
 
-        <div className="d-flex flex-wrap gap-2">
+        <div className="prod-hero-actions">
           <button
+            type="button"
             className="btn btn-outline-secondary d-flex align-items-center gap-2"
             onClick={() => navigate('/automations')}
           >
-            <i className="bi bi-robot"></i>
+            <i className="bi bi-robot text-success"></i>
             <span>Automation Messages</span>
           </button>
           <button
+            type="button"
             className="btn btn-outline-primary d-flex align-items-center gap-2"
             onClick={() => setShowCategoryModal(true)}
           >
@@ -266,7 +261,8 @@ export default function ProductLibrary() {
             <span>Add Category</span>
           </button>
           <button
-            className="btn btn-success d-flex align-items-center gap-2 shadow-sm"
+            type="button"
+            className="btn-blue-brand"
             onClick={handleOpenCreateProduct}
           >
             <i className="bi bi-plus-lg"></i>
@@ -275,211 +271,185 @@ export default function ProductLibrary() {
         </div>
       </div>
 
-      {/* Metrics Row */}
-      <div className="row g-3 mb-4">
-        <div className="col-12 col-sm-6 col-xl-4">
-          <div className="card border-0 shadow-sm rounded-4 p-3 h-100">
-            <div className="d-flex align-items-center justify-content-between">
-              <div>
-                <p className="text-muted small mb-1 fw-semibold text-uppercase tracking-wider">Total Products</p>
-                <h3 className="fw-bold mb-0 text-dark">{stats.totalProducts}</h3>
-              </div>
-              <div className="bg-primary-subtle text-primary p-3 rounded-circle">
-                <i className="bi bi-box-seam fs-4"></i>
-              </div>
-            </div>
+      {/* Global Feedback Alert */}
+      {feedback && (
+        <div className={`alert alert-${feedback.type} alert-dismissible fade show d-flex align-items-center mb-4`} role="alert">
+          <i className={`bi ${feedback.type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'} me-2 fs-5`}></i>
+          <div className="flex-grow-1">{feedback.message}</div>
+          <button type="button" className="btn-close" onClick={() => setFeedback(null)}></button>
+        </div>
+      )}
+
+      {/* 2. Four KPI Metric Cards (Matching wa-kpi-grid & ib-kpi-grid) */}
+      <div className="prod-kpi-grid">
+        <div className="prod-kpi-card">
+          <div className="prod-kpi-icon-circle blue">
+            <i className="bi bi-box-seam-fill"></i>
+          </div>
+          <div className="prod-kpi-info">
+            <span className="prod-kpi-value">{stats.totalProducts || 0}</span>
+            <span className="prod-kpi-label">TOTAL PRODUCTS</span>
           </div>
         </div>
 
-        <div className="col-12 col-sm-6 col-xl-4">
-          <div className="card border-0 shadow-sm rounded-4 p-3 h-100">
-            <div className="d-flex align-items-center justify-content-between">
-              <div>
-                <p className="text-muted small mb-1 fw-semibold text-uppercase tracking-wider">In Stock</p>
-                <h3 className="fw-bold mb-0 text-success">{stats.inStockCount}</h3>
-              </div>
-              <div className="bg-success-subtle text-success p-3 rounded-circle">
-                <i className="bi bi-check2-circle fs-4"></i>
-              </div>
-            </div>
+        <div className="prod-kpi-card">
+          <div className="prod-kpi-icon-circle green">
+            <i className="bi bi-check2-circle"></i>
+          </div>
+          <div className="prod-kpi-info">
+            <span className="prod-kpi-value">{stats.inStockCount || 0}</span>
+            <span className="prod-kpi-label">IN STOCK & ACTIVE</span>
           </div>
         </div>
 
-        <div className="col-12 col-sm-6 col-xl-4">
-          <div className="card border-0 shadow-sm rounded-4 p-3 h-100">
-            <div className="d-flex align-items-center justify-content-between">
-              <div>
-                <p className="text-muted small mb-1 fw-semibold text-uppercase tracking-wider">Categories</p>
-                <h3 className="fw-bold mb-0 text-info">{stats.categoriesCount || categories.length}</h3>
-              </div>
-              <div className="bg-info-subtle text-info p-3 rounded-circle">
-                <i className="bi bi-grid-3x3-gap fs-4"></i>
-              </div>
-            </div>
+        <div className="prod-kpi-card">
+          <div className="prod-kpi-icon-circle amber">
+            <i className="bi bi-exclamation-circle-fill"></i>
+          </div>
+          <div className="prod-kpi-info">
+            <span className="prod-kpi-value">{Math.max(0, (stats.totalProducts || 0) - (stats.inStockCount || 0))}</span>
+            <span className="prod-kpi-label">OUT OF STOCK</span>
+          </div>
+        </div>
+
+        <div className="prod-kpi-card">
+          <div className="prod-kpi-icon-circle purple">
+            <i className="bi bi-grid-3x3-gap-fill"></i>
+          </div>
+          <div className="prod-kpi-info">
+            <span className="prod-kpi-value">{stats.categoriesCount || categories.length || 0}</span>
+            <span className="prod-kpi-label">PRODUCT CATEGORIES</span>
           </div>
         </div>
       </div>
 
-      {/* Main Content Card with Navigation Tabs */}
-      <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
-        {/* Navigation Tabs Bar */}
-        <div className="card-header bg-white border-bottom pt-3 pb-0 px-4">
-          <ul className="nav nav-tabs card-header-tabs border-bottom-0">
-            <li className="nav-item">
-              <button
-                className={`nav-link pb-3 px-3 fw-semibold ${activeTab === 'all' ? 'active text-primary border-primary border-bottom border-2' : 'text-muted'}`}
-                onClick={() => handleTabChange('all')}
+      {/* 3. Filter Bar & View Switcher */}
+      <div className="prod-filter-bar">
+        <form onSubmit={handleSearchSubmit} className="prod-search-box">
+          <i className="bi bi-search"></i>
+          <input
+            type="text"
+            className="prod-search-input"
+            placeholder="Search by product name, SKU or keyword..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </form>
+
+        <div className="d-flex align-items-center gap-3 flex-wrap">
+          {/* Sub-navbar Filter Tabs */}
+          <div className="prod-filter-tabs">
+            <button
+              type="button"
+              className={`prod-tab-btn ${activeTab === 'all' ? 'active' : ''}`}
+              onClick={() => handleTabChange('all')}
+            >
+              All Products
+              <span className="badge bg-light text-dark ms-1">{stats.totalProducts || 0}</span>
+            </button>
+            <button
+              type="button"
+              className={`prod-tab-btn ${activeTab === 'in_stock' ? 'active' : ''}`}
+              onClick={() => handleTabChange('in_stock')}
+            >
+              <i className="bi bi-check-circle me-1"></i>
+              In Stock
+              <span className="badge bg-success-subtle text-success ms-1">{stats.inStockCount || 0}</span>
+            </button>
+            <button
+              type="button"
+              className={`prod-tab-btn ${activeTab === 'out_of_stock' ? 'active' : ''}`}
+              onClick={() => handleTabChange('out_of_stock')}
+            >
+              <i className="bi bi-x-circle me-1"></i>
+              Out of Stock
+              <span className="badge bg-danger-subtle text-danger ms-1">
+                {Math.max(0, (stats.totalProducts || 0) - (stats.inStockCount || 0))}
+              </span>
+            </button>
+            <button
+              type="button"
+              className={`prod-tab-btn ${activeTab === 'categories' ? 'active' : ''}`}
+              onClick={() => handleTabChange('categories')}
+            >
+              <i className="bi bi-tags me-1"></i>
+              Categories
+              <span className="badge bg-info-subtle text-info ms-1">{categories.length}</span>
+            </button>
+          </div>
+
+          {/* Category Dropdown */}
+          {activeTab !== 'categories' && (
+            <div className="d-flex align-items-center gap-2">
+              <select
+                className="form-select form-select-sm w-auto"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
               >
-                <i className="bi bi-collection me-2"></i>
-                All Products
-                <span className="badge bg-light text-dark ms-2">{stats.totalProducts}</span>
-              </button>
-            </li>
-            <li className="nav-item">
-              <button
-                className={`nav-link pb-3 px-3 fw-semibold ${activeTab === 'in_stock' ? 'active text-success border-success border-bottom border-2' : 'text-muted'}`}
-                onClick={() => handleTabChange('in_stock')}
-              >
-                <i className="bi bi-check-circle me-2"></i>
-                In Stock
-                <span className="badge bg-success-subtle text-success ms-2">{stats.inStockCount}</span>
-              </button>
-            </li>
-            <li className="nav-item">
-              <button
-                className={`nav-link pb-3 px-3 fw-semibold ${activeTab === 'out_of_stock' ? 'active text-danger border-danger border-bottom border-2' : 'text-muted'}`}
-                onClick={() => handleTabChange('out_of_stock')}
-              >
-                <i className="bi bi-x-circle me-2"></i>
-                Out of Stock
-                <span className="badge bg-danger-subtle text-danger ms-2">
-                  {Math.max(0, stats.totalProducts - stats.inStockCount)}
-                </span>
-              </button>
-            </li>
-            <li className="nav-item">
-              <button
-                className={`nav-link pb-3 px-3 fw-semibold ${activeTab === 'categories' ? 'active text-primary border-primary border-bottom border-2' : 'text-muted'}`}
-                onClick={() => handleTabChange('categories')}
-              >
-                <i className="bi bi-tags me-2"></i>
-                Categories
-                <span className="badge bg-info-subtle text-info ms-2">{categories.length}</span>
-              </button>
-            </li>
-          </ul>
-        </div>
+                <option value="ALL">All Categories</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
 
-        {/* Tab 1, 2, 3: Products View */}
-        {activeTab !== 'categories' && (
-          <div className="card-body p-4">
-            {/* Filter & Search Bar */}
-            <div className="row g-3 align-items-center justify-content-between mb-4">
-              <div className="col-12 col-md-5">
-                <form onSubmit={handleSearchSubmit} className="input-group">
-                  <span className="input-group-text bg-light border-end-0">
-                    <i className="bi bi-search text-muted"></i>
-                  </span>
-                  <input
-                    type="text"
-                    className="form-control bg-light border-start-0"
-                    placeholder="Search by product name, SKU or keyword..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                  {search && (
-                    <button
-                      type="button"
-                      className="btn btn-light border"
-                      onClick={() => { setSearch(''); loadProducts(); }}
-                    >
-                      <i className="bi bi-x"></i>
-                    </button>
-                  )}
-                  <button type="submit" className="btn btn-outline-secondary">Search</button>
-                </form>
-              </div>
-
-              <div className="col-12 col-md-7 d-flex flex-wrap align-items-center justify-content-md-end gap-2">
-                <div className="d-flex align-items-center gap-2">
-                  <label className="text-muted small fw-semibold mb-0">Category:</label>
-                  <select
-                    className="form-select form-select-sm w-auto"
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                  >
-                    <option value="ALL">All Categories</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="btn-group btn-group-sm ms-2" role="group">
-                  <button
-                    type="button"
-                    className={`btn ${viewMode === 'grid' ? 'btn-primary' : 'btn-outline-secondary'}`}
-                    onClick={() => setViewMode('grid')}
-                    title="Grid View"
-                  >
-                    <i className="bi bi-grid-fill"></i>
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn ${viewMode === 'table' ? 'btn-primary' : 'btn-outline-secondary'}`}
-                    onClick={() => setViewMode('table')}
-                    title="Table View"
-                  >
-                    <i className="bi bi-list-ul"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Loading State */}
-            {loading && (
-              <div className="text-center py-5">
-                <div className="spinner-border text-primary" role="status">
-                  <span className="visually-hidden">Loading...</span>
-                </div>
-                <p className="text-muted mt-2 mb-0">Loading product catalogue...</p>
-              </div>
-            )}
-
-            {/* Empty State */}
-            {!loading && products.length === 0 && (
-              <div className="text-center py-5 bg-light rounded-4 my-2">
-                <div className="mb-3 text-muted">
-                  <i className="bi bi-box-seam display-3 opacity-50"></i>
-                </div>
-                <h5 className="fw-bold">No Products Found</h5>
-                <p className="text-muted small max-w-md mx-auto mb-4" style={{ maxWidth: '420px' }}>
-                  {search || selectedCategory !== 'ALL'
-                    ? 'No products matched your search filter. Try clearing your filters or searching with another term.'
-                    : 'Start building your WhatsApp product catalog. Customers in automations can browse, ask questions, and request callbacks.'}
-                </p>
-                <button className="btn btn-success" onClick={handleOpenCreateProduct}>
-                  <i className="bi bi-plus-lg me-2"></i>Add First Product
+              <div className="btn-group btn-group-sm" role="group">
+                <button
+                  type="button"
+                  className={`btn ${viewMode === 'grid' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                  onClick={() => setViewMode('grid')}
+                  title="Grid View"
+                >
+                  <i className="bi bi-grid-fill"></i>
+                </button>
+                <button
+                  type="button"
+                  className={`btn ${viewMode === 'table' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                  onClick={() => setViewMode('table')}
+                  title="Table View"
+                >
+                  <i className="bi bi-list-ul"></i>
                 </button>
               </div>
-            )}
+            </div>
+          )}
+        </div>
+      </div>
 
-            {/* Grid View */}
-            {!loading && products.length > 0 && viewMode === 'grid' && (
+      {/* 4. Main Content Area */}
+      {activeTab !== 'categories' ? (
+        <div className="prod-content-card">
+          {loading ? (
+            <div className="text-center py-5 text-muted">
+              <span className="spinner-border spinner-border-sm me-2 text-primary" role="status"></span>
+              Loading product catalogue...
+            </div>
+          ) : products.length === 0 ? (
+            <div className="text-center py-5">
+              <div className="text-muted mb-3">
+                <i className="bi bi-box-seam display-4 opacity-50"></i>
+              </div>
+              <h5 className="fw-bold text-dark mb-1">No products found</h5>
+              <p className="text-muted small mb-3 max-w-md mx-auto" style={{ maxWidth: '420px' }}>
+                {search || selectedCategory !== 'ALL'
+                  ? 'No products matched your search filter. Try clearing filters.'
+                  : 'Start building your WhatsApp product catalog. Customers in automations can browse, ask questions, and request callbacks.'}
+              </p>
+              <button className="btn-blue-brand btn-sm" onClick={handleOpenCreateProduct}>
+                <i className="bi bi-plus-lg me-1"></i> Add First Product
+              </button>
+            </div>
+          ) : viewMode === 'grid' ? (
+            <div className="p-4">
               <div className="row g-3">
                 {products.map((prod) => (
                   <div key={prod.id || prod.hashId} className="col-12 col-md-6 col-lg-4 col-xl-3">
-                    <div className="card h-100 border rounded-3 shadow-xs hover-shadow transition">
+                    <div className="prod-grid-card">
                       {/* Product Image / Placeholder */}
-                      <div
-                        className="bg-light d-flex align-items-center justify-content-center position-relative overflow-hidden"
-                        style={{ height: '170px' }}
-                      >
+                      <div className="prod-image-wrapper">
                         {prod.image_url ? (
                           <img
                             src={prod.image_url}
                             alt={prod.name}
-                            className="w-100 h-100 object-fit-cover"
                             onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/400x300?text=Product'; }}
                           />
                         ) : (
@@ -500,7 +470,7 @@ export default function ProductLibrary() {
                       </div>
 
                       {/* Card Body */}
-                      <div className="card-body p-3 d-flex flex-column">
+                      <div className="prod-grid-body">
                         <div className="d-flex align-items-center gap-1 mb-1">
                           <span className="badge bg-secondary-subtle text-secondary small">
                             {prod.category_name || 'General'}
@@ -512,11 +482,11 @@ export default function ProductLibrary() {
                           )}
                         </div>
 
-                        <h6 className="card-title fw-bold mb-1 text-truncate" title={prod.name}>
+                        <h6 className="fw-bold mb-1 text-truncate text-dark" title={prod.name}>
                           {prod.name}
                         </h6>
 
-                        <p className="text-muted small mb-2 flex-grow-1 line-clamp-2" style={{ minHeight: '38px' }}>
+                        <p className="text-muted small mb-3 flex-grow-1" style={{ minHeight: '38px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                           {prod.description || 'No description provided.'}
                         </p>
 
@@ -526,9 +496,10 @@ export default function ProductLibrary() {
                           </span>
                         </div>
 
-                        {/* Card Actions */}
+                        {/* Actions */}
                         <div className="d-flex align-items-center gap-1 pt-2 border-top">
                           <button
+                            type="button"
                             className="btn btn-sm btn-outline-success flex-grow-1 d-flex align-items-center justify-content-center gap-1"
                             onClick={() => copyWhatsAppShare(prod)}
                             title="Copy WhatsApp text"
@@ -537,6 +508,7 @@ export default function ProductLibrary() {
                             <span className="small">Copy Text</span>
                           </button>
                           <button
+                            type="button"
                             className="btn btn-sm btn-outline-primary"
                             onClick={() => handleOpenEditProduct(prod)}
                             title="Edit Product"
@@ -544,6 +516,7 @@ export default function ProductLibrary() {
                             <i className="bi bi-pencil"></i>
                           </button>
                           <button
+                            type="button"
                             className="btn btn-sm btn-outline-danger"
                             onClick={() => handleDeleteProduct(prod)}
                             title="Delete Product"
@@ -556,178 +529,184 @@ export default function ProductLibrary() {
                   </div>
                 ))}
               </div>
-            )}
-
-            {/* Table View */}
-            {!loading && products.length > 0 && viewMode === 'table' && (
-              <div className="table-responsive">
-                <table className="table table-hover align-middle mb-0">
-                  <thead className="table-light">
-                    <tr>
-                      <th style={{ width: '60px' }}>Image</th>
-                      <th>Product Name</th>
-                      <th>Category</th>
-                      <th>SKU</th>
-                      <th>Price</th>
-                      <th>Stock</th>
-                      <th className="text-end">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {products.map((prod) => (
-                      <tr key={prod.id || prod.hashId}>
-                        <td>
-                          {prod.image_url ? (
-                            <img
-                              src={prod.image_url}
-                              alt={prod.name}
-                              className="rounded border"
-                              style={{ width: '42px', height: '42px', objectFit: 'cover' }}
-                            />
-                          ) : (
-                            <div
-                              className="rounded bg-light border d-flex align-items-center justify-content-center text-muted"
-                              style={{ width: '42px', height: '42px' }}
-                            >
-                              <i className="bi bi-box"></i>
-                            </div>
-                          )}
-                        </td>
-                        <td>
-                          <div className="fw-bold">{prod.name}</div>
-                          {prod.description && (
-                            <small className="text-muted text-truncate d-block" style={{ maxWidth: '280px' }}>
-                              {prod.description}
-                            </small>
-                          )}
-                        </td>
-                        <td>
-                          <span className="badge bg-secondary-subtle text-secondary">
-                            {prod.category_name || 'General'}
-                          </span>
-                        </td>
-                        <td>
-                          <code className="text-muted">{prod.sku || '—'}</code>
-                        </td>
-                        <td>
-                          <span className="fw-semibold text-dark">
-                            {prod.currency === 'INR' ? '₹' : '$'} {Number(prod.price || 0).toLocaleString()}
-                          </span>
-                        </td>
-                        <td>
-                          <span
-                            className={`badge ${
-                              prod.stock_status === 'in_stock'
-                                ? 'bg-success-subtle text-success'
-                                : 'bg-danger-subtle text-danger'
-                            }`}
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table auto-table align-middle mb-0">
+                <thead className="prod-table-head">
+                  <tr>
+                    <th className="ps-4" style={{ width: '60px' }}>Image</th>
+                    <th>Product Name</th>
+                    <th>Category</th>
+                    <th>SKU</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th className="pe-4 text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map((prod) => (
+                    <tr key={prod.id || prod.hashId}>
+                      <td className="ps-4">
+                        {prod.image_url ? (
+                          <img
+                            src={prod.image_url}
+                            alt={prod.name}
+                            className="rounded border"
+                            style={{ width: '42px', height: '42px', objectFit: 'cover' }}
+                          />
+                        ) : (
+                          <div
+                            className="rounded bg-light border d-flex align-items-center justify-content-center text-muted"
+                            style={{ width: '42px', height: '42px' }}
                           >
-                            {prod.stock_status === 'in_stock' ? 'In Stock' : 'Out of Stock'}
-                          </span>
-                        </td>
-                        <td className="text-end">
-                          <div className="btn-group btn-group-sm">
-                            <button
-                              className="btn btn-outline-success"
-                              onClick={() => copyWhatsAppShare(prod)}
-                              title="Copy WhatsApp Text"
-                            >
-                              <i className="bi bi-whatsapp"></i>
-                            </button>
-                            <button
-                              className="btn btn-outline-primary"
-                              onClick={() => handleOpenEditProduct(prod)}
-                              title="Edit"
-                            >
-                              <i className="bi bi-pencil"></i>
-                            </button>
-                            <button
-                              className="btn btn-outline-danger"
-                              onClick={() => handleDeleteProduct(prod)}
-                              title="Delete"
-                            >
-                              <i className="bi bi-trash"></i>
-                            </button>
+                            <i className="bi bi-box"></i>
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                        )}
+                      </td>
+                      <td>
+                        <div className="fw-bold text-dark">{prod.name}</div>
+                        {prod.description && (
+                          <small className="text-muted text-truncate d-block" style={{ maxWidth: '280px' }}>
+                            {prod.description}
+                          </small>
+                        )}
+                      </td>
+                      <td>
+                        <span className="badge bg-secondary-subtle text-secondary">
+                          {prod.category_name || 'General'}
+                        </span>
+                      </td>
+                      <td>
+                        <code className="text-muted">{prod.sku || '—'}</code>
+                      </td>
+                      <td>
+                        <span className="fw-semibold text-dark">
+                          {prod.currency === 'INR' ? '₹' : '$'} {Number(prod.price || 0).toLocaleString()}
+                        </span>
+                      </td>
+                      <td>
+                        <span
+                          className={`badge ${
+                            prod.stock_status === 'in_stock'
+                              ? 'bg-success-subtle text-success'
+                              : 'bg-danger-subtle text-danger'
+                          }`}
+                        >
+                          {prod.stock_status === 'in_stock' ? 'In Stock' : 'Out of Stock'}
+                        </span>
+                      </td>
+                      <td className="pe-4 text-end">
+                        <div className="btn-group btn-group-sm">
+                          <button
+                            type="button"
+                            className="btn btn-outline-success"
+                            onClick={() => copyWhatsAppShare(prod)}
+                            title="Copy WhatsApp Text"
+                          >
+                            <i className="bi bi-whatsapp"></i>
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-outline-primary"
+                            onClick={() => handleOpenEditProduct(prod)}
+                            title="Edit"
+                          >
+                            <i className="bi bi-pencil"></i>
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-outline-danger"
+                            onClick={() => handleDeleteProduct(prod)}
+                            title="Delete"
+                          >
+                            <i className="bi bi-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Categories View */
+        <div className="prod-content-card p-4">
+          <div className="d-flex align-items-center justify-content-between mb-4">
+            <div>
+              <h5 className="fw-bold mb-1 text-dark">Product Categories</h5>
+              <p className="text-muted small mb-0">
+                Organize your catalogue into logical groups for WhatsApp catalogue menus.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn-blue-brand btn-sm"
+              onClick={() => setShowCategoryModal(true)}
+            >
+              <i className="bi bi-plus-lg me-1"></i> Add New Category
+            </button>
           </div>
-        )}
 
-        {/* Tab 4: Categories View */}
-        {activeTab === 'categories' && (
-          <div className="card-body p-4">
-            <div className="d-flex align-items-center justify-content-between mb-4">
-              <div>
-                <h5 className="fw-bold mb-1">Product Categories</h5>
-                <p className="text-muted small mb-0">
-                  Organize your catalogue into logical groups for WhatsApp catalogue menus.
-                </p>
-              </div>
+          {categories.length === 0 ? (
+            <div className="text-center py-5 bg-light rounded-4">
+              <i className="bi bi-grid-3x3-gap display-4 text-muted opacity-50 mb-3"></i>
+              <h6 className="fw-bold text-dark">No Categories Found</h6>
+              <p className="text-muted small mb-3">
+                Create categories like Electronics, Clothing, Services, or FMCG to group your products.
+              </p>
               <button
-                className="btn btn-primary d-flex align-items-center gap-2"
+                type="button"
+                className="btn btn-sm btn-primary"
                 onClick={() => setShowCategoryModal(true)}
               >
-                <i className="bi bi-plus-lg"></i>
-                <span>Add New Category</span>
+                <i className="bi bi-plus-lg me-1"></i> Add Category
               </button>
             </div>
-
-            {categories.length === 0 ? (
-              <div className="text-center py-5 bg-light rounded-4">
-                <i className="bi bi-grid-3x3-gap display-4 text-muted opacity-50 mb-3"></i>
-                <h6 className="fw-bold">No Categories Found</h6>
-                <p className="text-muted small mb-3">
-                  Create categories like Electronics, Clothing, Services, or FMCG to group your products.
-                </p>
-                <button
-                  className="btn btn-sm btn-primary"
-                  onClick={() => setShowCategoryModal(true)}
-                >
-                  <i className="bi bi-plus-lg me-1"></i> Add Category
-                </button>
-              </div>
-            ) : (
-              <div className="row g-3">
-                {categories.map((cat) => (
-                  <div key={cat.id} className="col-12 col-md-6 col-lg-4">
-                    <div className="card border h-100 rounded-3 p-3">
-                      <div className="d-flex align-items-center gap-3">
-                        <div className="bg-primary-subtle text-primary p-3 rounded-3">
-                          <i className="bi bi-folder2-open fs-4"></i>
-                        </div>
-                        <div className="flex-grow-1">
-                          <h6 className="fw-bold mb-1">{cat.name}</h6>
-                          <p className="text-muted small mb-0">
-                            {cat.description || 'No description provided.'}
-                          </p>
-                        </div>
+          ) : (
+            <div className="row g-3">
+              {categories.map((cat) => (
+                <div key={cat.id} className="col-12 col-md-6 col-lg-4">
+                  <div className="card border h-100 rounded-3 p-3 shadow-xs">
+                    <div className="d-flex align-items-center gap-3">
+                      <div className="bg-primary-subtle text-primary p-3 rounded-3 fs-4">
+                        <i className="bi bi-folder2-open"></i>
+                      </div>
+                      <div className="flex-grow-1">
+                        <h6 className="fw-bold mb-1 text-dark">{cat.name}</h6>
+                        <p className="text-muted small mb-0">
+                          {cat.description || 'No description provided.'}
+                        </p>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Add / Edit Product Modal */}
       {showProductModal && (
         <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog modal-lg modal-dialog-centered">
-            <div className="modal-content border-0 shadow rounded-4">
+            <div className="modal-content border-0 shadow rounded-4 overflow-hidden">
               <form onSubmit={handleSaveProduct}>
-                <div className="modal-header border-bottom px-4">
-                  <h5 className="modal-title fw-bold">
-                    <i className="bi bi-box-seam text-primary me-2"></i>
-                    {editingProduct ? 'Edit Product' : 'Add New Product'}
-                  </h5>
+                <div className="modal-header border-bottom px-4 bg-light">
+                  <div className="d-flex align-items-center gap-2">
+                    <div className="bg-primary text-white p-2 rounded-3 fs-5 d-flex align-items-center justify-content-center" style={{ width: '38px', height: '38px' }}>
+                      <i className="bi bi-box-seam"></i>
+                    </div>
+                    <div>
+                      <h5 className="modal-title fw-bold text-dark mb-0">
+                        {editingProduct ? 'Edit Product' : 'Add New Product'}
+                      </h5>
+                      <small className="text-muted">Enter product specifications and WhatsApp share copy</small>
+                    </div>
+                  </div>
                   <button
                     type="button"
                     className="btn-close"
@@ -849,7 +828,7 @@ export default function ProductLibrary() {
                   </div>
                 </div>
 
-                <div className="modal-footer border-top px-4">
+                <div className="modal-footer border-top px-4 bg-light">
                   <button
                     type="button"
                     className="btn btn-outline-secondary"
@@ -857,7 +836,7 @@ export default function ProductLibrary() {
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-success" disabled={saving}>
+                  <button type="submit" className="btn-blue-brand" disabled={saving}>
                     {saving ? (
                       <>
                         <span className="spinner-border spinner-border-sm me-2"></span>
@@ -881,13 +860,18 @@ export default function ProductLibrary() {
       {showCategoryModal && (
         <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0 shadow rounded-4">
+            <div className="modal-content border-0 shadow rounded-4 overflow-hidden">
               <form onSubmit={handleSaveCategory}>
-                <div className="modal-header border-bottom px-4">
-                  <h5 className="modal-title fw-bold">
-                    <i className="bi bi-folder-plus text-primary me-2"></i>
-                    Add Category
-                  </h5>
+                <div className="modal-header border-bottom px-4 bg-light">
+                  <div className="d-flex align-items-center gap-2">
+                    <div className="bg-primary text-white p-2 rounded-3 fs-5 d-flex align-items-center justify-content-center" style={{ width: '38px', height: '38px' }}>
+                      <i className="bi bi-folder-plus"></i>
+                    </div>
+                    <div>
+                      <h5 className="modal-title fw-bold text-dark mb-0">Add Category</h5>
+                      <small className="text-muted">Create product category for catalogue segmentation</small>
+                    </div>
+                  </div>
                   <button
                     type="button"
                     className="btn-close"
@@ -920,7 +904,7 @@ export default function ProductLibrary() {
                   </div>
                 </div>
 
-                <div className="modal-footer border-top px-4">
+                <div className="modal-footer border-top px-4 bg-light">
                   <button
                     type="button"
                     className="btn btn-outline-secondary"
@@ -928,7 +912,7 @@ export default function ProductLibrary() {
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-primary" disabled={saving}>
+                  <button type="submit" className="btn-blue-brand" disabled={saving}>
                     {saving ? 'Saving...' : 'Create Category'}
                   </button>
                 </div>

@@ -95,163 +95,196 @@ export default function AutomationsDashboard() {
   };
 
   return (
-    <div className="automation-container">
-      {/* Page Header */}
-      <div className="automation-header">
-        <div>
-          <h1 className="automation-title">
-            <i className="bi bi-robot text-success"></i> Automation messages
-          </h1>
-          <p className="automation-subtitle">
-            Automatic WhatsApp conversations that explain products, answer common questions and collect call-back requests.
-          </p>
+    <div className="automation-page-container">
+      {/* 1. Hero Title Banner (Matching Aiveexa Brand Style) */}
+      <div className="auto-hero-banner">
+        <div className="auto-hero-left">
+          <div className="auto-brand-square">
+            <i className="bi bi-robot"></i>
+          </div>
+          <div>
+            <h1 className="auto-hero-title">
+              <span>Automation Messages</span>
+              <span className="auto-role-tag">Live Bot Engine</span>
+            </h1>
+            <p className="auto-hero-subtitle">
+              Automatic WhatsApp conversations that explain products, answer common questions, and collect call-back requests.
+            </p>
+          </div>
         </div>
 
-        <div className="automation-actions">
+        <div className="auto-hero-actions">
+          <button
+            type="button"
+            className="btn btn-outline-secondary d-flex align-items-center gap-2"
+            onClick={() => setShowHowItWorks(!showHowItWorks)}
+          >
+            <i className="bi bi-lightbulb text-warning"></i>
+            <span>How This Works</span>
+          </button>
           <button
             type="button"
             className="btn btn-outline-secondary d-flex align-items-center gap-2"
             onClick={() => navigate('/products')}
             title="Browse Product Catalogue & Library"
           >
-            <i className="bi bi-box-seam text-success"></i> Product Library
+            <i className="bi bi-box-seam text-success"></i>
+            <span>Product Library</span>
           </button>
-
           <button
             type="button"
-            className="btn btn-emerald"
+            className="btn-emerald-brand"
             onClick={() => setShowNewModal(true)}
           >
-            <i className="bi bi-plus-lg"></i> New Automation
+            <i className="bi bi-plus-lg"></i>
+            <span>New Automation</span>
           </button>
         </div>
       </div>
 
       {/* Global Feedback Alert */}
       {feedback && (
-        <div className={`alert alert-${feedback.type} alert-dismissible fade show py-2 small d-flex align-items-center justify-content-between mb-4`} role="alert">
-          <div>
-            <i className={`bi ${feedback.type === 'success' ? 'bi-check-circle-fill' : 'bi-info-circle-fill'} me-2`}></i>
-            {feedback.message}
-          </div>
-          <button type="button" className="btn-close py-2" onClick={() => setFeedback(null)}></button>
+        <div className={`alert alert-${feedback.type} alert-dismissible fade show d-flex align-items-center mb-4`} role="alert">
+          <i className={`bi ${feedback.type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'} me-2 fs-5`}></i>
+          <div className="flex-grow-1">{feedback.message}</div>
+          <button type="button" className="btn-close" onClick={() => setFeedback(null)}></button>
         </div>
       )}
 
-      {/* How This Works Expandable Panel */}
-      <div className="how-it-works-card">
-        <div className="how-it-works-toggle" onClick={() => setShowHowItWorks(!showHowItWorks)}>
-          <span>
-            <i className="bi bi-lightbulb-fill text-warning me-2"></i>
-            How This Works — Conversational WhatsApp Automation Guide
-          </span>
-          <i className={`bi ${showHowItWorks ? 'bi-chevron-up' : 'bi-chevron-down'}`}></i>
-        </div>
+      {/* 2. Expandable Info Panel */}
+      {showHowItWorks && (
+        <div className="auto-how-it-works-card">
+          <div className="auto-how-it-works-toggle" onClick={() => setShowHowItWorks(!showHowItWorks)}>
+            <div className="d-flex align-items-center gap-2">
+              <i className="bi bi-lightbulb-fill text-warning"></i>
+              <span className="fw-bold">How Conversational WhatsApp Automation Works</span>
+            </div>
+            <i className="bi bi-chevron-up"></i>
+          </div>
 
-        {showHowItWorks && (
-          <div className="how-it-works-content">
+          <div className="auto-how-it-works-content">
             <p className="mb-2">
               Automations respond immediately whenever a customer triggers your keyword (e.g. <code>menu</code>, <code>price</code>) or taps a button from your campaign broadcast.
             </p>
-            <div className="how-it-works-steps">
-              <div className="hiw-step-box">
-                <div className="hiw-step-num">Step 1: Triggers</div>
+            <div className="auto-how-it-works-steps">
+              <div className="auto-hiw-step-box">
+                <div className="auto-hiw-step-num">Step 1: Triggers</div>
                 <div>Customer sends a matching keyword or taps an interactive campaign button.</div>
               </div>
-              <div className="hiw-step-box">
-                <div className="hiw-step-num">Step 2: Guided Chat</div>
+              <div className="auto-hiw-step-box">
+                <div className="auto-hiw-step-num">Step 2: Guided Chat</div>
                 <div>Your bot sends sequential interactive messages with quick reply options.</div>
               </div>
-              <div className="hiw-step-box">
-                <div className="hiw-step-num">Step 3: Call Back & Handover</div>
+              <div className="auto-hiw-step-box">
+                <div className="auto-hiw-step-num">Step 3: Call Back & Handover</div>
                 <div>Unexpected replies trigger a callback offer, or seamless transfer to human team.</div>
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
+
+      {/* 3. Four KPI Metric Cards (Matching wa-kpi-grid & ib-kpi-grid) */}
+      <div className="auto-kpi-grid">
+        <div className="auto-kpi-card">
+          <div className="auto-kpi-icon-circle green">
+            <i className="bi bi-send-check-fill"></i>
+          </div>
+          <div className="auto-kpi-info">
+            <span className="auto-kpi-value">{stats.publishedCount || 0}</span>
+            <span className="auto-kpi-label">Published Live</span>
+          </div>
+        </div>
+
+        <div className="auto-kpi-card">
+          <div className="auto-kpi-icon-circle purple">
+            <i className="bi bi-file-earmark-code-fill"></i>
+          </div>
+          <div className="auto-kpi-info">
+            <span className="auto-kpi-value">{stats.draftCount || 0}</span>
+            <span className="auto-kpi-label">Draft Flows</span>
+          </div>
+        </div>
+
+        <div className="auto-kpi-card">
+          <div className="auto-kpi-icon-circle blue">
+            <i className="bi bi-chat-dots-fill"></i>
+          </div>
+          <div className="auto-kpi-info">
+            <span className="auto-kpi-value">{stats.totalConversations || 0}</span>
+            <span className="auto-kpi-label">Conversations Handled</span>
+          </div>
+        </div>
+
+        <div className="auto-kpi-card">
+          <div className="auto-kpi-icon-circle amber">
+            <i className="bi bi-telephone-inbound-fill"></i>
+          </div>
+          <div className="auto-kpi-info">
+            <span className="auto-kpi-value">{stats.totalCallbacks || 0}</span>
+            <span className="auto-kpi-label">Callback Leads</span>
+          </div>
+        </div>
       </div>
 
-      {/* Automation Usage Stats Grid */}
-      <div className="automation-stats-grid">
-        <div className="auto-stat-card">
-          <div className="auto-stat-icon bg-success-subtle text-success">
-            <i className="bi bi-send-check"></i>
-          </div>
-          <div>
-            <div className="auto-stat-val">{stats.publishedCount || 0}</div>
-            <div className="auto-stat-label">Published Live</div>
-          </div>
-        </div>
+      {/* 4. Filter Toolbar */}
+      <div className="auto-filter-bar">
+        <form onSubmit={handleSearchSubmit} className="auto-search-box">
+          <i className="bi bi-search"></i>
+          <input
+            type="text"
+            className="auto-search-input"
+            placeholder="Search automations by name or keyword..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </form>
 
-        <div className="auto-stat-card">
-          <div className="auto-stat-icon bg-light text-secondary">
-            <i className="bi bi-file-earmark"></i>
-          </div>
-          <div>
-            <div className="auto-stat-val">{stats.draftCount || 0}</div>
-            <div className="auto-stat-label">Drafts</div>
-          </div>
-        </div>
-
-        <div className="auto-stat-card">
-          <div className="auto-stat-icon bg-primary-subtle text-primary">
-            <i className="bi bi-chat-left-dots"></i>
-          </div>
-          <div>
-            <div className="auto-stat-val">{stats.totalConversations || 0}</div>
-            <div className="auto-stat-label">Conversations Handled</div>
-          </div>
-        </div>
-
-        <div className="auto-stat-card">
-          <div className="auto-stat-icon bg-warning-subtle text-warning">
-            <i className="bi bi-telephone-inbound"></i>
-          </div>
-          <div>
-            <div className="auto-stat-val">{stats.totalCallbacks || 0}</div>
-            <div className="auto-stat-label">Callbacks Generated</div>
-          </div>
+        <div className="auto-filter-tabs">
+          <button
+            type="button"
+            className={`auto-tab-btn ${statusFilter === 'ALL' ? 'active' : ''}`}
+            onClick={() => setStatusFilter('ALL')}
+          >
+            All Automations
+            <span className="badge bg-light text-dark ms-1">{automations.length}</span>
+          </button>
+          <button
+            type="button"
+            className={`auto-tab-btn ${statusFilter === 'published' ? 'active' : ''}`}
+            onClick={() => setStatusFilter('published')}
+          >
+            <i className="bi bi-check-circle me-1"></i>
+            Published
+          </button>
+          <button
+            type="button"
+            className={`auto-tab-btn ${statusFilter === 'draft' ? 'active' : ''}`}
+            onClick={() => setStatusFilter('draft')}
+          >
+            <i className="bi bi-pencil-square me-1"></i>
+            Drafts
+          </button>
+          <button
+            type="button"
+            className={`auto-tab-btn ${statusFilter === 'paused' ? 'active' : ''}`}
+            onClick={() => setStatusFilter('paused')}
+          >
+            <i className="bi bi-pause-circle me-1"></i>
+            Paused
+          </button>
         </div>
       </div>
 
-      {/* Automations Table Card */}
-      <div className="automations-table-card">
-        {/* Table Toolbar */}
-        <div className="table-toolbar">
-          <form onSubmit={handleSearchSubmit} className="search-input-wrap">
-            <i className="bi bi-search"></i>
-            <input
-              type="text"
-              className="form-control form-control-sm"
-              placeholder="Search automations..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </form>
-
-          <div className="d-flex align-items-center gap-2">
-            <select
-              className="form-select form-select-sm"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              style={{ width: '150px' }}
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="published">Published</option>
-              <option value="draft">Drafts</option>
-              <option value="paused">Paused</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Automations Listing Table */}
+      {/* 5. Main Automations Table Card */}
+      <div className="auto-content-card">
         <div className="table-responsive">
-          <table className="table table-hover align-middle mb-0" style={{ fontSize: '0.875rem' }}>
-            <thead className="table-light">
+          <table className="table auto-table align-middle mb-0">
+            <thead className="auto-table-head">
               <tr>
                 <th className="ps-4">Automation Name</th>
                 <th>Status</th>
-                <th>Starts With</th>
+                <th>Starts With (Triggers)</th>
                 <th>Conversations</th>
                 <th>Callbacks</th>
                 <th>Updated</th>
@@ -262,21 +295,25 @@ export default function AutomationsDashboard() {
               {loading ? (
                 <tr>
                   <td colSpan="7" className="text-center py-5 text-muted">
-                    <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                    <span className="spinner-border spinner-border-sm me-2 text-success" role="status"></span>
                     Loading automations...
                   </td>
                 </tr>
               ) : automations.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="text-center py-5">
-                    <i className="bi bi-robot text-muted fs-1 d-block mb-2"></i>
-                    <h6 className="fw-bold text-dark mb-1">No automations found</h6>
-                    <p className="text-muted small mb-3">
-                      Create your first automated WhatsApp workflow to guide customers and generate leads.
+                    <div className="text-muted mb-3">
+                      <i className="bi bi-robot display-4 opacity-50"></i>
+                    </div>
+                    <h5 className="fw-bold text-dark mb-1">No automations found</h5>
+                    <p className="text-muted small mb-3 max-w-md mx-auto" style={{ maxWidth: '420px' }}>
+                      {search || statusFilter !== 'ALL'
+                        ? 'No automations match your search filter. Try clearing filters.'
+                        : 'Create your first automated WhatsApp workflow to guide customers and generate leads.'}
                     </p>
                     <button
                       type="button"
-                      className="btn btn-emerald btn-sm"
+                      className="btn-emerald-brand btn-sm"
                       onClick={() => setShowNewModal(true)}
                     >
                       <i className="bi bi-plus-lg me-1"></i> Create Automation
@@ -292,22 +329,22 @@ export default function AutomationsDashboard() {
                     <tr key={auto.id}>
                       <td className="ps-4">
                         <div
-                          className="fw-bold text-dark text-decoration-none cursor-pointer"
+                          className="fw-bold text-dark text-decoration-none"
                           style={{ cursor: 'pointer' }}
                           onClick={() => navigate(`/automations/${auto.hashId || auto.id}/builder`)}
                         >
                           {auto.name}
                         </div>
                         {auto.purpose && (
-                          <div className="text-muted text-truncate small" style={{ maxWidth: '300px', fontSize: '0.775rem' }}>
+                          <div className="text-muted text-truncate small" style={{ maxWidth: '300px', fontSize: '0.785rem' }}>
                             {auto.purpose}
                           </div>
                         )}
                       </td>
 
                       <td>
-                        <span className={`status-badge ${auto.status}`}>
-                          {auto.status === 'published' ? '🟢 Published' : auto.status === 'paused' ? '⏸️ Paused' : '⚪ Draft'}
+                        <span className={`auto-status-pill ${auto.status}`}>
+                          {auto.status === 'published' ? '● Published' : auto.status === 'paused' ? '⏸ Paused' : '○ Draft'}
                         </span>
                       </td>
 
