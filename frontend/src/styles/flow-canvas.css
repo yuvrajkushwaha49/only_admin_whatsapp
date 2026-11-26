@@ -450,10 +450,46 @@
   z-index: 10;
 }
 
-.flow-port-input:hover {
+.flow-port-input:hover,
+.flow-port-input.highlight-target {
   border-color: #10b981;
   background: #10b981;
-  transform: translateY(-50%) scale(1.2);
+  transform: translateY(-50%) scale(1.35);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.7);
+}
+
+.flow-wire-temp {
+  fill: none;
+  stroke: #10b981;
+  stroke-width: 3px;
+  stroke-dasharray: 6 4;
+  animation: flowWireDash 0.8s linear infinite;
+}
+
+@keyframes flowWireDash {
+  from { stroke-dashoffset: 20; }
+  to { stroke-dashoffset: 0; }
+}
+
+.flow-wire-group {
+  cursor: pointer;
+  pointer-events: all;
+}
+
+.flow-wire-group:hover .flow-wire-path {
+  stroke: #ef4444 !important;
+  stroke-width: 3.5px;
+}
+
+.flow-wire-delete-badge {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: all;
+  cursor: pointer;
+}
+
+.flow-wire-group:hover .flow-wire-delete-badge {
+  opacity: 1;
 }
 
 .flow-port-output {

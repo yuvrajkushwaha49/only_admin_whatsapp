@@ -5,7 +5,6 @@ import '../../../styles/flow-canvas.css';
 import '../../../styles/automations.css';
 
 const NODE_WIDTH = 280;
-const NODE_HEIGHT = 160;
 
 const PALETTE_TEMPLATES = [
   {
@@ -88,6 +87,12 @@ export default function FlowCanvasBuilder() {
   const [draggingNodeId, setDraggingNodeId] = useState(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
 
+  // Interactive Port-to-Port Wire Connection
+  // connectingFrom: { sourceId: string, type: 'trigger' | 'node' | 'button', btnIndex?: number, startX: number, startY: number }
+  const [connectingFrom, setConnectingFrom] = useState(null);
+  const [connectingMouse, setConnectingMouse] = useState({ x: 0, y: 0 });
+  const [hoveredTargetStepId, setHoveredTargetStepId] = useState(null);
+
   // Load automation data
   useEffect(() => {
     loadAutomation();
@@ -106,7 +111,7 @@ export default function FlowCanvasBuilder() {
           const stepsWithPos = (def.steps || []).map((step, idx) => ({
             ...step,
             position: step.position || {
-              x: 400 + idx * 320,
+              x: 400 + idx * 340,
               y: 160 + (idx % 2 === 0 ? 0 : 80)
             }
           }));
@@ -128,6 +133,7 @@ export default function FlowCanvasBuilder() {
 
   // Node Dragging Handlers
   const handleNodeMouseDown = (e, nodeId) => {
+    if (connectingFrom) return;
     e.stopPropagation();
     setSelectedNodeId(nodeId);
     setDraggingNodeId(nodeId);
@@ -141,9 +147,125 @@ export default function FlowCanvasBuilder() {
     };
   };
 
-  // Canvas Mouse Move (Handles both canvas panning & node dragging)
+  // Wire Connection: Mouse Down on an Output Port
+  const handlePortMouseDown = (e, sourceId, type, btnIndex = null) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    let startX = 0;
+    let startY = 0;
+
+    if (type === 'trigger') {
+      startX = 70 + 240; // Trigger card right edge
+      startY = 180 + 55;
+    } else {
+      const step = definition.steps.find(s => s.id === sourceId);
+      const pos = step?.position || { x: 400, y: 160 };
+      startX = pos.x + NODE_WIDTH;
+      if (type === 'button') {
+        startY = pos.y + 112 + (btnIndex * 28);
+      } else {
+        startY = pos.y + 50; // Middle of card
+      }
+    }
+
+    setConnectingFrom({
+      sourceId,
+      type,
+      btnIndex,
+      startX,
+      startY
+    });
+    setConnectingMouse({ x: startX, y: startY });
+  };
+
+  // Wire Connection: Mouse Up on a Target Input Port (Completes the Wire!)
+  const handlePortMouseUp = (e, targetStepId) => {
+    e.stopPropagation();
+    if (!connectingFrom) return;
+
+    const targetStep = definition.steps.find(s => s.id === targetStepId);
+    if (!targetStep) {
+      setConnectingFrom(null);
+      return;
+    }
+
+    // Do not connect to self
+    if (connectingFrom.sourceId === targetStepId) {
+      setConnectingFrom(null);
+      return;
+    }
+
+    if (connectingFrom.type === 'trigger') {
+      // Connect Trigger -> targetStep (move targetStep to index 0)
+      const reordered = [
+        targetStep,
+        ...definition.steps.filter(s => s.id !== targetStepId)
+      ];
+      setDefinition(prev => ({ ...prev, steps: reordered }));
+      setFeedback({ type: 'success', message: `Trigger now starts with "${targetStep.name}"!` });
+    } else if (connectingFrom.type === 'button') {
+      // Connect Button -> targetStep
+      const sourceStep = definition.steps.find(s => s.id === connectingFrom.sourceId);
+      if (sourceStep && Array.isArray(sourceStep.buttons)) {
+        const btns = [...sourceStep.buttons];
+        if (btns[connectingFrom.btnIndex]) {
+          btns[connectingFrom.btnIndex] = {
+            ...btns[connectingFrom.btnIndex],
+            action: 'go_to_step',
+            targetStepId
+          };
+          updateStepField(connectingFrom.sourceId, 'buttons', btns);
+          setFeedback({
+            type: 'success',
+            message: `Connected "${btns[connectingFrom.btnIndex].text}" → "${targetStep.name}"!`
+          });
+        }
+      }
+    } else if (connectingFrom.type === 'node') {
+      // Connect Step Output -> targetStep
+      updateStepField(connectingFrom.sourceId, 'nextAction', 'go_to_step');
+      updateStepField(connectingFrom.sourceId, 'targetStepId', targetStepId);
+      setFeedback({
+        type: 'success',
+        message: `Connected step to "${targetStep.name}"!`
+      });
+    }
+
+    setConnectingFrom(null);
+    setHoveredTargetStepId(null);
+  };
+
+  // Disconnect an existing wire
+  const handleDisconnectWire = (wireType, sourceId, btnIndex = null) => {
+    if (wireType === 'button') {
+      const sourceStep = definition.steps.find(s => s.id === sourceId);
+      if (sourceStep && Array.isArray(sourceStep.buttons)) {
+        const btns = [...sourceStep.buttons];
+        if (btns[btnIndex]) {
+          btns[btnIndex] = {
+            ...btns[btnIndex],
+            targetStepId: ''
+          };
+          updateStepField(sourceId, 'buttons', btns);
+          setFeedback({ type: 'info', message: 'Connection removed.' });
+        }
+      }
+    } else if (wireType === 'node') {
+      updateStepField(sourceId, 'nextAction', 'end_conversation');
+      updateStepField(sourceId, 'targetStepId', '');
+      setFeedback({ type: 'info', message: 'Connection removed.' });
+    }
+  };
+
+  // Canvas Mouse Move (Handles node dragging, canvas panning & dynamic connecting wire)
   const handleMouseMove = (e) => {
-    if (draggingNodeId) {
+    if (connectingFrom) {
+      // Compute mouse coordinate relative to canvas content
+      const canvasX = Math.round((e.clientX - pan.x) / zoom);
+      const canvasY = Math.round((e.clientY - pan.y) / zoom);
+      setConnectingMouse({ x: canvasX, y: canvasY });
+    } else if (draggingNodeId) {
       const newX = Math.round((e.clientX / zoom) - dragOffsetRef.current.x);
       const newY = Math.round((e.clientY / zoom) - dragOffsetRef.current.y);
 
@@ -166,11 +288,15 @@ export default function FlowCanvasBuilder() {
   const handleMouseUp = () => {
     setDraggingNodeId(null);
     setIsPanning(false);
+    if (connectingFrom) {
+      setConnectingFrom(null);
+      setHoveredTargetStepId(null);
+    }
   };
 
   // Canvas Pan Handlers
   const handleCanvasMouseDown = (e) => {
-    if (e.target.closest('.flow-node-card') || e.target.closest('.flow-palette-sidebar') || e.target.closest('.flow-inspector-drawer')) {
+    if (e.target.closest('.flow-node-card') || e.target.closest('.flow-palette-sidebar') || e.target.closest('.flow-inspector-drawer') || e.target.closest('.flow-port-output') || e.target.closest('.flow-port-input') || e.target.closest('.flow-port-btn-output')) {
       return;
     }
     setIsPanning(true);
@@ -200,8 +326,8 @@ export default function FlowCanvasBuilder() {
       buttons: template.defaultData.buttons ? JSON.parse(JSON.stringify(template.defaultData.buttons)) : [],
       nextAction: template.defaultData.nextAction || 'go_to_next',
       position: {
-        x: 400 + (definition.steps.length * 320),
-        y: 180 + (definition.steps.length % 2 === 0 ? 0 : 90)
+        x: 400 + (definition.steps.length * 340),
+        y: 180 + (definition.steps.length % 2 === 0 ? 0 : 80)
       }
     };
 
@@ -223,15 +349,20 @@ export default function FlowCanvasBuilder() {
     }
   };
 
-  // Update selected step fields from inspector
-  const updateSelectedStep = (field, value) => {
-    if (!selectedNodeId) return;
+  // Update specific step field
+  const updateStepField = (stepId, field, value) => {
     setDefinition(prev => ({
       ...prev,
       steps: prev.steps.map(step => 
-        step.id === selectedNodeId ? { ...step, [field]: value } : step
+        step.id === stepId ? { ...step, [field]: value } : step
       )
     }));
+  };
+
+  // Update selected step fields from inspector
+  const updateSelectedStep = (field, value) => {
+    if (!selectedNodeId) return;
+    updateStepField(selectedNodeId, field, value);
   };
 
   // Add button to selected step
@@ -321,7 +452,7 @@ export default function FlowCanvasBuilder() {
     if (definition.steps.length > 0) {
       const step1 = definition.steps[0];
       const startX = triggerPos.x + 240;
-      const startY = triggerPos.y + 60;
+      const startY = triggerPos.y + 55;
       const endX = step1.position?.x || 400;
       const endY = (step1.position?.y || 160) + 40;
 
@@ -342,26 +473,72 @@ export default function FlowCanvasBuilder() {
           if (btn.action === 'go_to_step' && btn.targetStepId) {
             const targetStep = definition.steps.find(s => s.id === btn.targetStepId);
             if (targetStep) {
-              const startY = (step.position?.y || 160) + 110 + (bIdx * 28);
+              const startY = (step.position?.y || 160) + 112 + (bIdx * 28);
               const endX = targetStep.position?.x || 400;
-              const endY = (targetStep.position?.y || 160) + 45;
+              const endY = (targetStep.position?.y || 160) + 40;
 
               const deltaX = Math.max(60, Math.abs(endX - startX) * 0.5);
+              const midX = (startX + endX) / 2;
+              const midY = (startY + endY) / 2;
               const d = `M ${startX} ${startY} C ${startX + deltaX} ${startY}, ${endX - deltaX} ${endY}, ${endX} ${endY}`;
+
               lines.push(
-                <path key={`btn_${step.id}_${btn.id || bIdx}`} d={d} className="flow-wire-path btn-wire" markerEnd="url(#arrowhead-blue)" />
+                <g key={`btn_${step.id}_${btn.id || bIdx}`} className="flow-wire-group">
+                  <path d={d} className="flow-wire-path btn-wire" markerEnd="url(#arrowhead-blue)" />
+                  {/* Disconnect Badge on Wire */}
+                  <g 
+                    className="flow-wire-delete-badge"
+                    transform={`translate(${midX}, ${midY})`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDisconnectWire('button', step.id, bIdx);
+                    }}
+                  >
+                    <circle r="10" fill="#ef4444" />
+                    <text textAnchor="middle" dy="4" fill="#ffffff" fontSize="11" fontWeight="bold">✕</text>
+                  </g>
+                </g>
               );
             }
           }
         });
       }
 
-      // Check linear nextAction
-      if (step.nextAction === 'go_to_next' && idx < definition.steps.length - 1) {
+      // Check step-level nextAction (either explicit targetStepId or sequential go_to_next)
+      if (step.nextAction === 'go_to_step' && step.targetStepId) {
+        const targetStep = definition.steps.find(s => s.id === step.targetStepId);
+        if (targetStep) {
+          const startY = (step.position?.y || 160) + 50;
+          const endX = targetStep.position?.x || 400;
+          const endY = (targetStep.position?.y || 160) + 40;
+
+          const deltaX = Math.max(60, Math.abs(endX - startX) * 0.5);
+          const midX = (startX + endX) / 2;
+          const midY = (startY + endY) / 2;
+          const d = `M ${startX} ${startY} C ${startX + deltaX} ${startY}, ${endX - deltaX} ${endY}, ${endX} ${endY}`;
+
+          lines.push(
+            <g key={`node_${step.id}`} className="flow-wire-group">
+              <path d={d} className="flow-wire-path active" markerEnd="url(#arrowhead-green)" />
+              <g 
+                className="flow-wire-delete-badge"
+                transform={`translate(${midX}, ${midY})`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDisconnectWire('node', step.id);
+                }}
+              >
+                <circle r="10" fill="#ef4444" />
+                <text textAnchor="middle" dy="4" fill="#ffffff" fontSize="11" fontWeight="bold">✕</text>
+              </g>
+            </g>
+          );
+        }
+      } else if (step.nextAction === 'go_to_next' && idx < definition.steps.length - 1) {
         const nextStep = definition.steps[idx + 1];
         const startY = (step.position?.y || 160) + 50;
         const endX = nextStep.position?.x || 400;
-        const endY = (nextStep.position?.y || 160) + 50;
+        const endY = (nextStep.position?.y || 160) + 40;
 
         const deltaX = Math.max(60, Math.abs(endX - startX) * 0.5);
         const d = `M ${startX} ${startY} C ${startX + deltaX} ${startY}, ${endX - deltaX} ${endY}, ${endX} ${endY}`;
@@ -370,6 +547,24 @@ export default function FlowCanvasBuilder() {
         );
       }
     });
+
+    // 3. Dynamic Interactive Wire while dragging from an Output Port
+    if (connectingFrom) {
+      const { startX, startY } = connectingFrom;
+      const endX = connectingMouse.x;
+      const endY = connectingMouse.y;
+      const deltaX = Math.max(50, Math.abs(endX - startX) * 0.5);
+      const d = `M ${startX} ${startY} C ${startX + deltaX} ${startY}, ${endX - deltaX} ${endY}, ${endX} ${endY}`;
+
+      lines.push(
+        <path 
+          key="dynamic_connecting_wire" 
+          d={d} 
+          className="flow-wire-temp" 
+          markerEnd="url(#arrowhead-green)" 
+        />
+      );
+    }
 
     return lines;
   };
@@ -503,6 +698,14 @@ export default function FlowCanvasBuilder() {
               </div>
             ))}
           </div>
+
+          {/* Quick Tip Box */}
+          <div className="p-3 mt-auto bg-light border-top text-muted small" style={{ fontSize: '0.74rem' }}>
+            <div className="fw-bold text-dark mb-1">
+              <i className="bi bi-lightning-charge-fill text-warning me-1"></i> How to Connect Arrows:
+            </div>
+            Drag from any <strong>Circle Dot (Port)</strong> on the right of a block/button and drop it onto the <strong>Input Dot</strong> of another block to connect them!
+          </div>
         </aside>
 
         {/* Center: The Infinite Dot Canvas */}
@@ -511,6 +714,7 @@ export default function FlowCanvasBuilder() {
           onMouseDown={handleCanvasMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
+          style={{ cursor: connectingFrom ? 'crosshair' : (isPanning ? 'grabbing' : 'grab') }}
         >
           {/* Zoom & Canvas Controls */}
           <div className="flow-canvas-controls">
@@ -534,7 +738,7 @@ export default function FlowCanvasBuilder() {
             }}
           >
             {/* SVG Connecting Wires */}
-            <svg className="flow-wires-svg">
+            <svg className="flow-wires-svg" width="5000" height="5000">
               <defs>
                 <marker id="arrowhead-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
                   <polygon points="0 0, 8 3, 0 6" fill="#10b981" />
@@ -568,26 +772,51 @@ export default function FlowCanvasBuilder() {
                   Keywords: {definition.triggers?.keywords?.join(', ') || 'menu'}
                 </span>
                 <p className="text-muted small mt-2 mb-0" style={{ fontSize: '0.74rem' }}>
-                  Customer triggers the bot by typing one of these keywords on WhatsApp.
+                  Drag green dot to connect with the first message!
                 </p>
               </div>
-              <div className="flow-port-output" title="Trigger Output"></div>
+              {/* Trigger Output Port */}
+              <div 
+                className="flow-port-output" 
+                title="Drag to connect first message"
+                onMouseDown={(e) => handlePortMouseDown(e, 'trigger', 'trigger')}
+              ></div>
             </div>
 
             {/* Interactive Step Nodes */}
             {definition.steps.map((step, idx) => {
               const isSelected = selectedNodeId === step.id;
-              const pos = step.position || { x: 400 + idx * 320, y: 160 };
+              const pos = step.position || { x: 400 + idx * 340, y: 160 };
+              const isTargetHovered = hoveredTargetStepId === step.id;
 
               return (
                 <div
                   key={step.id}
-                  className={`flow-node-card ${isSelected ? 'selected' : ''}`}
+                  className={`flow-node-card ${isSelected ? 'selected' : ''} ${isTargetHovered ? 'selected' : ''}`}
                   style={{ left: pos.x, top: pos.y }}
                   onMouseDown={(e) => handleNodeMouseDown(e, step.id)}
+                  onMouseEnter={() => {
+                    if (connectingFrom && connectingFrom.sourceId !== step.id) {
+                      setHoveredTargetStepId(step.id);
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    if (hoveredTargetStepId === step.id) {
+                      setHoveredTargetStepId(null);
+                    }
+                  }}
+                  onMouseUp={(e) => {
+                    if (connectingFrom && connectingFrom.sourceId !== step.id) {
+                      handlePortMouseUp(e, step.id);
+                    }
+                  }}
                 >
-                  {/* Left Input Port */}
-                  <div className="flow-port-input" title="Connect into this step"></div>
+                  {/* Left Input Port (Drop target for wires!) */}
+                  <div 
+                    className={`flow-port-input ${isTargetHovered ? 'highlight-target' : ''}`}
+                    title="Release wire here to connect!"
+                    onMouseUp={(e) => handlePortMouseUp(e, step.id)}
+                  ></div>
 
                   {/* Card Header */}
                   <div className="flow-node-header message">
@@ -623,15 +852,24 @@ export default function FlowCanvasBuilder() {
                             <span className="text-truncate" style={{ maxWidth: '210px' }}>
                               <i className="bi bi-hand-index-thumb text-primary me-1"></i> {btn.text}
                             </span>
-                            <div className="flow-port-btn-output" title={`Connect option: ${btn.text}`}></div>
+                            {/* Button Output Port (Drag from here to connect this button to another block!) */}
+                            <div 
+                              className="flow-port-btn-output" 
+                              title={`Drag arrow from button "${btn.text}" to next step`}
+                              onMouseDown={(e) => handlePortMouseDown(e, step.id, 'button', bIdx)}
+                            ></div>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
 
-                  {/* Right Output Port */}
-                  <div className="flow-port-output" title="Next Step Output"></div>
+                  {/* Right Output Port (Drag from here to connect entire step to next step!) */}
+                  <div 
+                    className="flow-port-output" 
+                    title="Drag arrow to next step"
+                    onMouseDown={(e) => handlePortMouseDown(e, step.id, 'node')}
+                  ></div>
                 </div>
               );
             })}
@@ -752,7 +990,7 @@ export default function FlowCanvasBuilder() {
 
                         {/* Action when button is tapped */}
                         <div className="row g-1">
-                          <div className="col-6">
+                          <div className="col-5">
                             <select 
                               className="form-select form-select-sm"
                               value={btn.action}
@@ -765,14 +1003,14 @@ export default function FlowCanvasBuilder() {
                             </select>
                           </div>
                           {btn.action === 'go_to_step' && (
-                            <div className="col-6">
+                            <div className="col-7">
                               <select 
                                 className="form-select form-select-sm"
                                 value={btn.targetStepId || ''}
                                 onChange={(e) => handleUpdateButton(bIdx, 'targetStepId', e.target.value)}
                                 style={{ fontSize: '0.75rem' }}
                               >
-                                <option value="">Select Target...</option>
+                                <option value="">Select Target Step...</option>
                                 {definition.steps
                                   .filter(s => s.id !== selectedStep.id)
                                   .map(s => (
@@ -793,14 +1031,30 @@ export default function FlowCanvasBuilder() {
                 <div className="mb-3 border-top pt-3">
                   <label className="flow-form-label">After Sending Message</label>
                   <select 
-                    className="form-select form-select-sm"
+                    className="form-select form-select-sm mb-2"
                     value={selectedStep.nextAction || 'go_to_next'}
                     onChange={(e) => updateSelectedStep('nextAction', e.target.value)}
                   >
                     <option value="go_to_next">Go to Next Step in Flow</option>
+                    <option value="go_to_step">Go to Specific Step (Connected Arrow)</option>
                     <option value="request_callback">Offer Callback to Lead</option>
                     <option value="end_conversation">End Conversation</option>
                   </select>
+
+                  {selectedStep.nextAction === 'go_to_step' && (
+                    <select 
+                      className="form-select form-select-sm"
+                      value={selectedStep.targetStepId || ''}
+                      onChange={(e) => updateSelectedStep('targetStepId', e.target.value)}
+                    >
+                      <option value="">Select Target Step...</option>
+                      {definition.steps
+                        .filter(s => s.id !== selectedStep.id)
+                        .map(s => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                    </select>
+                  )}
                 </div>
               )}
 
