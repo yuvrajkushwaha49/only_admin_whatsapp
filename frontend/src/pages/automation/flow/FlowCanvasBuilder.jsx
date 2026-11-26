@@ -104,54 +104,70 @@ export default function FlowCanvasBuilder() {
     initialCenter: { x: 0, y: 0 }
   });
 
-  // Native non-passive Wheel Event Listener for Smooth Trackpad Pinch & Mouse Wheel Zoom
-  useEffect(() => {
+  // Reusable Wheel / Touchpad Zoom Function
+  const applyWheelZoom = (e) => {
     const viewport = viewportRef.current;
     if (!viewport) return;
 
-    const onWheel = (e) => {
-      // Don't intercept scroll if cursor is inside sidebar or inspector drawer
-      if (e.target.closest('.flow-palette-sidebar') || e.target.closest('.flow-inspector-drawer')) {
-        return;
-      }
-      e.preventDefault();
+    // Don't intercept scroll if cursor is inside sidebar or inspector drawer
+    if (e.target.closest('.flow-palette-sidebar') || e.target.closest('.flow-inspector-drawer')) {
+      return;
+    }
+    if (e.cancelable) e.preventDefault();
 
-      const rect = viewport.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
+    const rect = viewport.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
 
-      // Trackpad pinch-to-zoom (or Ctrl+wheel on Windows/Mac) sends e.ctrlKey = true
-      let zoomDelta = 0;
-      if (e.ctrlKey) {
-        zoomDelta = -e.deltaY * 0.01;
-      } else {
-        zoomDelta = -e.deltaY * 0.0015;
-      }
+    // Horizontal two-finger touchpad swipe -> Pan horizontally
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 4) {
+      setPan((curPan) => ({
+        ...curPan,
+        x: curPan.x - Math.round(e.deltaX * 1.1)
+      }));
+      return;
+    }
 
-      setZoom((curZoom) => {
-        const nextZoom = Math.max(0.4, Math.min(2.2, +(curZoom + zoomDelta).toFixed(3)));
-        if (nextZoom === curZoom) return curZoom;
+    // Touchpad pinch-to-zoom sends e.ctrlKey = true; normal 2-finger scroll sends e.ctrlKey = false
+    let zoomDelta = 0;
+    if (e.ctrlKey) {
+      zoomDelta = -e.deltaY * 0.015;
+    } else {
+      zoomDelta = -e.deltaY * 0.003;
+    }
 
-        // Zoom centered around current mouse cursor position!
-        setPan((curPan) => {
-          const scaleChange = nextZoom / curZoom;
-          const newPanX = mouseX - (mouseX - curPan.x) * scaleChange;
-          const newPanY = mouseY - (mouseY - curPan.y) * scaleChange;
-          return {
-            x: Math.round(newPanX),
-            y: Math.round(newPanY)
-          };
-        });
+    setZoom((curZoom) => {
+      const nextZoom = Math.max(0.4, Math.min(2.2, +(curZoom + zoomDelta).toFixed(3)));
+      if (Math.abs(nextZoom - curZoom) < 0.001) return curZoom;
 
-        return nextZoom;
+      // Center zoom around the exact mouse cursor point
+      setPan((curPan) => {
+        const scaleChange = nextZoom / curZoom;
+        const newPanX = mouseX - (mouseX - curPan.x) * scaleChange;
+        const newPanY = mouseY - (mouseY - curPan.y) * scaleChange;
+        return {
+          x: Math.round(newPanX),
+          y: Math.round(newPanY)
+        };
       });
-    };
 
-    viewport.addEventListener('wheel', onWheel, { passive: false });
+      return nextZoom;
+    });
+  };
+
+  // Native non-passive Wheel Event Listener for Smooth Trackpad Pinch & Mouse Wheel Zoom
+  useEffect(() => {
+    if (loading) return;
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const onNativeWheel = (e) => applyWheelZoom(e);
+
+    viewport.addEventListener('wheel', onNativeWheel, { passive: false });
     return () => {
-      viewport.removeEventListener('wheel', onWheel);
+      viewport.removeEventListener('wheel', onNativeWheel);
     };
-  }, []);
+  }, [loading]);
 
   // Accurate Coordinate Converter: Translates Client Screen (x, y) into Canvas Space
   const getCanvasCoords = (clientX, clientY) => {
@@ -865,6 +881,7 @@ export default function FlowCanvasBuilder() {
           onMouseDown={handleCanvasMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
+          onWheel={applyWheelZoom}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
