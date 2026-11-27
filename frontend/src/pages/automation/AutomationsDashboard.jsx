@@ -287,7 +287,7 @@ export default function AutomationsDashboard() {
                 <th>Conversations</th>
                 <th>Callbacks</th>
                 <th>Updated</th>
-                <th className="pe-4 text-end">Actions</th>
+                <th className="pe-4 text-end" style={{ minWidth: '160px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -385,7 +385,7 @@ export default function AutomationsDashboard() {
                         {updatedDate}
                       </td>
 
-                      <td className="pe-4 text-end">
+                      <td className="pe-4 text-end" style={{ minWidth: '160px' }}>
                         <div className="btn-group btn-group-sm">
                           <button
                             type="button"

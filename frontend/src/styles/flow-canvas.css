@@ -326,6 +326,114 @@
   user-select: none;
 }
 
+.flow-node-card.first-step {
+  border-color: #10b981;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.15), 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.flow-node-start-banner {
+  background: linear-gradient(90deg, #10b981, #059669);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flow-start-target-hint {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.72rem;
+}
+
+/* Floating Journey Guide */
+.flow-journey-guide {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  border: 1px solid #e2e8f0;
+  border-radius: 30px;
+  padding: 5px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.08);
+  z-index: 12;
+  pointer-events: none;
+}
+
+.flow-journey-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.flow-journey-step.active {
+  color: #059669;
+}
+
+.flow-journey-step.active-start {
+  color: #2563eb;
+}
+
+.flow-journey-badge {
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: inherit;
+}
+
+.flow-journey-step.active .flow-journey-badge {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.flow-journey-step.active-start .flow-journey-badge {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.flow-journey-arrow {
+  color: #cbd5e1;
+  font-size: 0.82rem;
+}
+
+.flow-wire-label-rect {
+  fill: #ecfdf5;
+  stroke: #10b981;
+  stroke-width: 1.5px;
+}
+
+.flow-wire-label-text {
+  fill: #059669;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
 .flow-node-card:hover {
   border-color: #cbd5e1;
   box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.12);

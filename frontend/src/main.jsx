@@ -11,6 +11,8 @@ import './styles/logs.css';
 import './styles/settings.css';
 import './styles/notifications.css';
 import './styles/campaigns.css';
+import './styles/automations.css';
+import './styles/flow-canvas.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

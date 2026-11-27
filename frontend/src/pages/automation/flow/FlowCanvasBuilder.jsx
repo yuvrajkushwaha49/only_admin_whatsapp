@@ -74,6 +74,9 @@ export default function FlowCanvasBuilder() {
   const [publishing, setPublishing] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
+  const [whatsappAccounts, setWhatsappAccounts] = useState([]);
+  const [templates, setTemplates] = useState([]);
+
   // Viewport Container Ref (for exact bounding box calculations)
   const viewportRef = useRef(null);
 
@@ -217,6 +220,38 @@ export default function FlowCanvasBuilder() {
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    loadAccountsAndTemplates();
+  }, []);
+
+  const loadAccountsAndTemplates = async () => {
+    try {
+      const [accRes, tplRes] = await Promise.allSettled([
+        api.get('/whatsapp/accounts'),
+        api.get('/whatsapp/templates?status=APPROVED&limit=100')
+      ]);
+      if (accRes.status === 'fulfilled' && accRes.value.data?.success) {
+        setWhatsappAccounts(accRes.value.data.data?.accounts || accRes.value.data.data || []);
+      }
+      if (tplRes.status === 'fulfilled' && tplRes.value.data?.success) {
+        setTemplates(tplRes.value.data.data || []);
+      }
+    } catch (_) {}
+  };
+
+  // Set any step as 1st starting message
+  const handleSetAsFirstStep = (stepId) => {
+    const targetStep = definition.steps.find(s => s.id === stepId);
+    if (!targetStep) return;
+    const reordered = [
+      targetStep,
+      ...definition.steps.filter(s => s.id !== stepId)
+    ];
+    setDefinition(prev => ({ ...prev, steps: reordered }));
+    setSelectedNodeId(stepId);
+    setFeedback({ type: 'success', message: `"${targetStep.name}" is now set as the 1st Message sent on trigger!` });
   };
 
   // Node Dragging Handlers
@@ -610,15 +645,21 @@ export default function FlowCanvasBuilder() {
     // 1. Trigger connecting to Step 1
     if (definition.steps.length > 0) {
       const step1 = definition.steps[0];
-      const startX = triggerPos.x + 240;
-      const startY = triggerPos.y + 55;
+      const startX = triggerPos.x + 250;
+      const startY = triggerPos.y + 60;
       const endX = step1.position?.x || 400;
       const endY = (step1.position?.y || 160) + 40;
 
       const deltaX = Math.abs(endX - startX) * 0.5;
+      const midX = Math.round((startX + endX) / 2);
+      const midY = Math.round((startY + endY) / 2);
       const d = `M ${startX} ${startY} C ${startX + deltaX} ${startY}, ${endX - deltaX} ${endY}, ${endX} ${endY}`;
       lines.push(
-        <path key="trig_to_step1" d={d} className="flow-wire-path active" markerEnd="url(#arrowhead-green)" />
+        <g key="trig_to_step1" className="flow-wire-group">
+          <path d={d} className="flow-wire-path active" markerEnd="url(#arrowhead-green)" />
+          <rect x={midX - 48} y={midY - 11} width="96" height="22" rx="11" className="flow-wire-label-rect" />
+          <text x={midX} y={midY + 1} className="flow-wire-label-text">⚡ SENDS FIRST</text>
+        </g>
       );
     }
 
@@ -887,6 +928,24 @@ export default function FlowCanvasBuilder() {
           onTouchEnd={handleTouchEnd}
           style={{ cursor: connectingFrom ? 'crosshair' : (isPanning ? 'grabbing' : 'grab') }}
         >
+          {/* Top Flow Journey Guide */}
+          <div className="flow-journey-guide">
+            <div className="flow-journey-step active">
+              <span className="flow-journey-badge">1</span>
+              <span>⚡ Trigger Event</span>
+            </div>
+            <i className="bi bi-arrow-right flow-journey-arrow"></i>
+            <div className="flow-journey-step active-start">
+              <span className="flow-journey-badge">2</span>
+              <span>💬 1st Message Auto-Sends</span>
+            </div>
+            <i className="bi bi-arrow-right flow-journey-arrow"></i>
+            <div className="flow-journey-step">
+              <span className="flow-journey-badge">3</span>
+              <span>🔘 Customer Replies ➔ Next Step</span>
+            </div>
+          </div>
+
           {/* Zoom & Canvas Controls */}
           <div className="flow-canvas-controls">
             <button type="button" className="flow-control-btn" onClick={handleZoomIn} title="Zoom In">
@@ -924,19 +983,38 @@ export default function FlowCanvasBuilder() {
               {renderConnections()}
             </svg>
 
-            {/* Trigger Start Node (Static Anchor on Canvas) */}
+            {/* Trigger Start Node (Interactive Anchor on Canvas) */}
             <div
-              className="flow-node-card"
-              style={{ left: 70, top: 180, width: 240 }}
+              className={`flow-node-card ${selectedNodeId === 'trigger' ? 'selected' : ''}`}
+              style={{ left: 70, top: 180, width: 250, cursor: 'pointer' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedNodeId('trigger');
+              }}
             >
               <div className="flow-node-header trigger">
                 <div className="flow-node-title-box">
                   <div className="flow-node-icon" style={{ backgroundColor: '#10b981' }}>
-                    <i className="bi bi-play-circle-fill"></i>
+                    <i className="bi bi-lightning-charge-fill"></i>
                   </div>
-                  <h6 className="flow-node-name">1. How It Starts</h6>
+                  <div>
+                    <h6 className="flow-node-name">1. How It Starts</h6>
+                  </div>
                 </div>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-success py-0 px-2 rounded-pill"
+                  style={{ fontSize: '0.72rem' }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedNodeId('trigger');
+                  }}
+                  title="Configure WhatsApp triggers"
+                >
+                  Edit <i className="bi bi-sliders ms-1"></i>
+                </button>
               </div>
+
               <div className="flow-node-body">
                 {definition.triggers?.templateName && (
                   <span className="badge bg-light text-success border me-1 mb-1 d-inline-block text-truncate" style={{ maxWidth: '210px' }}>
@@ -961,10 +1039,19 @@ export default function FlowCanvasBuilder() {
                     Keywords: menu
                   </span>
                 )}
-                <p className="text-muted small mt-2 mb-0" style={{ fontSize: '0.74rem' }}>
-                  Drag green dot to connect with the first message!
+
+                <div className="flow-start-target-hint">
+                  <span className="text-muted d-block" style={{ fontSize: '0.7rem' }}>🚀 Sends 1st Message:</span>
+                  <strong className="text-dark d-block text-truncate" style={{ fontSize: '0.78rem' }}>
+                    {definition.steps[0]?.name || 'No message connected'}
+                  </strong>
+                </div>
+
+                <p className="text-success small mt-2 mb-0 fw-semibold" style={{ fontSize: '0.72rem' }}>
+                  Click to edit triggers or drag dot to rewire
                 </p>
               </div>
+
               {/* Trigger Output Port */}
               <div
                 className="flow-port-output"
@@ -976,14 +1063,15 @@ export default function FlowCanvasBuilder() {
             {/* Interactive Step Nodes */}
             {definition.steps.map((step, idx) => {
               const isSelected = selectedNodeId === step.id;
-              const pos = step.position || { x: 400 + idx * 340, y: 160 };
+              const pos = step.position || { x: 420 + idx * 340, y: 160 };
               const isTargetHovered = hoveredTargetStepId === step.id;
+              const isFirstStep = idx === 0;
 
               return (
                 <div
                   key={step.id}
                   data-node-id={step.id}
-                  className={`flow-node-card ${isSelected ? 'selected' : ''} ${isTargetHovered ? 'selected' : ''}`}
+                  className={`flow-node-card ${isFirstStep ? 'first-step' : ''} ${isSelected ? 'selected' : ''} ${isTargetHovered ? 'selected' : ''}`}
                   style={{ left: pos.x, top: pos.y }}
                   onMouseDown={(e) => handleNodeMouseDown(e, step.id)}
                 >
@@ -993,14 +1081,38 @@ export default function FlowCanvasBuilder() {
                     title="Release wire here to connect!"
                   ></div>
 
+                  {/* 1st Outbound Message Indicator Banner */}
+                  {isFirstStep && (
+                    <div className="flow-node-start-banner">
+                      <span><i className="bi bi-star-fill me-1"></i> 1st Outbound Message</span>
+                      <span className="badge bg-white text-success" style={{ fontSize: '0.62rem' }}>SENT ON TRIGGER</span>
+                    </div>
+                  )}
+
                   {/* Card Header */}
                   <div className="flow-node-header message">
                     <div className="flow-node-title-box">
-                      <div className="flow-node-icon" style={{ backgroundColor: '#2563eb' }}>
-                        <i className="bi bi-chat-square-text-fill"></i>
+                      <div className="flow-node-icon" style={{ backgroundColor: isFirstStep ? '#10b981' : '#2563eb' }}>
+                        <i className={`bi ${isFirstStep ? 'bi-send-check-fill' : 'bi-chat-square-text-fill'}`}></i>
                       </div>
                       <h6 className="flow-node-name">{step.name || `Step ${idx + 1}`}</h6>
                     </div>
+
+                    {!isFirstStep && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-success py-0 px-1.5 ms-auto me-2"
+                        style={{ fontSize: '0.68rem' }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSetAsFirstStep(step.id);
+                        }}
+                        title="Make this the 1st message sent on trigger"
+                      >
+                        <i className="bi bi-play-circle me-1"></i> Make 1st
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       className="btn-close"
@@ -1068,6 +1180,24 @@ export default function FlowCanvasBuilder() {
             </div>
 
             <div className="flow-inspector-body">
+              {/* Starting Step Status & Switcher */}
+              {definition.steps[0]?.id === selectedStep.id ? (
+                <div className="alert alert-success py-2 px-3 small d-flex align-items-center mb-3">
+                  <i className="bi bi-star-fill me-2 fs-6"></i>
+                  <div>
+                    <strong>Active 1st Outbound Message:</strong> When the automation triggers, this message is sent to the customer automatically.
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="btn btn-outline-success btn-sm w-100 mb-3"
+                  onClick={() => handleSetAsFirstStep(selectedStep.id)}
+                >
+                  <i className="bi bi-play-circle me-1"></i> Set as 1st Message (Dispatched on Trigger)
+                </button>
+              )}
+
               {/* Step Name */}
               <div className="mb-3">
                 <label className="flow-form-label">Step Name</label>
@@ -1233,6 +1363,201 @@ export default function FlowCanvasBuilder() {
                 </div>
               )}
 
+            </div>
+          </aside>
+        )}
+
+        {/* Right Drawer: Trigger Inspector (When Trigger Node is Selected) */}
+        {selectedNodeId === 'trigger' && (
+          <aside className="flow-inspector-drawer">
+            <div className="flow-inspector-header">
+              <h6 className="flow-inspector-title">
+                <i className="bi bi-lightning-charge-fill text-success"></i>
+                <span>How This Automation Starts</span>
+              </h6>
+              <button
+                type="button"
+                className="btn-close"
+                onClick={() => setSelectedNodeId(null)}
+              ></button>
+            </div>
+
+            <div className="flow-inspector-body">
+              <div className="alert alert-success py-2 px-3 small d-flex align-items-center mb-3">
+                <i className="bi bi-info-circle-fill me-2 fs-6"></i>
+                <div>
+                  Whenever a customer triggers this flow, <strong>{definition.steps[0]?.name || 'Step 1'}</strong> will be sent automatically as the first message.
+                </div>
+              </div>
+
+              {/* 1. First Message to Send */}
+              <div className="mb-3">
+                <label className="flow-form-label">First Message to Send (Step 1)</label>
+                <select
+                  className="form-select form-select-sm"
+                  value={definition.steps[0]?.id || ''}
+                  onChange={(e) => handleSetAsFirstStep(e.target.value)}
+                  disabled={definition.steps.length <= 1}
+                >
+                  {definition.steps.map((st, i) => (
+                    <option key={st.id} value={st.id}>
+                      {i === 0 ? '⭐ [Active 1st Step] ' : ''}{st.name} ({st.id})
+                    </option>
+                  ))}
+                </select>
+                <span className="text-muted small mt-1 d-block" style={{ fontSize: '0.72rem' }}>
+                  The green arrow on the canvas connects directly to this initial step.
+                </span>
+              </div>
+
+              {/* 2. WhatsApp Listening Number */}
+              <div className="mb-3 border-top pt-3">
+                <label className="flow-form-label">Listening WhatsApp Number</label>
+                <select
+                  className="form-select form-select-sm"
+                  value={automation?.whatsapp_account_id || ''}
+                  onChange={(e) => {
+                    const accId = e.target.value ? Number(e.target.value) : null;
+                    setAutomation(prev => ({ ...prev, whatsapp_account_id: accId }));
+                  }}
+                >
+                  <option value="">All Connected Numbers (Default)</option>
+                  {whatsappAccounts.map(acc => (
+                    <option key={acc.id} value={acc.id}>
+                      {acc.display_name || acc.verified_name || 'Account'} ({acc.phone_number || acc.phone_number_id})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 3. Trigger C: WhatsApp Template Reply */}
+              <div className="mb-3 border-top pt-3">
+                <div className="d-flex justify-content-between align-items-center mb-1">
+                  <label className="flow-form-label mb-0">WhatsApp Template Broadcast Reply</label>
+                  <span className="badge bg-success-subtle text-success small">Recommended</span>
+                </div>
+                <p className="text-muted small mb-2" style={{ fontSize: '0.74rem' }}>
+                  Triggers automatically when a customer asks a query or replies after receiving a template broadcast.
+                </p>
+                <select
+                  className="form-select form-select-sm mb-2"
+                  value={definition.triggers?.templateName || ''}
+                  onChange={(e) => {
+                    const val = e.target.value || null;
+                    setDefinition(prev => ({
+                      ...prev,
+                      triggers: {
+                        ...(prev.triggers || {}),
+                        templateName: val,
+                        templateMatchType: prev.triggers?.templateMatchType || 'ANY_REPLY'
+                      }
+                    }));
+                  }}
+                >
+                  <option value="">Disabled (Don't trigger on template reply)</option>
+                  <option value="ANY">⭐ Any Template (Triggers on reply to any template)</option>
+                  {templates.map(tpl => (
+                    <option key={tpl.id} value={tpl.name}>
+                      {tpl.name} ({tpl.language || 'en'})
+                    </option>
+                  ))}
+                </select>
+
+                {definition.triggers?.templateName && (
+                  <div className="bg-light p-2 rounded-2 border small">
+                    <label className="fw-semibold text-dark mb-1 d-block" style={{ fontSize: '0.74rem' }}>Reply Type:</label>
+                    <select
+                      className="form-select form-select-sm"
+                      value={definition.triggers?.templateMatchType || 'ANY_REPLY'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setDefinition(prev => ({
+                          ...prev,
+                          triggers: {
+                            ...(prev.triggers || {}),
+                            templateMatchType: val
+                          }
+                        }));
+                      }}
+                    >
+                      <option value="ANY_REPLY">Any Text Reply or Button Tap</option>
+                      <option value="BUTTON_CLICK">Only Quick Reply Button Clicks</option>
+                      <option value="KEYWORD">Only Matching Keywords Below</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {/* 4. Trigger A: Incoming Keywords */}
+              <div className="mb-3 border-top pt-3">
+                <div className="d-flex justify-content-between align-items-center mb-1">
+                  <label className="flow-form-label mb-0">Incoming Keywords ({definition.triggers?.keywords?.length || 0}/10)</label>
+                </div>
+                <p className="text-muted small mb-2" style={{ fontSize: '0.74rem' }}>
+                  When customer sends any of these words (e.g. <code>menu</code>, <code>price</code>, <code>hi</code>).
+                </p>
+                <div className="d-flex flex-wrap gap-1 mb-2">
+                  {(definition.triggers?.keywords || []).map((kw, i) => (
+                    <span key={i} className="badge bg-light text-dark border p-1.5 d-inline-flex align-items-center gap-1">
+                      {kw}
+                      <button
+                        type="button"
+                        className="btn-close"
+                        style={{ fontSize: '0.5rem' }}
+                        onClick={() => {
+                          const updated = (definition.triggers?.keywords || []).filter((_, idx) => idx !== i);
+                          setDefinition(prev => ({
+                            ...prev,
+                            triggers: { ...prev.triggers, keywords: updated }
+                          }));
+                        }}
+                      ></button>
+                    </span>
+                  ))}
+                </div>
+                <div className="input-group input-group-sm">
+                  <input
+                    type="text"
+                    id="canvasKwInput"
+                    className="form-control form-control-sm"
+                    placeholder="Type keyword & press Add..."
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const val = e.target.value.trim().toLowerCase();
+                        if (!val) return;
+                        const existing = definition.triggers?.keywords || [];
+                        if (!existing.includes(val) && existing.length < 10) {
+                          setDefinition(prev => ({
+                            ...prev,
+                            triggers: { ...prev.triggers, keywords: [...existing, val] }
+                          }));
+                        }
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-outline-success btn-sm"
+                    onClick={() => {
+                      const inp = document.getElementById('canvasKwInput');
+                      const val = inp?.value.trim().toLowerCase();
+                      if (!val) return;
+                      const existing = definition.triggers?.keywords || [];
+                      if (!existing.includes(val) && existing.length < 10) {
+                        setDefinition(prev => ({
+                          ...prev,
+                          triggers: { ...prev.triggers, keywords: [...existing, val] }
+                        }));
+                      }
+                      if (inp) inp.value = '';
+                    }}
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
             </div>
           </aside>
         )}
