@@ -301,7 +301,8 @@ export default function Templates() {
   const handleCheckLiveStatus = async (tpl) => {
     try {
       setStatusCheckLoading(true);
-      const res = await api.get(`/whatsapp/templates/${tpl.id}/status`);
+      const secureId = tpl.hash_id || encodeHashId(tpl.id);
+      const res = await api.get(`/whatsapp/templates/${secureId}/status`);
       if (res.data?.success) {
         const updated = res.data.data;
         setDetailTemplate(updated);
@@ -326,7 +327,8 @@ export default function Templates() {
       return;
     }
     try {
-      const res = await api.delete(`/whatsapp/templates/${tpl.id}`);
+      const secureId = tpl.hash_id || encodeHashId(tpl.id);
+      const res = await api.delete(`/whatsapp/templates/${secureId}`);
       if (res.data?.success) {
         setFeedbackMsg({ type: 'success', text: `Template "${tpl.name}" deleted.` });
         if (detailTemplate?.id === tpl.id) setDetailTemplate(null);

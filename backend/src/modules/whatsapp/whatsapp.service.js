@@ -2368,7 +2368,7 @@ export async function checkTemplateStatus(businessId, templateId) {
       [newStatus, realMetaId, rejectionReason, qualityRating, tpl.id, businessId]
     );
 
-    return getTemplate(businessId, tpl.id);
+    return await getTemplate(businessId, tpl.id, true);
   } catch (err) {
     logger.warn(`[WhatsApp] Failed to refresh status for template #${templateId}: ${err.message}`);
     const error = new Error(`Meta Live Status: ${err.message}`);

@@ -53,7 +53,10 @@ export default function AppLayout() {
   }, [location.pathname]);
 
   return (
-    <div className={`aiveexa-app-shell d-flex flex-column ${isInbox ? 'vh-100 overflow-hidden' : 'min-vh-100'} bg-light-subtle`}>
+    <div
+      className={`aiveexa-app-shell d-flex flex-column ${isInbox ? 'vh-100 overflow-hidden' : 'min-vh-100'} bg-light-subtle`}
+      style={isInbox ? { height: '100vh', maxHeight: '100vh', overflow: 'hidden' } : undefined}
+    >
       {/* Global Real-time Floating Live Progress Bar (Campaign & Import) */}
       <FloatingLiveProgress />
 
@@ -84,7 +87,7 @@ export default function AppLayout() {
       {/* Main Container below Top Navbar */}
       <div
         className="d-flex flex-grow-1 position-relative"
-        style={isInbox ? { minHeight: 0, overflow: 'hidden' } : undefined}
+        style={isInbox ? { flex: '1 1 0%', minHeight: 0, overflow: 'hidden' } : undefined}
       >
         {/* Mobile Backdrop overlay */}
         {sidebarOpen && (
@@ -104,11 +107,11 @@ export default function AppLayout() {
 
         {/* Main Content Area */}
         <main
-          className={`flex-grow-1 ${isInbox ? 'p-0 overflow-hidden' : 'p-3 p-md-4 overflow-auto'}`}
+          className={`flex-grow-1 ${isInbox ? 'p-0 overflow-hidden position-relative' : 'p-3 p-md-4 overflow-auto'}`}
           style={{
             minWidth: 0,
             backgroundColor: '#f8fafc',
-            ...(isInbox ? { minHeight: 0, height: '100%' } : {})
+            ...(isInbox ? { flex: '1 1 0%', minHeight: 0 } : {})
           }}
         >
           <Outlet context={{ onToggleSidebar: toggleSidebar, sidebarOpen }} />

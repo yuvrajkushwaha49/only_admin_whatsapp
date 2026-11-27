@@ -4,6 +4,7 @@
 
 .aiveexa-top-navbar {
   height: 64px;
+  flex-shrink: 0;
   background-color: #ffffff;
   border-bottom: 1px solid #f1f5f9;
   display: flex;
