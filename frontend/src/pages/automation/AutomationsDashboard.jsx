@@ -348,19 +348,29 @@ export default function AutomationsDashboard() {
                       </td>
 
                       <td>
-                        {keywords.length > 0 ? (
-                          <span className="badge bg-light text-dark border small">
-                            <i className="bi bi-chat-text text-muted me-1"></i>
-                            {keywords.slice(0, 2).join(', ')}
-                            {keywords.length > 2 && ` +${keywords.length - 2} more`}
-                          </span>
-                        ) : auto.triggers?.buttonId ? (
-                          <span className="badge bg-light text-dark border small">
-                            <i className="bi bi-grid text-warning me-1"></i> Button #{auto.triggers.buttonId}
-                          </span>
-                        ) : (
-                          <span className="text-muted small">No trigger</span>
-                        )}
+                        <div className="d-flex flex-wrap gap-1 align-items-center">
+                          {auto.triggers?.templateName && (
+                            <span className="badge bg-light text-success border small" title={`Triggers on reply to "${auto.triggers.templateName}"`}>
+                              <i className="bi bi-file-earmark-text text-success me-1"></i>
+                              {auto.triggers.templateName === 'ANY' ? 'Any Template' : auto.triggers.templateName}
+                            </span>
+                          )}
+                          {keywords.length > 0 && (
+                            <span className="badge bg-light text-dark border small">
+                              <i className="bi bi-chat-text text-muted me-1"></i>
+                              {keywords.slice(0, 2).join(', ')}
+                              {keywords.length > 2 && ` +${keywords.length - 2} more`}
+                            </span>
+                          )}
+                          {auto.triggers?.buttonId && (
+                            <span className="badge bg-light text-dark border small">
+                              <i className="bi bi-grid text-warning me-1"></i> Button #{auto.triggers.buttonId}
+                            </span>
+                          )}
+                          {!auto.triggers?.templateName && keywords.length === 0 && !auto.triggers?.buttonId && (
+                            <span className="text-muted small">No trigger</span>
+                          )}
+                        </div>
                       </td>
 
                       <td className="fw-semibold text-dark">

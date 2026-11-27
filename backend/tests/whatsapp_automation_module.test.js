@@ -244,4 +244,62 @@ describe('WhatsApp Conversational Automation Module', () => {
     const session = store.automation_sessions.find(s => s.customer_phone === contact.phone);
     assert.strictEqual(session.status, 'handed_over');
   });
+
+  it('9. should trigger automation when customer queries/replies after receiving a WhatsApp template', async () => {
+    // 1. Create and publish automation with Template Reply trigger
+    const auto = await automationsService.createAutomation(businessId, userId, {
+      name: 'Welcome Template Followup Bot',
+      templateId: 'product_enquiry'
+    });
+
+    // Update definition to listen for replies to 'welcome_msg'
+    await automationsService.updateAutomation(businessId, auto.id, {
+      definition: {
+        ...auto.draft_definition,
+        triggers: {
+          keywords: [],
+          buttonId: null,
+          templateName: 'welcome_msg',
+          templateMatchType: 'ANY_REPLY'
+        }
+      }
+    });
+
+    await automationsService.publishAutomation(businessId, auto.id, userId);
+
+    const store = getMemoryStore();
+    // 2. Simulate outbound template broadcast sent to customer
+    const targetPhone = '+919988776655';
+    const contact = { id: 202, phone: targetPhone, first_name: 'Rohit' };
+    const conversation = { id: 602, customer_phone: targetPhone };
+
+    if (!store.messages) store.messages = [];
+    store.messages.push({
+      id: Date.now(),
+      business_id: businessId,
+      phone: targetPhone,
+      contact_id: contact.id,
+      direction: 'OUTBOUND',
+      message_type: 'template',
+      template_name: 'welcome_msg',
+      created_at: new Date()
+    });
+
+    // 3. Customer sends an inbound question/query
+    const queryResult = await automationEngine.handleInboundEvent({
+      businessId,
+      accountId: 1,
+      contact,
+      conversation,
+      message: { message_body: 'Hi, what are your service charges?', message_type: 'text' },
+      rawMsg: {}
+    });
+
+    assert.strictEqual(queryResult.handledByAutomation, true);
+    assert.strictEqual(queryResult.stepId, 'step_1');
+
+    const session = (store.automation_sessions || []).find(s => s.customer_phone === targetPhone && s.status === 'active');
+    assert.ok(session, 'Expected active automation session to be created for customer query');
+    assert.strictEqual(Number(session.automation_id), Number(auto.id));
+  });
 });

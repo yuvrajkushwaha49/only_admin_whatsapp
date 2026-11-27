@@ -105,21 +105,98 @@ export async function handleInboundEvent({ businessId, accountId, contact, conve
     });
   }
 
-  // B. IF NO ACTIVE SESSION: Match Keyword or Button Triggers
+  // B. IF NO ACTIVE SESSION: Match Keyword, Button, or Template Reply Triggers
   return matchAndStartNewSession({
     businessId: numBusinessId,
     accountId: numAccountId,
     contact,
     conversation,
     inboundText,
-    buttonReplyId
+    buttonReplyId,
+    buttonReplyTitle,
+    rawMsg
   });
+}
+
+/**
+ * Detect the last outbound template sent to a customer (via Campaign or Inbox)
+ */
+async function getLastOutboundTemplateForCustomer({ businessId, contactId, customerPhone, conversationId }) {
+  if (isUsingFallback()) {
+    const store = getMemoryStore();
+    // 1. Check store.messages for recent template
+    const msg = (store.messages || [])
+      .filter(m => Number(m.business_id) === Number(businessId) &&
+                   (String(m.phone) === String(customerPhone) || Number(m.contact_id) === Number(contactId)) &&
+                   String(m.direction).toLowerCase() === 'outbound' &&
+                   (m.template_name || m.message_type === 'template'))
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))[0];
+
+    if (msg && msg.template_name) {
+      return { templateName: msg.template_name, sentAt: msg.created_at };
+    }
+
+    // 2. Check store.campaign_recipients
+    const rec = (store.campaign_recipients || [])
+      .filter(r => Number(r.business_id) === Number(businessId) &&
+                   (String(r.phone) === String(customerPhone) || Number(r.contact_id) === Number(contactId)) &&
+                   r.status === 'sent')
+      .sort((a, b) => new Date(b.sent_at || 0) - new Date(a.sent_at || 0))[0];
+
+    if (rec) {
+      const camp = store.campaigns?.find(c => Number(c.id) === Number(rec.campaign_id));
+      const tpl = store.templates?.find(t => Number(t.id) === Number(camp?.template_id));
+      const tplName = tpl?.name || camp?.template_name || 'welcome_msg';
+      return { templateName: tplName, sentAt: rec.sent_at };
+    }
+
+    return null;
+  }
+
+  // MySQL Outbound Template Detection
+  try {
+    // A. Check campaign recipients (broadcast campaigns)
+    const campRows = await executeQuery(
+      `SELECT t.name as template_name, cr.sent_at as created_at
+       FROM campaign_recipients cr
+       JOIN campaigns c ON cr.campaign_id = c.id
+       JOIN templates t ON c.template_id = t.id
+       WHERE cr.business_id = ? AND (cr.phone = ? OR cr.contact_id = ?) AND cr.status = 'sent'
+       ORDER BY cr.id DESC LIMIT 1`,
+      [businessId, customerPhone, contactId || 0]
+    );
+
+    // B. Check whatsapp_messages (direct inbox templates)
+    const inboxRows = await executeQuery(
+      `SELECT template_name, created_at
+       FROM whatsapp_messages
+       WHERE business_id = ? AND (contact_id = ? OR conversation_id = ?) 
+         AND direction = 'OUTBOUND' AND template_name IS NOT NULL
+       ORDER BY id DESC LIMIT 1`,
+      [businessId, contactId || 0, conversationId || 0]
+    );
+
+    const campMatch = campRows?.[0] || null;
+    const inboxMatch = inboxRows?.[0] || null;
+
+    if (!campMatch && !inboxMatch) return null;
+    if (campMatch && !inboxMatch) return campMatch;
+    if (!campMatch && inboxMatch) return inboxMatch;
+
+    // Pick the most recent
+    const campTime = new Date(campMatch.created_at).getTime();
+    const inboxTime = new Date(inboxMatch.created_at).getTime();
+    return campTime >= inboxTime ? campMatch : inboxMatch;
+  } catch (err) {
+    logger.warn('[AutomationEngine] Error finding last outbound template:', err);
+    return null;
+  }
 }
 
 /**
  * Match triggers and instantiate a new automation session
  */
-async function matchAndStartNewSession({ businessId, accountId, contact, conversation, inboundText, buttonReplyId }) {
+async function matchAndStartNewSession({ businessId, accountId, contact, conversation, inboundText, buttonReplyId, buttonReplyTitle, rawMsg }) {
   const cleanKeyword = inboundText.toLowerCase().trim();
   let matchedTrigger = null;
 
@@ -146,6 +223,27 @@ async function matchAndStartNewSession({ businessId, accountId, contact, convers
              t.keyword === cleanKeyword &&
              (!t.whatsapp_account_id || Number(t.whatsapp_account_id) === accountId)
       );
+    }
+
+    // Check Template Reply trigger (when customer responds after receiving a template broadcast)
+    if (!matchedTrigger) {
+      const lastTpl = await getLastOutboundTemplateForCustomer({
+        businessId,
+        contactId: contact?.id,
+        customerPhone: contact?.phone,
+        conversationId: conversation?.id
+      });
+
+      if (lastTpl && lastTpl.templateName) {
+        matchedTrigger = triggers.find(
+          t => Number(t.business_id) === businessId &&
+               t.is_active &&
+               t.trigger_type === 'TEMPLATE_REPLY' &&
+               (t.template_name === 'ANY' || String(t.template_name).toLowerCase() === String(lastTpl.templateName).toLowerCase()) &&
+               (!t.keyword || t.keyword === cleanKeyword || (buttonReplyTitle && t.keyword === buttonReplyTitle.toLowerCase())) &&
+               (!t.whatsapp_account_id || Number(t.whatsapp_account_id) === accountId)
+        );
+      }
     }
   } else {
     // MySQL Trigger Matching
@@ -174,6 +272,35 @@ async function matchAndStartNewSession({ businessId, accountId, contact, convers
         [businessId, cleanKeyword, accountId]
       );
       if (kwRows && kwRows.length > 0) matchedTrigger = kwRows[0];
+    }
+
+    // Check Template Reply trigger in MySQL
+    if (!matchedTrigger) {
+      const lastTpl = await getLastOutboundTemplateForCustomer({
+        businessId,
+        contactId: contact?.id,
+        customerPhone: contact?.phone,
+        conversationId: conversation?.id
+      });
+
+      if (lastTpl && lastTpl.templateName) {
+        const tplRows = await executeQuery(
+          `SELECT t.*, a.current_version_id, a.name as automation_name, a.status as automation_status
+           FROM automation_triggers t
+           JOIN automations a ON t.automation_id = a.id
+           WHERE t.business_id = ? AND t.is_active = 1 AND a.status = 'published'
+             AND t.trigger_type = 'TEMPLATE_REPLY'
+             AND (t.template_name = 'ANY' OR LOWER(t.template_name) = LOWER(?))
+             AND (t.keyword IS NULL OR t.keyword = ? OR (t.keyword = ?))
+             AND (t.whatsapp_account_id IS NULL OR t.whatsapp_account_id = ?)
+           LIMIT 1`,
+          [businessId, lastTpl.templateName, cleanKeyword, (buttonReplyTitle || '').toLowerCase(), accountId]
+        );
+        if (tplRows && tplRows.length > 0) {
+          matchedTrigger = tplRows[0];
+          logger.info(`✨ [AutomationEngine] Template reply trigger matched: Template "${lastTpl.templateName}" -> Automation #${matchedTrigger.automation_id}`);
+        }
+      }
     }
   }
 

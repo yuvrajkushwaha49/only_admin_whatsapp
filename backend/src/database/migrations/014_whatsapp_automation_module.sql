@@ -48,13 +48,15 @@ CREATE TABLE IF NOT EXISTS automation_triggers (
   automation_id BIGINT UNSIGNED NOT NULL,
   business_id BIGINT UNSIGNED NOT NULL,
   whatsapp_account_id BIGINT UNSIGNED NULL,
-  trigger_type ENUM('KEYWORD', 'BUTTON_CLICK') NOT NULL,
+  trigger_type ENUM('KEYWORD', 'BUTTON_CLICK', 'TEMPLATE_REPLY') NOT NULL,
   keyword VARCHAR(100) NULL,
   interactive_button_id BIGINT UNSIGNED NULL,
+  template_name VARCHAR(128) NULL,
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_trig_lookup (business_id, is_active, trigger_type, keyword),
   INDEX idx_trig_button (business_id, interactive_button_id),
+  INDEX idx_trig_template (business_id, is_active, trigger_type, template_name),
   INDEX idx_trig_auto (automation_id),
   INDEX idx_trig_business (business_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -938,10 +938,29 @@ export default function FlowCanvasBuilder() {
                 </div>
               </div>
               <div className="flow-node-body">
-                <span className="badge bg-light text-dark border me-1 mb-1">
-                  <i className="bi bi-chat-dots-fill text-success me-1"></i>
-                  Keywords: {definition.triggers?.keywords?.join(', ') || 'menu'}
-                </span>
+                {definition.triggers?.templateName && (
+                  <span className="badge bg-light text-success border me-1 mb-1 d-inline-block text-truncate" style={{ maxWidth: '210px' }}>
+                    <i className="bi bi-file-earmark-text text-success me-1"></i>
+                    Template: {definition.triggers.templateName === 'ANY' ? 'Any Template' : definition.triggers.templateName}
+                  </span>
+                )}
+                {(definition.triggers?.keywords || []).length > 0 && (
+                  <span className="badge bg-light text-dark border me-1 mb-1 d-inline-block text-truncate" style={{ maxWidth: '210px' }}>
+                    <i className="bi bi-chat-dots-fill text-primary me-1"></i>
+                    Keywords: {definition.triggers.keywords.join(', ')}
+                  </span>
+                )}
+                {definition.triggers?.buttonId && (
+                  <span className="badge bg-light text-dark border me-1 mb-1">
+                    <i className="bi bi-grid text-warning me-1"></i>
+                    Button #{definition.triggers.buttonId}
+                  </span>
+                )}
+                {!definition.triggers?.templateName && (definition.triggers?.keywords || []).length === 0 && !definition.triggers?.buttonId && (
+                  <span className="badge bg-light text-muted border me-1 mb-1">
+                    Keywords: menu
+                  </span>
+                )}
                 <p className="text-muted small mt-2 mb-0" style={{ fontSize: '0.74rem' }}>
                   Drag green dot to connect with the first message!
                 </p>

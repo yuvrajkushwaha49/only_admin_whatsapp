@@ -31,6 +31,7 @@ export function validateAutomationDefinition(definition, options = {}) {
   // 1. Triggers Validation
   const keywords = Array.isArray(triggers.keywords) ? triggers.keywords : [];
   const buttonId = triggers.buttonId || null;
+  const templateName = triggers.templateName || triggers.templateReply?.templateName || null;
 
   const cleanKeywords = [];
   const seenKeywords = new Set();
@@ -53,8 +54,8 @@ export function validateAutomationDefinition(definition, options = {}) {
     cleanKeywords.push(kw);
   }
 
-  if (cleanKeywords.length === 0 && !buttonId) {
-    errors.push('At least one trigger is required: configure either at least 1 keyword or connect an interactive campaign button.');
+  if (cleanKeywords.length === 0 && !buttonId && !templateName) {
+    errors.push('At least one trigger is required: configure incoming keywords, connect an interactive campaign button, or select a WhatsApp template reply trigger.');
   }
 
   if (cleanKeywords.length > 10) {

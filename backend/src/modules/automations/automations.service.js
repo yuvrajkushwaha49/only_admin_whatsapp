@@ -97,17 +97,34 @@ export async function ensureAutomationTables() {
         automation_id BIGINT UNSIGNED NOT NULL,
         business_id BIGINT UNSIGNED NOT NULL,
         whatsapp_account_id BIGINT UNSIGNED NULL,
-        trigger_type ENUM('KEYWORD', 'BUTTON_CLICK') NOT NULL,
+        trigger_type ENUM('KEYWORD', 'BUTTON_CLICK', 'TEMPLATE_REPLY') NOT NULL,
         keyword VARCHAR(100) NULL,
         interactive_button_id BIGINT UNSIGNED NULL,
+        template_name VARCHAR(128) NULL,
         is_active BOOLEAN NOT NULL DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_trig_lookup (business_id, is_active, trigger_type, keyword),
         INDEX idx_trig_button (business_id, interactive_button_id),
+        INDEX idx_trig_template (business_id, is_active, trigger_type, template_name),
         INDEX idx_trig_auto (automation_id),
         INDEX idx_trig_business (business_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
+
+    // Ensure automation_triggers has template_name column & updated ENUM
+    try {
+      const trigCols = await executeQuery('SHOW COLUMNS FROM automation_triggers');
+      const trigColNames = (trigCols || []).map(c => c.Field);
+      if (!trigColNames.includes('template_name')) {
+        await executeQuery(`ALTER TABLE automation_triggers ADD COLUMN template_name VARCHAR(128) NULL AFTER interactive_button_id`);
+        logger.info('[AutomationService] Auto-added missing column "template_name" to automation_triggers table.');
+      }
+      const typeCol = (trigCols || []).find(c => c.Field === 'trigger_type');
+      if (typeCol && !typeCol.Type.includes('TEMPLATE_REPLY')) {
+        await executeQuery(`ALTER TABLE automation_triggers MODIFY COLUMN trigger_type ENUM('KEYWORD', 'BUTTON_CLICK', 'TEMPLATE_REPLY') NOT NULL`);
+        logger.info('[AutomationService] Auto-updated trigger_type ENUM to include TEMPLATE_REPLY in automation_triggers table.');
+      }
+    } catch (_) {}
 
     await executeQuery(`
       CREATE TABLE IF NOT EXISTS automation_sessions (
@@ -503,6 +520,8 @@ export async function publishAutomation(businessId, rawId, userId) {
   const triggersDef = auto.draft_definition?.triggers || {};
   const keywords = validation.cleanKeywords || [];
   const buttonId = triggersDef.buttonId || null;
+  const templateName = triggersDef.templateName || triggersDef.templateReply?.templateName || null;
+  const templateMatchType = triggersDef.templateMatchType || triggersDef.templateReply?.matchType || 'ANY_REPLY';
 
   if (isUsingFallback()) {
     const store = getMemoryStore();
@@ -536,6 +555,7 @@ export async function publishAutomation(businessId, rawId, userId) {
         trigger_type: 'KEYWORD',
         keyword: kw.toLowerCase(),
         interactive_button_id: null,
+        template_name: null,
         is_active: 1,
         created_at: new Date()
       });
@@ -550,6 +570,22 @@ export async function publishAutomation(businessId, rawId, userId) {
         trigger_type: 'BUTTON_CLICK',
         keyword: null,
         interactive_button_id: Number(buttonId),
+        template_name: null,
+        is_active: 1,
+        created_at: new Date()
+      });
+    }
+
+    if (templateName) {
+      store.automation_triggers.push({
+        id: Date.now() + Math.random(),
+        automation_id: autoId,
+        business_id: numBusinessId,
+        whatsapp_account_id: auto.whatsapp_account_id,
+        trigger_type: 'TEMPLATE_REPLY',
+        keyword: templateMatchType === 'KEYWORD' ? (keywords[0] || null) : null,
+        interactive_button_id: null,
+        template_name: templateName,
         is_active: 1,
         created_at: new Date()
       });
@@ -601,6 +637,15 @@ export async function publishAutomation(businessId, rawId, userId) {
       `INSERT INTO automation_triggers (automation_id, business_id, whatsapp_account_id, trigger_type, interactive_button_id, is_active, created_at)
        VALUES (?, ?, ?, 'BUTTON_CLICK', ?, 1, NOW())`,
       [autoId, numBusinessId, auto.whatsapp_account_id, Number(buttonId)]
+    );
+  }
+
+  // Insert template reply trigger if configured
+  if (templateName) {
+    await executeQuery(
+      `INSERT INTO automation_triggers (automation_id, business_id, whatsapp_account_id, trigger_type, template_name, keyword, is_active, created_at)
+       VALUES (?, ?, ?, 'TEMPLATE_REPLY', ?, ?, 1, NOW())`,
+      [autoId, numBusinessId, auto.whatsapp_account_id, templateName, templateMatchType === 'KEYWORD' ? (keywords[0] || null) : null]
     );
   }
 

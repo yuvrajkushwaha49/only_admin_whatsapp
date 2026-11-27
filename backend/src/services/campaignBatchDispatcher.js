@@ -303,7 +303,8 @@ export async function processCampaignBatch(campaign) {
           direction: 'outbound',
           provider_message_id: providerMsgId,
           phone: rec.phone,
-          status: 'sent'
+          status: 'sent',
+          template_name: templateName
         });
       } else {
         totalFailedInRun++;
