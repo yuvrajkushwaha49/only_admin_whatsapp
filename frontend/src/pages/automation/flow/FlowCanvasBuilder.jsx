@@ -81,10 +81,14 @@ export default function FlowCanvasBuilder() {
   const viewportRef = useRef(null);
 
   // Canvas Pan & Zoom
-  const [pan, setPan] = useState({ x: 50, y: 50 });
-  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 30, y: 30 });
+  const [zoom, setZoom] = useState(0.88);
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef({ x: 0, y: 0 });
+
+  // Sidebar Collapse / Canvas Expansion State
+  const [isPaletteCollapsed, setIsPaletteCollapsed] = useState(false);
+  const [showJourneyGuide, setShowJourneyGuide] = useState(true);
 
   // Selected Node for Right Inspector Drawer
   const [selectedNodeId, setSelectedNodeId] = useState(null);
@@ -504,8 +508,8 @@ export default function FlowCanvasBuilder() {
   const handleZoomIn = () => setZoom(prev => Math.min(1.8, +(prev + 0.15).toFixed(2)));
   const handleZoomOut = () => setZoom(prev => Math.max(0.5, +(prev - 0.15).toFixed(2)));
   const handleResetView = () => {
-    setZoom(1);
-    setPan({ x: 50, y: 50 });
+    setZoom(0.88);
+    setPan({ x: 30, y: 30 });
   };
 
   // Add new Step Node from Palette
@@ -882,10 +886,33 @@ export default function FlowCanvasBuilder() {
       <div className="flow-canvas-workspace">
 
         {/* Left Palette / Node Toolbox */}
-        <aside className="flow-palette-sidebar">
+        <aside className={`flow-palette-sidebar ${isPaletteCollapsed ? 'collapsed' : ''}`}>
           <div className="flow-palette-header">
-            <span>Flow Blocks</span>
-            <span className="badge bg-light text-muted border">Click to Add</span>
+            {!isPaletteCollapsed ? (
+              <>
+                <span className="flow-palette-header-text">Flow Blocks</span>
+                <div className="d-flex align-items-center gap-1">
+                  <span className="badge bg-light text-muted border flow-palette-badge">Add</span>
+                  <button
+                    type="button"
+                    className="flow-palette-toggle-btn"
+                    onClick={() => setIsPaletteCollapsed(true)}
+                    title="Collapse Blocks Panel to gain more Canvas space"
+                  >
+                    <i className="bi bi-chevron-left"></i>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="flow-palette-toggle-btn mx-auto"
+                onClick={() => setIsPaletteCollapsed(false)}
+                title="Expand Flow Blocks Panel"
+              >
+                <i className="bi bi-chevron-right"></i>
+              </button>
+            )}
           </div>
 
           <div className="flow-palette-items">
@@ -894,25 +921,30 @@ export default function FlowCanvasBuilder() {
                 key={tpl.type}
                 className="flow-palette-item"
                 onClick={() => handleAddNodeFromPalette(tpl)}
+                title={isPaletteCollapsed ? `${tpl.title}: Click to add` : undefined}
               >
                 <div className="flow-palette-icon" style={{ backgroundColor: tpl.bg, color: '#ffffff' }}>
                   <i className={`bi ${tpl.icon}`}></i>
                 </div>
-                <div>
-                  <div className="flow-palette-title">{tpl.title}</div>
-                  <div className="flow-palette-desc">{tpl.desc}</div>
-                </div>
+                {!isPaletteCollapsed && (
+                  <div className="flow-palette-text">
+                    <div className="flow-palette-title">{tpl.title}</div>
+                    <div className="flow-palette-desc">{tpl.desc}</div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
 
           {/* Quick Tip Box */}
-          <div className="p-3 mt-auto bg-light border-top text-muted small" style={{ fontSize: '0.74rem' }}>
-            <div className="fw-bold text-dark mb-1">
-              <i className="bi bi-lightning-charge-fill text-warning me-1"></i> How to Connect Arrows:
+          {!isPaletteCollapsed && (
+            <div className="flow-palette-tip p-2 mt-auto bg-light border-top text-muted small" style={{ fontSize: '0.72rem' }}>
+              <div className="fw-bold text-dark mb-1">
+                <i className="bi bi-lightning-charge-fill text-warning me-1"></i> Connect:
+              </div>
+              Drag from <strong>Circle Port</strong> to connect steps!
             </div>
-            Drag from any <strong>Circle Dot (Port)</strong> and drop it onto the next block to connect them!
-          </div>
+          )}
         </aside>
 
         {/* Center: The Infinite Dot Canvas */}
@@ -929,22 +961,31 @@ export default function FlowCanvasBuilder() {
           style={{ cursor: connectingFrom ? 'crosshair' : (isPanning ? 'grabbing' : 'grab') }}
         >
           {/* Top Flow Journey Guide */}
-          <div className="flow-journey-guide">
-            <div className="flow-journey-step active">
-              <span className="flow-journey-badge">1</span>
-              <span>⚡ Trigger Event</span>
+          {showJourneyGuide && (
+            <div className="flow-journey-guide">
+              <div className="flow-journey-step active">
+                <span className="flow-journey-badge">1</span>
+                <span>⚡ Trigger</span>
+              </div>
+              <i className="bi bi-arrow-right flow-journey-arrow"></i>
+              <div className="flow-journey-step active-start">
+                <span className="flow-journey-badge">2</span>
+                <span>💬 1st Message</span>
+              </div>
+              <i className="bi bi-arrow-right flow-journey-arrow"></i>
+              <div className="flow-journey-step">
+                <span className="flow-journey-badge">3</span>
+                <span>🔘 Next Step</span>
+              </div>
+              <button
+                type="button"
+                className="btn-close ms-2"
+                style={{ fontSize: '0.65rem' }}
+                onClick={() => setShowJourneyGuide(false)}
+                title="Dismiss Journey Guide"
+              ></button>
             </div>
-            <i className="bi bi-arrow-right flow-journey-arrow"></i>
-            <div className="flow-journey-step active-start">
-              <span className="flow-journey-badge">2</span>
-              <span>💬 1st Message Auto-Sends</span>
-            </div>
-            <i className="bi bi-arrow-right flow-journey-arrow"></i>
-            <div className="flow-journey-step">
-              <span className="flow-journey-badge">3</span>
-              <span>🔘 Customer Replies ➔ Next Step</span>
-            </div>
-          </div>
+          )}
 
           {/* Zoom & Canvas Controls */}
           <div className="flow-canvas-controls">
@@ -955,8 +996,16 @@ export default function FlowCanvasBuilder() {
             <button type="button" className="flow-control-btn" onClick={handleZoomOut} title="Zoom Out">
               <i className="bi bi-zoom-out"></i>
             </button>
-            <button type="button" className="flow-control-btn" onClick={handleResetView} title="Reset View">
+            <button type="button" className="flow-control-btn" onClick={handleResetView} title="Reset View (Center & 88% Zoom)">
               <i className="bi bi-aspect-ratio"></i>
+            </button>
+            <button
+              type="button"
+              className={`flow-control-btn ${isPaletteCollapsed ? 'text-success' : ''}`}
+              onClick={() => setIsPaletteCollapsed(prev => !prev)}
+              title={isPaletteCollapsed ? "Expand Flow Blocks Panel" : "Collapse Flow Blocks (Maximize Canvas)"}
+            >
+              <i className={`bi ${isPaletteCollapsed ? 'bi-layout-sidebar-inset' : 'bi-layout-sidebar'}`}></i>
             </button>
           </div>
 

@@ -138,20 +138,28 @@
 
 /* Left Node Palette / Library */
 .flow-palette-sidebar {
-  width: 250px;
+  width: 185px;
+  min-width: 185px;
   background: #ffffff;
   border-right: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
   z-index: 10;
   box-shadow: 2px 0 6px rgba(0, 0, 0, 0.02);
+  transition: width 0.2s ease, min-width 0.2s ease;
+  flex-shrink: 0;
+}
+
+.flow-palette-sidebar.collapsed {
+  width: 48px;
+  min-width: 48px;
 }
 
 .flow-palette-header {
-  padding: 1rem;
+  padding: 0.65rem 0.75rem;
   border-bottom: 1px solid #f1f5f9;
   font-weight: 700;
-  font-size: 0.84rem;
+  font-size: 0.76rem;
   color: #334155;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -160,31 +168,64 @@
   justify-content: space-between;
 }
 
+.flow-palette-toggle-btn {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 0.72rem;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.flow-palette-toggle-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
 .flow-palette-items {
-  padding: 0.85rem;
+  padding: 0.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.45rem;
   overflow-y: auto;
 }
 
 .flow-palette-item {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 0.75rem 0.85rem;
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
   cursor: grab;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.55rem;
   transition: all 0.15s ease;
+}
+
+.flow-palette-sidebar.collapsed .flow-palette-item {
+  padding: 0.45rem;
+  justify-content: center;
+}
+
+.flow-palette-sidebar.collapsed .flow-palette-text,
+.flow-palette-sidebar.collapsed .flow-palette-badge,
+.flow-palette-sidebar.collapsed .flow-palette-header-text,
+.flow-palette-sidebar.collapsed .flow-palette-tip {
+  display: none !important;
 }
 
 .flow-palette-item:hover {
   border-color: #10b981;
   background: #f0fdf4;
   transform: translateY(-1px);
-  box-shadow: 0 3px 8px rgba(16, 185, 129, 0.1);
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.1);
 }
 
 .flow-palette-item:active {
@@ -192,28 +233,34 @@
 }
 
 .flow-palette-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  border-radius: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
+  font-size: 0.88rem;
   flex-shrink: 0;
 }
 
 .flow-palette-title {
-  font-size: 0.84rem;
-  font-weight: 700;
+  font-size: 0.76rem;
+  font-weight: 600;
   color: #1e293b;
-  margin-bottom: 0.15rem;
+  line-height: 1.2;
 }
 
 .flow-palette-desc {
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   color: #64748b;
   margin: 0;
-  line-height: 1.25;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 105px;
 }
 
 /* 3. The Interactive Infinite Dot Canvas */
@@ -358,27 +405,28 @@
 /* Floating Journey Guide */
 .flow-journey-guide {
   position: absolute;
-  top: 14px;
+  top: 10px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(8px);
   border: 1px solid #e2e8f0;
   border-radius: 30px;
-  padding: 5px 16px;
+  padding: 3px 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.08);
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
   z-index: 12;
-  pointer-events: none;
+  pointer-events: auto;
+  white-space: nowrap;
 }
 
 .flow-journey-step {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.76rem;
+  gap: 5px;
+  font-size: 0.72rem;
   font-weight: 600;
   color: #64748b;
 }
@@ -392,14 +440,14 @@
 }
 
 .flow-journey-badge {
-  width: 19px;
-  height: 19px;
+  width: 17px;
+  height: 17px;
   border-radius: 50%;
   background: #f1f5f9;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 700;
   color: inherit;
 }
@@ -643,17 +691,21 @@
 
 /* 5. Right Slide-out Step Inspector Drawer */
 .flow-inspector-drawer {
-  width: 380px;
+  width: 295px;
+  min-width: 295px;
+  max-width: 310px;
   background: #ffffff;
   border-left: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
   z-index: 20;
   box-shadow: -4px 0 16px rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
+  transition: width 0.2s ease;
 }
 
 .flow-inspector-header {
-  padding: 1.15rem 1.35rem;
+  padding: 0.85rem 1rem;
   border-bottom: 1px solid #f1f5f9;
   display: flex;
   align-items: center;
@@ -661,26 +713,26 @@
 }
 
 .flow-inspector-title {
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
 }
 
 .flow-inspector-body {
-  padding: 1.25rem 1.35rem;
+  padding: 0.85rem 1rem;
   overflow-y: auto;
   flex: 1;
 }
 
 .flow-form-label {
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 700;
   color: #334155;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.25rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
