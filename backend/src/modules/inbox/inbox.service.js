@@ -1412,9 +1412,12 @@ export async function getInboxStats(businessId, user, accountId = null) {
     WHERE business_id = ?`;
   const statsParams = [user?.id || 0, numBusinessId];
 
-  if (accountId && accountId !== 'all') {
-    statsQuery += ' AND whatsapp_account_id = ?';
-    statsParams.push(Number(accountId));
+  if (accountId && accountId !== 'all' && accountId !== 'null' && accountId !== 'undefined') {
+    const numAccountId = Number(accountId);
+    if (!Number.isNaN(numAccountId) && numAccountId > 0) {
+      statsQuery += ' AND whatsapp_account_id = ?';
+      statsParams.push(numAccountId);
+    }
   }
 
   if (user?.role === 'agent') {

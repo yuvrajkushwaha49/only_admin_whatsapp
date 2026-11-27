@@ -11,6 +11,9 @@ const poolConfig = {
   waitForConnections: true,
   connectionLimit: parseInt(process.env.DATABASE_CONNECTION_LIMIT || '10', 10),
   queueLimit: 0,
+  connectTimeout: 20000,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000,
   charset: 'utf8mb4'
 };
 

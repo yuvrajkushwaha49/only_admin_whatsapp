@@ -1075,9 +1075,9 @@ export function getPool() {
  * Universal raw parameterized SQL executor with automatic fallback support
  */
 export async function executeQuery(sql, params = []) {
-  // Convert any undefined values in params to null to prevent MySQL2 bind errors
+  // Convert undefined or NaN values in params to null to prevent MySQL2 bind errors
   const safeParams = Array.isArray(params)
-    ? params.map(val => (val === undefined ? null : val))
+    ? params.map(val => (val === undefined || (typeof val === 'number' && Number.isNaN(val)) ? null : val))
     : params;
 
   if (useFallback) {
@@ -1090,6 +1090,16 @@ export async function executeQuery(sql, params = []) {
     const [rows] = await p.execute(sql, safeParams);
     return rows;
   } catch (err) {
+    // Retry once on transient network/keepalive socket drops
+    if (err.code === 'ECONNRESET' || err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'EPIPE' || err.code === 'ETIMEDOUT') {
+      try {
+        const p = getPool();
+        const [rows] = await p.execute(sql, safeParams);
+        return rows;
+      } catch (retryErr) {
+        err = retryErr;
+      }
+    }
     if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
       useFallback = true;
       await initFallbackStore();
