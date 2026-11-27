@@ -1,5 +1,6 @@
 import * as metaSetupService from './metaSetup.service.js';
 import * as whatsappService from './whatsapp.service.js';
+import * as platformMetaService from '../admin/platformMeta.service.js';
 
 export async function getStatus(req, res, next) {
   try {
@@ -127,6 +128,46 @@ export async function disconnectAccount(req, res, next) {
     }
     const result = await whatsappService.disconnectAccount(req.businessId, accountId);
     res.json({ success: true, message: result.message });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getPlatformMetaConfig(req, res, next) {
+  try {
+    const config = await platformMetaService.getPlatformMetaConfig();
+    res.json({ success: true, data: config });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function savePlatformMetaConfig(req, res, next) {
+  try {
+    const updated = await platformMetaService.savePlatformMetaConfig(req.body, req.user?.id);
+    res.json({
+      success: true,
+      message: 'Meta Developer App configuration saved and encrypted at rest',
+      data: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function testPlatformMetaConfig(req, res, next) {
+  try {
+    const testResult = await platformMetaService.testPlatformMetaConfig();
+    res.json({ success: true, data: testResult });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getPlatformMetaMonitoring(req, res, next) {
+  try {
+    const monitoring = await platformMetaService.getMetaIntegrationMonitoring();
+    res.json({ success: true, data: monitoring });
   } catch (error) {
     next(error);
   }

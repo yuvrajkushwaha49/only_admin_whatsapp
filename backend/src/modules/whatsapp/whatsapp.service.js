@@ -7,6 +7,7 @@ import { ensureAllowedNumbersColumn } from '../admin/admin.service.js';
 import logger from '../../utils/logger.js';
 import { emitToTenant } from '../../socket.js';
 import { encodeHashId, decodeHashId } from '../../utils/hashId.js';
+import { SINGLE_COMPANY_MODE } from '../../middleware/tenant.js';
 
 /**
  * Robustly resolve account identifier from either raw numeric ID or encrypted hashId
@@ -246,7 +247,7 @@ export async function completeEmbeddedSignup(businessId, payload = {}) {
   }
 
   const hasAllocatedNumbers = Array.isArray(allowedList) && allowedList.length > 0;
-  const isAllowed = hasAllocatedNumbers && isNumberAllocatedToTenant(targetPhoneId, phoneNumber, allowedList);
+  const isAllowed = SINGLE_COMPANY_MODE || (hasAllocatedNumbers && isNumberAllocatedToTenant(targetPhoneId, phoneNumber, allowedList));
 
   if (!isAllowed) {
     const errMsg = !hasAllocatedNumbers
@@ -2805,6 +2806,11 @@ export async function discoverSystemUserAccounts(businessId, payload = {}, reque
       return true;
     }
 
+    // In Single-Company Mode, the Workspace Owner owns all discovered Meta numbers directly
+    if (SINGLE_COMPANY_MODE) {
+      return true;
+    }
+
     // Rule C: Check SuperAdmin Pre-Approved allowed_phone_numbers list
     if (Array.isArray(allowedList) && allowedList.length > 0) {
       return isNumberAllocatedToTenant(candId, candidatePhone, allowedList);
@@ -2850,7 +2856,7 @@ export async function discoverSystemUserAccounts(businessId, payload = {}, reque
     };
   });
 
-  const hasAllocatedNumbers = Array.isArray(allowedList) && allowedList.length > 0;
+  const hasAllocatedNumbers = SINGLE_COMPANY_MODE ? true : (Array.isArray(allowedList) && allowedList.length > 0);
   // Only keep WABAs that have at least 1 visible allowed number
   const visibleWabas = annotatedWabas.filter(w => w.phoneNumbers.length > 0);
 
@@ -2866,11 +2872,13 @@ export async function discoverSystemUserAccounts(businessId, payload = {}, reque
     totalPhoneNumbers,
     totalDiscoveredFromMeta,
     hasAllocatedNumbers,
-    isFilteredBySuperAdmin: true,
+    isFilteredBySuperAdmin: !SINGLE_COMPANY_MODE,
     allowedPhoneNumbers: allowedList || [],
-    allocationWarning: !hasAllocatedNumbers
-      ? 'No WhatsApp numbers have been allocated to this business by the Super Admin in the Number Allocation & Approval Matrix. Please allocate an approved number first.'
-      : (totalPhoneNumbers === 0 ? 'None of the discovered WhatsApp numbers in this Meta account match the numbers allocated to this business by the Super Admin.' : null),
+    allocationWarning: SINGLE_COMPANY_MODE
+      ? null
+      : (!hasAllocatedNumbers
+          ? 'No WhatsApp numbers have been allocated to this business by the Super Admin in the Number Allocation & Approval Matrix. Please allocate an approved number first.'
+          : (totalPhoneNumbers === 0 ? 'None of the discovered WhatsApp numbers in this Meta account match the numbers allocated to this business by the Super Admin.' : null)),
     wabas: visibleWabas
   };
 }
@@ -2948,6 +2956,7 @@ export async function bulkConnectSystemUserAccounts(businessId, payload = {}, re
     });
     if (myExisting && myExisting.admin_status === 'DEACTIVE') return false;
     if (myExisting && myExisting.admin_status !== 'DEACTIVE') return true;
+    if (SINGLE_COMPANY_MODE) return true;
 
     return isNumberAllocatedToTenant(idStr, candPhone, allowedList);
   };

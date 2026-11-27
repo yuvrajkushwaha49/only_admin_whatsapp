@@ -12,9 +12,8 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
   const location = useLocation();
 
   const userRole = (user?.role || 'owner').toLowerCase();
-  const isAgent = userRole === 'agent';
   const isSuper = isSuperAdmin ? (typeof isSuperAdmin === 'function' ? isSuperAdmin() : isSuperAdmin) : (userRole === 'superadmin' || userRole === 'super_admin');
-  const canManageButtons = isSuper || ['superadmin', 'super_admin', 'owner', 'admin'].includes(userRole);
+  const effectiveRole = isSuper ? 'owner' : userRole;
 
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -58,24 +57,21 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
     }
   };
 
-  // Dedicated routes & query states so items don't collide
-  const navSections = [
+  // Dedicated routes & role-filtered sections for Single-Company + Team mode
+  const rawSections = [
     {
       heading: 'HOME',
       items: [
-        { to: '/dashboard', label: 'Dashboard', icon: 'bi-house-door' }
+        { to: '/dashboard', label: 'Dashboard', icon: 'bi-house-door', roles: ['owner', 'admin', 'marketer', 'agent'] }
       ]
     },
     {
       heading: 'WHATSAPP',
       items: [
-        // { to: '/whatsapp?tab=connect', label: 'Connect', icon: 'bi-link-45deg' },
-        { to: '/whatsapp', label: 'Connected Numbers', icon: 'bi-telephone' },
-        { to: '/settings?tab=profile', label: 'Business Profile', icon: 'bi-card-image' },
-        { to: '/templates', label: 'Templates', icon: 'bi-file-earmark-text' },
-        ...(canManageButtons ? [{ to: '/interactive-buttons', label: 'Interactive Buttons', icon: 'bi-grid' }] : [])
-        // { to: '/whatsapp?tab=health', label: 'Health', icon: 'bi-heart' }
-        // { to: '/admin/meta', label: 'Webhook Status', icon: 'bi-lightning-charge' }
+        { to: '/whatsapp', label: 'Connected Numbers', icon: 'bi-telephone', roles: ['owner', 'admin', 'marketer'] },
+        { to: '/settings?tab=profile', label: 'Business & Meta Settings', icon: 'bi-card-image', roles: ['owner', 'admin'] },
+        { to: '/templates', label: 'Templates', icon: 'bi-file-earmark-text', roles: ['owner', 'admin', 'marketer'] },
+        { to: '/interactive-buttons', label: 'Interactive Buttons', icon: 'bi-grid', roles: ['owner', 'admin'] }
       ]
     },
     {
@@ -85,6 +81,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
           to: '/inbox',
           label: 'Inbox',
           icon: 'bi-chat-dots',
+          roles: ['owner', 'admin', 'marketer', 'agent'],
           badge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : null
         }
       ]
@@ -92,65 +89,58 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
     {
       heading: 'AUTOMATION',
       items: [
-        { to: '/automations', label: 'Automations', icon: 'bi-robot' }
+        { to: '/automations', label: 'Automations', icon: 'bi-robot', roles: ['owner', 'admin', 'marketer'] }
       ]
     },
     {
       heading: 'CATALOGUE & PRODUCTS',
       items: [
-        { to: '/products', label: 'Product Library', icon: 'bi-box-seam' },
-        { to: '/products?tab=categories', label: 'Categories', icon: 'bi-grid-3x3-gap' }
+        { to: '/products', label: 'Product Library', icon: 'bi-box-seam', roles: ['owner', 'admin', 'marketer'] },
+        { to: '/products?tab=categories', label: 'Categories', icon: 'bi-grid-3x3-gap', roles: ['owner', 'admin', 'marketer'] }
       ]
     },
-    /*
-    {
-      heading: 'LEADS',
-      items: [
-        { to: '/contacts?view=leads', label: 'Lead Manager', icon: 'bi-briefcase' }
-      ]
-    },
-    */
     {
       heading: 'CONTACTS',
       items: [
-        { to: '/contacts', label: 'All Contacts', icon: 'bi-person-lines-fill' },
-        { to: '/imports', label: 'Import CSV', icon: 'bi-upload' },
-        { to: '/export', label: 'Export', icon: 'bi-download' },
-        { to: '/contacts/groups', label: 'Contact Groups', icon: 'bi-people' },
-        { to: '/tags', label: 'Tags', icon: 'bi-tag' }
+        { to: '/contacts', label: 'All Contacts', icon: 'bi-person-lines-fill', roles: ['owner', 'admin', 'marketer', 'agent'] },
+        { to: '/imports', label: 'Import CSV', icon: 'bi-upload', roles: ['owner', 'admin', 'marketer'] },
+        { to: '/export', label: 'Export', icon: 'bi-download', roles: ['owner', 'admin', 'marketer'] },
+        { to: '/contacts/groups', label: 'Contact Groups', icon: 'bi-people', roles: ['owner', 'admin', 'marketer'] },
+        { to: '/tags', label: 'Tags', icon: 'bi-tag', roles: ['owner', 'admin', 'marketer'] }
       ]
     },
     {
       heading: 'ENGAGEMENT',
       items: [
-        { to: '/campaigns', label: 'Campaigns', icon: 'bi-send' },
-        { to: '/campaigns/new', label: 'Broadcast', icon: 'bi-megaphone' },
-        { to: '/analytics', label: 'Analytics', icon: 'bi-graph-up' },
-        { to: '/activity-logs', label: 'Audit Logs', icon: 'bi-clock-history' }
+        { to: '/campaigns', label: 'Campaigns', icon: 'bi-send', roles: ['owner', 'admin', 'marketer'] },
+        { to: '/campaigns/new', label: 'Broadcast', icon: 'bi-megaphone', roles: ['owner', 'admin', 'marketer'] },
+        { to: '/analytics', label: 'Analytics', icon: 'bi-graph-up', roles: ['owner', 'admin', 'marketer'] },
+        { to: '/activity-logs', label: 'Audit Logs', icon: 'bi-clock-history', roles: ['owner', 'admin'] }
       ]
     },
     {
       heading: 'REPORTS',
       items: [
-        { to: '/campaign-reports', label: 'Campaign Report', icon: 'bi-send' },
-        { to: '/message-reports', label: 'Message Report', icon: 'bi-chat-square-dots' },
-        { to: '/contact-reports', label: 'Contact Report', icon: 'bi-person-lines-fill' }
+        { to: '/campaign-reports', label: 'Campaign Report', icon: 'bi-send', roles: ['owner', 'admin', 'marketer'] },
+        { to: '/message-reports', label: 'Message Report', icon: 'bi-chat-square-dots', roles: ['owner', 'admin', 'marketer'] },
+        { to: '/contact-reports', label: 'Contact Report', icon: 'bi-person-lines-fill', roles: ['owner', 'admin', 'marketer'] }
       ]
     },
     {
       heading: 'TEAM',
       items: [
-        { to: '/team?role=lead', label: 'Team Leads', icon: 'bi-person-badge' },
-        { to: '/team?role=agent', label: 'Members', icon: 'bi-people' }
-      ]
-    },
-    {
-      heading: 'BILLING',
-      items: [
-        { to: '/billing', label: 'Payments', icon: 'bi-wallet2' }
+        { to: '/team?role=lead', label: 'Team Leads', icon: 'bi-person-badge', roles: ['owner', 'admin'] },
+        { to: '/team?role=agent', label: 'Members', icon: 'bi-people', roles: ['owner', 'admin'] }
       ]
     }
   ];
+
+  const navSections = rawSections
+    .map((sec) => ({
+      ...sec,
+      items: sec.items.filter((item) => !item.roles || item.roles.includes(effectiveRole))
+    }))
+    .filter((sec) => sec.items.length > 0);
 
   const currentFullPath = location.pathname + location.search;
 

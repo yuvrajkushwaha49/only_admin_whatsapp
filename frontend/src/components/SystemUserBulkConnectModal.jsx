@@ -451,13 +451,13 @@ export default function SystemUserBulkConnectModal({ isOpen, onClose, onSuccess,
                         <p className="small text-secondary mb-2">
                           This business workspace has not been allocated any WhatsApp numbers in the <strong>Super Admin Number Allocation & Approval Matrix</strong>. Only pre-approved and allocated numbers will be visible and can be connected.
                         </p>
-                        {isSuperAdmin ? (
-                          <a href="/admin/numbers" className="btn btn-sm btn-warning text-dark fw-bold">
-                            <i className="bi bi-diagram-3-fill me-1"></i> Allocate Numbers in Admin Matrix &rarr;
+                        {isSuperAdmin || user?.role === 'owner' ? (
+                          <a href="/settings" className="btn btn-sm btn-warning text-dark fw-bold">
+                            <i className="bi bi-gear-fill me-1"></i> Configure Meta App in Settings &rarr;
                           </a>
                         ) : (
                           <span className="badge bg-secondary-subtle text-dark border">
-                            Please contact your Platform Administrator to allocate your WhatsApp number.
+                            Please contact your Workspace Owner to configure Meta App settings.
                           </span>
                         )}
                       </div>

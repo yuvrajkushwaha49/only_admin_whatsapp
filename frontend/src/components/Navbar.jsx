@@ -7,10 +7,10 @@ import logoImg from '../assets/logo.png';
 import '../styles/newNavbar.css';
 
 export default function Navbar({ onToggleSidebar, sidebarOpen }) {
-  const { user, business, logout, isSuperAdmin } = useAuth();
+  const { user, business, logout } = useAuth();
   const navigate = useNavigate();
 
-  const [unreadNotifs, setUnreadNotifs] = useState(88);
+  const [unreadNotifs, setUnreadNotifs] = useState(0);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileRef = useRef(null);
 
@@ -120,24 +120,16 @@ export default function Navbar({ onToggleSidebar, sidebarOpen }) {
                 </span>
               </div>
               <div className="dropdown-divider my-1"></div>
-              {isSuperAdmin && isSuperAdmin() && (
+              {['owner', 'admin', 'superadmin'].includes((user?.role || '').toLowerCase()) && (
                 <Link
-                  to="/admin"
+                  to="/settings"
                   className="dropdown-item py-2 px-3 small d-flex align-items-center gap-2"
                   onClick={() => setShowProfileMenu(false)}
                 >
-                  <i className="bi bi-speedometer2 text-primary"></i>
-                  <span>Super Admin Console</span>
+                  <i className="bi bi-gear text-secondary"></i>
+                  <span>Settings</span>
                 </Link>
               )}
-              <Link
-                to="/settings"
-                className="dropdown-item py-2 px-3 small d-flex align-items-center gap-2"
-                onClick={() => setShowProfileMenu(false)}
-              >
-                <i className="bi bi-gear text-secondary"></i>
-                <span>Settings</span>
-              </Link>
               <button
                 type="button"
                 className="dropdown-item py-2 px-3 small d-flex align-items-center gap-2 text-danger"

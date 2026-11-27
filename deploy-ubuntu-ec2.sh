@@ -34,8 +34,8 @@ DB_USER="cf_user"
 DB_PASS="CampaignFlow2026!Secure"
 
 sudo mysql -e "CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-sudo mysql -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED WITH mysql_native_password BY '${DB_PASS}';"
-sudo mysql -e "ALTER USER '${DB_USER}'@'localhost' IDENTIFIED WITH mysql_native_password BY '${DB_PASS}';"
+sudo mysql -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';"
+sudo mysql -e "ALTER USER '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';"
 sudo mysql -e "GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${DB_USER}'@'localhost';"
 sudo mysql -e "FLUSH PRIVILEGES;"
 
@@ -45,17 +45,17 @@ echo "✅ MySQL Database '${DB_NAME}' and user '${DB_USER}' created successfully
 APP_DIR="/var/www/campaignflow"
 echo "📂 Setting up application directory at ${APP_DIR}..."
 
-sudo mkdir -p ${APP_DIR}
+sudo mkdir -p ${APP_DIR}/backend/uploads/imports ${APP_DIR}/backend/uploads/templates ${APP_DIR}/backend/uploads/chunks/raw
 sudo chown -R $USER:$USER ${APP_DIR}
 
 # 5. Reminder to clone or copy codebase
 echo "===================================================="
 echo "✅ Prerequisites Installed Successfully!"
-echo "   Next Steps in your EC2 terminal:"
-echo "   1. Copy project code to: ${APP_DIR}"
-echo "   2. Configure backend .env with DB_PASSWORD=${DB_PASS}"
+echo "   Next Steps in your server terminal:"
+echo "   1. Clone/copy project code to: ${APP_DIR}"
+echo "   2. Configure backend/.env (DATABASE_PASSWORD=${DB_PASS}, SINGLE_COMPANY_MODE=true, JWT_SECRET, META_*)"
 echo "   3. Run 'npm install' in both backend and frontend"
-echo "   4. Run 'npm run migrate' in backend"
-echo "   5. Start backend with PM2"
-echo "   6. Build frontend with 'npm run build'"
+echo "   4. Run 'npm run migrate' in backend (do NOT run seed for clean single-owner setup)"
+echo "   5. Build frontend with 'npm run build'"
+echo "   6. Start services with 'pm2 start ecosystem.config.cjs && pm2 save'"
 echo "===================================================="

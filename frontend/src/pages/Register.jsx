@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import api from '../services/api';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -12,8 +13,27 @@ export default function Register() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [checkingSetup, setCheckingSetup] = useState(true);
+  const [registrationOpen, setRegistrationOpen] = useState(false);
+  const [workspaceName, setWorkspaceName] = useState('');
   const { register } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    api.get('/auth/setup-status')
+      .then((res) => {
+        if (res.data?.success && res.data?.data) {
+          setRegistrationOpen(Boolean(res.data.data.registrationOpen));
+          setWorkspaceName(res.data.data.businessName || '');
+        }
+      })
+      .catch(() => {
+        setRegistrationOpen(false);
+      })
+      .finally(() => {
+        setCheckingSetup(false);
+      });
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -33,6 +53,33 @@ export default function Register() {
       setLoading(false);
     }
   };
+
+  if (checkingSetup) {
+    return (
+      <div className="text-center py-5">
+        <div className="spinner-border text-success" role="status"></div>
+      </div>
+    );
+  }
+
+  if (!registrationOpen) {
+    return (
+      <div className="text-center py-3">
+        <div className="mb-3">
+          <span className="badge bg-success-subtle text-success px-3 py-2 rounded-pill fw-semibold">
+            <i className="bi bi-shield-lock-fill me-1"></i> Single-Company Workspace
+          </span>
+        </div>
+        <h4 className="fw-bold text-dark mb-2">Registration Closed</h4>
+        <p className="text-muted small mb-4">
+          {workspaceName ? <strong>{workspaceName}</strong> : 'This workspace'} is configured for a single business owner. Public self-registration is disabled — please ask the Workspace Owner to invite you via Team Management.
+        </p>
+        <Link to="/login" className="btn btn-cf-primary w-100 py-2 fw-semibold">
+          <i className="bi bi-box-arrow-in-right me-2"></i>Go to Sign In
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div>

@@ -25,4 +25,10 @@ router.post('/accounts/verify', requireRole(['owner', 'admin']), metaSetupContro
 router.post('/accounts/reconnect', requireRole(['owner', 'admin']), metaSetupController.reconnectAccount);
 router.post('/accounts/disconnect', requireRole(['owner', 'admin']), metaSetupController.disconnectAccount);
 
+// Owner-accessible Meta Developer App Config (for Single-Company mode)
+router.get('/platform-config', requireRole(['owner']), metaSetupController.getPlatformMetaConfig);
+router.post('/platform-config', requireRole(['owner']), metaSetupController.savePlatformMetaConfig);
+router.post('/platform-config/test', requireRole(['owner']), metaSetupController.testPlatformMetaConfig);
+router.get('/platform-config/monitoring', requireRole(['owner']), metaSetupController.getPlatformMetaMonitoring);
+
 export default router;

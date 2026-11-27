@@ -1,6 +1,10 @@
 /**
  * Multi-Tenant and RBAC Authorization Middleware
+ * Configured for Single-Company / Single-Owner + Team mode by default.
  */
+
+export const SINGLE_COMPANY_MODE = process.env.SINGLE_COMPANY_MODE !== 'false';
+export const DEFAULT_BUSINESS_ID = parseInt(process.env.DEFAULT_BUSINESS_ID || '1', 10);
 
 export function requireTenant(req, res, next) {
   if (!req.user) {
@@ -10,22 +14,29 @@ export function requireTenant(req, res, next) {
     });
   }
 
-  // If explicit tenant header is provided, use it
+  // Single-Company Mode: lock all authenticated users to the single company workspace
+  if (SINGLE_COMPANY_MODE) {
+    req.businessId = req.user.business_id ? Number(req.user.business_id) : DEFAULT_BUSINESS_ID;
+    return next();
+  }
+
+  // Multi-Tenant Mode: only superadmin may override tenant via x-tenant-id header
   const targetBusinessHeader = req.headers['x-tenant-id'];
-  if (targetBusinessHeader) {
+  if (targetBusinessHeader && req.user.role === 'superadmin') {
     req.businessId = Number(targetBusinessHeader);
     return next();
   }
 
-  // Superadmin has global access across tenants: default to Business #1 if no tenant assigned
   if (req.user.role === 'superadmin' && !req.businessId) {
-    req.businessId = 1;
+    req.businessId = DEFAULT_BUSINESS_ID;
     return next();
   }
 
-  // Fallback to Business #1 if businessId is missing to prevent breaking UI with 403
   if (!req.businessId) {
-    req.businessId = 1;
+    return res.status(403).json({
+      success: false,
+      error: { message: 'Valid business workspace context is required.', code: 'TENANT_REQUIRED' }
+    });
   }
 
   next();
@@ -39,6 +50,25 @@ export function requireSuperAdmin(req, res, next) {
     });
   }
   next();
+}
+
+/**
+ * Allow either SuperAdmin or the Single-Company Owner (when SINGLE_COMPANY_MODE is active)
+ */
+export function requirePlatformOwner(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: { message: 'Authentication required.', code: 'UNAUTHORIZED' }
+    });
+  }
+  if (req.user.role === 'superadmin' || (SINGLE_COMPANY_MODE && req.user.role === 'owner')) {
+    return next();
+  }
+  return res.status(403).json({
+    success: false,
+    error: { message: 'Access denied. Workspace Owner privileges required.', code: 'FORBIDDEN_OWNER' }
+  });
 }
 
 /**

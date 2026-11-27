@@ -384,11 +384,11 @@ export default function MetaSetupWizardModal({ isOpen, onClose, onSuccess }) {
                     <p className="small mb-2 text-dark">
                       {readiness.message || 'WhatsApp connection is currently being configured by our platform administrator. Please try again later.'}
                     </p>
-                    {isSuperAdmin && isSuperAdmin() && (
+                    {(isSuperAdmin || user?.role === 'owner') && (
                       <div className="mt-2 pt-2 border-top border-warning-subtle d-flex align-items-center justify-content-between">
-                        <span className="small text-muted">Super Admin notice: Meta Developer App credentials needed.</span>
-                        <a href="/superadmin" className="btn btn-sm btn-dark">
-                          Go to SuperAdmin Settings
+                        <span className="small text-muted">Owner notice: Meta Developer App credentials needed.</span>
+                        <a href="/settings" className="btn btn-sm btn-dark">
+                          Go to Meta App Settings
                         </a>
                       </div>
                     )}
@@ -448,13 +448,13 @@ export default function MetaSetupWizardModal({ isOpen, onClose, onSuccess }) {
                           <p className="small text-secondary mb-2">
                             This business workspace does not currently have any phone numbers allotted in the <strong>Super Admin Number Allocation & Approval Matrix</strong>. Unallocated numbers cannot be connected.
                           </p>
-                          {isSuperAdmin ? (
-                            <a href="/admin/numbers" className="btn btn-sm btn-warning text-dark fw-bold">
-                              <i className="bi bi-diagram-3-fill me-1"></i> Allocate Numbers in Admin Matrix &rarr;
+                          {isSuperAdmin || user?.role === 'owner' ? (
+                            <a href="/settings" className="btn btn-sm btn-warning text-dark fw-bold">
+                              <i className="bi bi-gear-fill me-1"></i> Configure Meta App in Settings &rarr;
                             </a>
                           ) : (
                             <span className="badge bg-secondary-subtle text-dark border">
-                              Please ask your Platform Administrator to allocate your WhatsApp number.
+                              Please ask your Workspace Owner to configure Meta App settings.
                             </span>
                           )}
                         </div>

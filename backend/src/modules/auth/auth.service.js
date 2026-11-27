@@ -1,10 +1,46 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { executeQuery, isUsingFallback, getMemoryStore } from '../../database/db.js';
+import { executeQuery, isUsingFallback, getMemoryStore, saveMemoryStore } from '../../database/db.js';
 import { signAccessToken, signRefreshToken } from '../../utils/jwt.js';
 import { sendPasswordResetOtpEmail } from '../../services/emailService.js';
+import { SINGLE_COMPANY_MODE, DEFAULT_BUSINESS_ID } from '../../middleware/tenant.js';
+
+export async function getSetupStatus() {
+  let hasOwner = false;
+  let businessName = null;
+
+  if (isUsingFallback()) {
+    const store = getMemoryStore();
+    const owners = (store.users || []).filter(u => u.role === 'owner');
+    hasOwner = owners.length > 0;
+    const primaryBiz = (store.businesses || []).find(b => Number(b.id) === DEFAULT_BUSINESS_ID) || store.businesses?.[0];
+    businessName = primaryBiz?.name || null;
+  } else {
+    const ownerRows = await executeQuery("SELECT id FROM users WHERE role = 'owner' LIMIT 1");
+    hasOwner = ownerRows.length > 0;
+    const bizRows = await executeQuery('SELECT name FROM businesses ORDER BY id ASC LIMIT 1');
+    businessName = bizRows?.[0]?.name || null;
+  }
+
+  return {
+    singleCompanyMode: SINGLE_COMPANY_MODE,
+    registrationOpen: SINGLE_COMPANY_MODE ? !hasOwner : true,
+    businessName
+  };
+}
 
 export async function register({ businessName, name, email, password, timezone = 'UTC' }) {
+  // In Single-Company Mode, block public registration once an owner/workspace exists
+  if (SINGLE_COMPANY_MODE) {
+    const status = await getSetupStatus();
+    if (!status.registrationOpen) {
+      const error = new Error('Public registration is disabled. This workspace is configured for a single business owner. Please ask the owner to invite you as a team member.');
+      error.statusCode = 403;
+      error.code = 'REGISTRATION_DISABLED';
+      throw error;
+    }
+  }
+
   // Check if email already exists
   const existing = await executeQuery('SELECT id FROM users WHERE email = ? LIMIT 1', [email]);
   if (existing.length > 0) {
@@ -49,11 +85,17 @@ export async function register({ businessName, name, email, password, timezone =
   );
   const userId = userResult.insertId;
 
-  // Assign Free Trial subscription (plan id 1)
-  await executeQuery(
-    'INSERT INTO subscriptions (business_id, plan_id, status, current_period_start) VALUES (?, 1, "active", NOW())',
-    [businessId]
-  );
+  // Assign default workspace subscription safely (ensure plan id 1 exists on fresh DB)
+  try {
+    await executeQuery(
+      `INSERT IGNORE INTO subscription_plans (id, name, slug, monthly_price, max_contacts, max_campaigns_per_month, max_messages_per_month, max_team_members, features)
+       VALUES (1, 'Single Workspace', 'single-workspace', 0.00, 1000000, 99999, 1000000, 100, '{"analytics": "advanced", "ai_assistant": true, "api_access": true}')`
+    );
+    await executeQuery(
+      'INSERT INTO subscriptions (business_id, plan_id, status, current_period_start) VALUES (?, 1, "active", NOW())',
+      [businessId]
+    );
+  } catch (_) {}
 
   const token = signAccessToken({ userId, businessId, role: 'owner' });
   const refreshToken = signRefreshToken({ userId });
@@ -357,12 +399,48 @@ export async function resetPasswordWithToken({ email, resetToken, newPassword })
   return { success: true, message: 'Password has been reset successfully' };
 }
 
+export async function updateWorkspaceProfile(businessId, { name, timezone }) {
+  const numBusinessId = Number(businessId);
+  const cleanName = name ? String(name).trim() : null;
+  const cleanTimezone = timezone ? String(timezone).trim() : null;
+
+  if (!cleanName || cleanName.length < 2) {
+    const error = new Error('Workspace name must be at least 2 characters.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (isUsingFallback()) {
+    const store = getMemoryStore();
+    const biz = (store.businesses || []).find(b => Number(b.id) === numBusinessId);
+    if (!biz) {
+      const error = new Error('Workspace not found');
+      error.statusCode = 404;
+      throw error;
+    }
+    biz.name = cleanName;
+    if (cleanTimezone) biz.timezone = cleanTimezone;
+    biz.updated_at = new Date();
+    saveMemoryStore();
+    return biz;
+  }
+
+  await executeQuery(
+    'UPDATE businesses SET name = ?, timezone = COALESCE(?, timezone), updated_at = NOW() WHERE id = ?',
+    [cleanName, cleanTimezone, numBusinessId]
+  );
+  const rows = await executeQuery('SELECT id, name, slug, timezone, status FROM businesses WHERE id = ? LIMIT 1', [numBusinessId]);
+  return rows[0];
+}
+
 export default {
+  getSetupStatus,
   register,
   login,
   getCurrentUser,
   verifyUserPassword,
   requestPasswordResetOtp,
   verifyPasswordResetOtp,
-  resetPasswordWithToken
+  resetPasswordWithToken,
+  updateWorkspaceProfile
 };

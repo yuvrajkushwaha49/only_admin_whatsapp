@@ -3,6 +3,7 @@ import { encryptToken, decryptToken } from '../../utils/crypto.js';
 import { MetaCloudApiClient } from './metaClient.js';
 import * as whatsappService from './whatsapp.service.js';
 import * as platformMetaService from '../admin/platformMeta.service.js';
+import { SINGLE_COMPANY_MODE } from '../../middleware/tenant.js';
 import logger from '../../utils/logger.js';
 import axios from 'axios';
 import crypto from 'crypto';
@@ -352,7 +353,7 @@ export async function checkClientReadiness(businessId) {
     } catch (_) {}
   }
 
-  const hasAllocatedNumbers = Array.isArray(allowedList) && allowedList.length > 0;
+  const hasAllocatedNumbers = SINGLE_COMPANY_MODE ? true : (Array.isArray(allowedList) && allowedList.length > 0);
   const appId = platformReadiness.appId || platformReadiness.metaAppId || platformReadiness.platformApp?.appId;
   const configId = platformReadiness.configId || platformReadiness.embeddedSignupConfigId || platformReadiness.platformApp?.configId;
 
@@ -476,9 +477,9 @@ export async function validateOnboardingSession(businessId, state) {
 export async function initiateSignup(businessId, redirectOrigin = '') {
   const numBusinessId = Number(businessId);
 
-  // Security gate: Ensure this business has at least one allocated number in Super Admin Matrix
+  // Security gate: Ensure this business has at least one allocated number in multi-tenant mode
   const readiness = await checkClientReadiness(numBusinessId);
-  if (!readiness.hasAllocatedNumbers) {
+  if (!SINGLE_COMPANY_MODE && !readiness.hasAllocatedNumbers) {
     const err = new Error('No WhatsApp numbers have been allocated to your business by the Super Admin in the Number Allocation & Approval Matrix. Please allocate an approved phone number first before connecting.');
     err.statusCode = 403;
     throw err;

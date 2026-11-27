@@ -17,7 +17,7 @@ router.post('/conversations/initiate', inboxController.initiateConversation);
 router.get('/conversations/:id', inboxController.getConversation);
 
 // Conversation Actions
-router.post('/conversations/:id/assign', requireRole(['owner', 'admin', 'team_lead', 'agent']), inboxController.assign);
+router.post('/conversations/:id/assign', requireRole(['owner', 'admin', 'marketer', 'agent']), inboxController.assign);
 router.post('/conversations/:id/close', inboxController.closeConversation);
 router.post('/conversations/:id/reopen', inboxController.reopenConversation);
 router.delete('/conversations/:id', requireRole(['owner', 'admin']), inboxController.deleteConversation);

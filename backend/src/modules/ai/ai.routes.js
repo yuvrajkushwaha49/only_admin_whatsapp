@@ -5,7 +5,7 @@ import * as conversationService from '../../services/ai/conversation.service.js'
 import * as knowledgeBaseService from '../../services/ai/knowledgeBase.service.js';
 import * as geminiService from '../../services/ai/gemini.service.js';
 import { authenticate } from '../../middleware/auth.js';
-import { requireTenant, requireSuperAdmin } from '../../middleware/tenant.js';
+import { requireTenant, requirePlatformOwner } from '../../middleware/tenant.js';
 import { executeQuery } from '../../database/db.js';
 
 const router = Router();
@@ -143,7 +143,7 @@ router.post('/feedback', requireTenant, async (req, res, next) => {
  * GET /api/ai/admin/analytics
  * Real database-calculated analytics on AI usage, tokens, feedback, cost
  */
-router.get('/admin/analytics', requireSuperAdmin, async (req, res, next) => {
+router.get('/admin/analytics', requirePlatformOwner, async (req, res, next) => {
   try {
     const { timeRange = '30d', tenantId } = req.query;
     const data = await conversationService.getAdminAnalytics({ timeRange, tenantId });
@@ -157,7 +157,7 @@ router.get('/admin/analytics', requireSuperAdmin, async (req, res, next) => {
  * GET /api/ai/admin/conversations
  * Super Admin conversation monitoring across tenants
  */
-router.get('/admin/conversations', requireSuperAdmin, async (req, res, next) => {
+router.get('/admin/conversations', requirePlatformOwner, async (req, res, next) => {
   try {
     const { page = 1, limit = 20, tenantId, search } = req.query;
     const data = await conversationService.getAdminConversations({ page, limit, tenantId, search });
@@ -171,7 +171,7 @@ router.get('/admin/conversations', requireSuperAdmin, async (req, res, next) => 
  * GET /api/ai/admin/knowledge-base/status
  * Check Knowledge Base indexing status
  */
-router.get('/admin/knowledge-base/status', requireSuperAdmin, async (req, res, next) => {
+router.get('/admin/knowledge-base/status', requirePlatformOwner, async (req, res, next) => {
   try {
     const status = await knowledgeBaseService.getKnowledgeBaseStatus();
     res.json({ success: true, status });
@@ -184,7 +184,7 @@ router.get('/admin/knowledge-base/status', requireSuperAdmin, async (req, res, n
  * POST /api/ai/admin/knowledge-base/reindex
  * Trigger on-demand document re-indexing
  */
-router.post('/admin/knowledge-base/reindex', requireSuperAdmin, async (req, res, next) => {
+router.post('/admin/knowledge-base/reindex', requirePlatformOwner, async (req, res, next) => {
   try {
     const result = await knowledgeBaseService.indexKnowledgeBase();
     res.json(result);
@@ -197,7 +197,7 @@ router.post('/admin/knowledge-base/reindex', requireSuperAdmin, async (req, res,
  * GET /api/ai/admin/settings
  * Read current AI settings (without exposing secret keys)
  */
-router.get('/admin/settings', requireSuperAdmin, async (req, res, next) => {
+router.get('/admin/settings', requirePlatformOwner, async (req, res, next) => {
   try {
     const config = await geminiService.getModelConfig();
     const rows = await executeQuery('SELECT setting_key, setting_value, updated_at FROM ai_settings');
@@ -229,7 +229,7 @@ router.get('/admin/settings', requireSuperAdmin, async (req, res, next) => {
  * POST /api/ai/admin/settings
  * Update permitted AI settings
  */
-router.post('/admin/settings', requireSuperAdmin, async (req, res, next) => {
+router.post('/admin/settings', requirePlatformOwner, async (req, res, next) => {
   try {
     const allowedKeys = [
       'ai_chat_enabled',

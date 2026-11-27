@@ -102,7 +102,30 @@ export async function resetPassword(req, res, next) {
   }
 }
 
+export async function setupStatus(req, res, next) {
+  try {
+    const result = await authService.getSetupStatus();
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateWorkspace(req, res, next) {
+  try {
+    const result = await authService.updateWorkspaceProfile(req.businessId, req.body);
+    res.json({
+      success: true,
+      message: 'Workspace profile updated successfully',
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export default {
+  setupStatus,
   register,
   login,
   logout,
@@ -110,5 +133,6 @@ export default {
   verifyPassword,
   forgotPassword,
   verifyOtp,
-  resetPassword
+  resetPassword,
+  updateWorkspace
 };

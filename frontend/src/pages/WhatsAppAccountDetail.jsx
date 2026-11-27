@@ -20,7 +20,7 @@ export default function WhatsAppAccountDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, isSuperAdmin } = useAuth();
-  const canManage = isSuperAdmin ? isSuperAdmin() : (user?.role === 'superadmin' || user?.role === 'owner');
+  const canManage = (isSuperAdmin ? isSuperAdmin() : false) || ['superadmin', 'owner', 'admin'].includes((user?.role || '').toLowerCase());
 
   const [account, setAccount] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -651,13 +651,13 @@ export default function WhatsAppAccountDetail() {
             </div>
           </div>
 
-          {/* SuperAdmin Live Test Messenger (Restricted to SuperAdmin Only) */}
-          {isSuperAdmin() && (
+          {/* Live Test Messenger (Owner / Admin) */}
+          {canManage && (
             <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: '14px', background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)' }}>
               <div className="card-header bg-white border-bottom py-3">
                 <h6 className="mb-0 fw-bold d-flex align-items-center gap-2">
                   <i className="bi bi-send-fill text-primary"></i>
-                  <span>Super Admin Live Test Messenger</span>
+                  <span>WhatsApp Live Test Messenger</span>
                 </h6>
               </div>
               <div className="card-body p-4">

@@ -5,7 +5,6 @@ import { useAuth } from './hooks/useAuth';
 // Layouts
 import AppLayout from './layouts/AppLayout';
 import AuthLayout from './layouts/AuthLayout';
-import AdminLayout from './layouts/AdminLayout';
 
 // Pages
 import Login from './pages/Login';
@@ -38,22 +37,8 @@ import ContactReports from './pages/ContactReports';
 import Analytics from './pages/Analytics/Analytics';
 import AiAssistant from './pages/AiAssistant';
 import TeamManagement from './pages/TeamManagement';
-import Billing from './pages/Billing';
 import ActivityLogs from './pages/ActivityLogs';
 import Settings from './pages/Settings';
-import SuperAdminDashboard from './pages/SuperAdminDashboard';
-
-// Super Admin Suite Pages
-import AdminOverview from './pages/admin/AdminOverview';
-import AdminTenants from './pages/admin/AdminTenants';
-import AdminBusinessDetail from './pages/admin/AdminBusinessDetail';
-import AdminNumbers from './pages/admin/AdminNumbers';
-import AdminBilling from './pages/admin/AdminBilling';
-import AdminLogs from './pages/admin/AdminLogs';
-import AdminMeta from './pages/admin/AdminMeta';
-import AdminMetaMonitoring from './pages/admin/AdminMetaMonitoring';
-import AdminAccounts from './pages/admin/AdminAccounts';
-import AdminAiSupport from './pages/admin/AdminAiSupport';
 
 import WhatsAppOAuthCallback from './pages/WhatsAppOAuthCallback';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -364,11 +349,7 @@ export default function App() {
         />
         <Route
           path="/billing"
-          element={
-            <ProtectedRoute allowedRoles={['owner', 'admin']}>
-              <Billing />
-            </ProtectedRoute>
-          }
+          element={<Navigate to="/dashboard" replace />}
         />
         <Route
           path="/activity-logs"
@@ -387,41 +368,12 @@ export default function App() {
           }
         />
 
-        {/* SuperAdmin Legacy Console inside client layout */}
-        <Route
-          path="/superadmin"
-          element={
-            <ProtectedRoute requireSuperAdmin={true}>
-              <SuperAdminDashboard />
-            </ProtectedRoute>
-          }
-        />
+        {/* Legacy Multi-Tenant / SuperAdmin Routes Redirected in Single-Company Mode */}
+        <Route path="/superadmin" element={<Navigate to="/dashboard" replace />} />
       </Route>
 
-      {/* Dedicated SuperAdmin Platform Management Suite */}
-      <Route
-        path="/admin"
-        element={
-          <ProtectedRoute requireSuperAdmin={true}>
-            <AdminLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<AdminOverview />} />
-        <Route path="dashboard" element={<AdminOverview />} />
-        <Route path="tenants" element={<AdminTenants />} />
-        <Route path="tenants/:id" element={<AdminBusinessDetail />} />
-        <Route path="businesses" element={<AdminTenants />} />
-        <Route path="businesses/:id" element={<AdminBusinessDetail />} />
-        <Route path="business-list" element={<AdminTenants />} />
-        <Route path="numbers" element={<AdminNumbers />} />
-        <Route path="billing" element={<AdminBilling />} />
-        <Route path="logs" element={<AdminLogs />} />
-        <Route path="meta" element={<AdminMeta />} />
-        <Route path="meta-monitoring" element={<AdminMetaMonitoring />} />
-        <Route path="accounts" element={<AdminAccounts />} />
-        <Route path="ai-support" element={<AdminAiSupport />} />
-      </Route>
+      <Route path="/admin/*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

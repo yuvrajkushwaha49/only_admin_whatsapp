@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import api from '../services/api';
 import '../styles/login.css';
 
 export default function Login({ initialView = 'login' }) {
@@ -28,10 +29,21 @@ export default function Login({ initialView = 'login' }) {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [resendCountdown, setResendCountdown] = useState(0);
+  const [registrationOpen, setRegistrationOpen] = useState(false);
 
   const otpInputRef = useRef(null);
   const { login, forgotPassword, verifyOtp, resetPassword } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    api.get('/auth/setup-status')
+      .then((res) => {
+        if (res.data?.success && res.data?.data) {
+          setRegistrationOpen(Boolean(res.data.data.registrationOpen));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Resend OTP countdown timer
   useEffect(() => {
@@ -70,12 +82,8 @@ export default function Login({ initialView = 'login' }) {
     setLoading(true);
 
     try {
-      const data = await login(email, password);
-      if (data.user.role === 'superadmin') {
-        navigate('/admin');
-      } else {
-        navigate('/dashboard');
-      }
+      await login(email, password);
+      navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Login failed. Please verify credentials.');
     } finally {
@@ -628,9 +636,15 @@ export default function Login({ initialView = 'login' }) {
         </button>
       </form>
 
-      <div className="text-center mt-4 text-muted small">
-        Don't have a workspace? <Link to="/register" className="fw-semibold text-success text-decoration-none">Create business account</Link>
-      </div>
+      {registrationOpen ? (
+        <div className="text-center mt-4 text-muted small">
+          First-time setup? <Link to="/register" className="fw-semibold text-success text-decoration-none">Create owner workspace</Link>
+        </div>
+      ) : (
+        <div className="text-center mt-4 text-muted small">
+          Invite-only workspace. Contact your Workspace Owner for access.
+        </div>
+      )}
 
       <div className="auth-footer-links">
         <Link to="/privacy" className="me-2">Privacy Policy</Link>

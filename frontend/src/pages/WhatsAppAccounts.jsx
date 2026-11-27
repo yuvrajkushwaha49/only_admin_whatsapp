@@ -11,9 +11,10 @@ import { encodeHashId } from '../utils/hashId';
 export default function WhatsAppAccounts() {
   const { isSuperAdmin, user } = useAuth();
   const isSuper = isSuperAdmin ? isSuperAdmin() : (user?.role === 'superadmin');
+  const isOwnerOrAdmin = ['owner', 'admin'].includes((user?.role || '').toLowerCase());
   const isSuperAdminClientView = localStorage.getItem('cf_impersonating') === 'true' || Boolean(localStorage.getItem('cf_superadmin_token'));
-  const canManageConnections = Boolean(isSuper || isSuperAdminClientView);
-  const canDisconnectOrDelete = Boolean(isSuper || user?.role === 'owner');
+  const canManageConnections = Boolean(isSuper || isSuperAdminClientView || isOwnerOrAdmin);
+  const canDisconnectOrDelete = Boolean(isSuper || user?.role === 'owner' || user?.role === 'admin');
 
   const outletContext = useOutletContext();
   const onToggleSidebar = outletContext?.onToggleSidebar;
@@ -548,8 +549,8 @@ export default function WhatsAppAccounts() {
         )}
         */}
 
-        {/* Meta Developer In-Software Control Center (Restricted to SuperAdmin Only) */}
-        {isSuper && accounts.length > 0 && !loading && (
+        {/* Meta Developer In-Software Control Center (Owner / Admin) */}
+        {canManageConnections && accounts.length > 0 && !loading && (
           <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: '14px', background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)' }}>
             <div className="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
               <div className="d-flex align-items-center gap-2">
@@ -802,13 +803,11 @@ export default function WhatsAppAccounts() {
                               style={{ borderRadius: '10px' }}
                             >
                               <i className="bi bi-shield-lock-fill fs-5"></i>
-                              <span>Number Allocation Required</span>
+                              <span>Meta App Setup Required</span>
                             </button>
-                            {isSuper && (
-                              <Link to="/admin/numbers" className="btn btn-outline-dark btn-lg fw-semibold" style={{ borderRadius: '10px' }}>
-                                <i className="bi bi-diagram-3-fill me-1"></i> Allocate Numbers
-                              </Link>
-                            )}
+                            <Link to="/settings" className="btn btn-outline-dark btn-lg fw-semibold" style={{ borderRadius: '10px' }}>
+                              <i className="bi bi-gear-fill me-1"></i> Configure Meta App
+                            </Link>
                           </div>
                         ) : (
                           <button
