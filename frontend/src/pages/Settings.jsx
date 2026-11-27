@@ -439,12 +439,12 @@ export default function Settings() {
                     </div>
                     <div className="col-md-4">
                       <label className="settings-label">
-                        Meta App Secret {metaStatus?.hasSecret && <span className="text-success small">(Saved)</span>}
+                        Meta App Secret {metaStatus?.appSecretConfigured && <span className="text-success small">(Saved)</span>}
                       </label>
                       <input
                         type="password"
                         className="settings-input font-monospace"
-                        placeholder={metaStatus?.hasSecret ? 'Leave blank to keep existing secret' : 'Enter Meta App Secret'}
+                        placeholder={metaStatus?.appSecretConfigured ? 'Leave blank to keep existing secret' : 'Enter Meta App Secret'}
                         value={metaConfig.metaAppSecret}
                         onChange={(e) => setMetaConfig(prev => ({ ...prev, metaAppSecret: e.target.value }))}
                       />

@@ -2452,7 +2452,7 @@ export async function detectMetaAccount(businessId) {
     };
   }
 
-  // 2. If not connected, check if configured in tenant_meta_integrations table for this business
+  // 2. If not connected, check tenant_meta_integrations or .env credentials for this business
   let token = null;
   let phoneId = null;
   let wabaId = null;
@@ -2466,6 +2466,28 @@ export async function detectMetaAccount(businessId) {
       token = decryptToken(integrations[0].encrypted_meta_app_secret);
       phoneId = integrations[0].meta_phone_number_id;
       wabaId = integrations[0].meta_waba_id;
+    }
+  }
+
+  if (!token) {
+    const envToken = (process.env.META_ACCESS_TOKEN || process.env.WHATSAPP_TOKEN || '').trim();
+    if (envToken && !envToken.startsWith('placeholder') && !envToken.includes('your_')) {
+      token = envToken;
+      phoneId = phoneId || (process.env.META_PHONE_NUMBER_ID || process.env.WHATSAPP_PHONE_NUMBER_ID || '').trim() || null;
+      wabaId = wabaId || (process.env.META_WABA_ID || process.env.WHATSAPP_WABA_ID || '').trim() || null;
+
+      if (!phoneId) {
+        try {
+          const discovered = await MetaCloudApiClient.discoverAllWabasAndNumbers(token);
+          const firstWaba = (discovered?.wabas || []).find(w => (w.phoneNumbers || []).length > 0);
+          if (firstWaba) {
+            wabaId = wabaId || firstWaba.id;
+            phoneId = firstWaba.phoneNumbers[0].id;
+          }
+        } catch (err) {
+          logger.warn('[detectMetaAccount] .env discovery warning:', err.message);
+        }
+      }
     }
   }
 
@@ -2527,7 +2549,7 @@ export async function autoConnectMetaAccount(businessId, payload = {}) {
   let targetPhoneId = payload.phoneNumberId;
   let targetWabaId = payload.wabaId;
 
-  // If not provided in payload, check if stored in tenant_meta_integrations for this business
+  // If not provided in payload, check tenant_meta_integrations, then fall back to .env credentials
   if (!token || !targetPhoneId) {
     if (!isUsingFallback()) {
       const integrations = await executeQuery(
@@ -2535,15 +2557,38 @@ export async function autoConnectMetaAccount(businessId, payload = {}) {
         [numBusinessId]
       );
       if (integrations && integrations.length > 0 && integrations[0].encrypted_meta_app_secret) {
-        token = decryptToken(integrations[0].encrypted_meta_app_secret);
-        targetPhoneId = integrations[0].meta_phone_number_id;
-        targetWabaId = integrations[0].meta_waba_id;
+        token = token || decryptToken(integrations[0].encrypted_meta_app_secret);
+        targetPhoneId = targetPhoneId || integrations[0].meta_phone_number_id;
+        targetWabaId = targetWabaId || integrations[0].meta_waba_id;
       }
     }
   }
 
+  if (!token) {
+    const envToken = (process.env.META_ACCESS_TOKEN || process.env.WHATSAPP_TOKEN || '').trim();
+    if (envToken && !envToken.startsWith('placeholder') && !envToken.includes('your_')) {
+      token = envToken;
+    }
+  }
+  if (!targetPhoneId) {
+    targetPhoneId = (process.env.META_PHONE_NUMBER_ID || process.env.WHATSAPP_PHONE_NUMBER_ID || '').trim() || null;
+  }
+  if (!targetWabaId) {
+    targetWabaId = (process.env.META_WABA_ID || process.env.WHATSAPP_WABA_ID || '').trim() || null;
+  }
+
+  // If token is present but Phone Number ID was omitted, auto-discover via Meta Graph API
+  if (token && !targetPhoneId) {
+    const discovered = await MetaCloudApiClient.discoverAllWabasAndNumbers(token);
+    const firstWaba = (discovered?.wabas || []).find(w => (w.phoneNumbers || []).length > 0);
+    if (firstWaba) {
+      targetWabaId = targetWabaId || firstWaba.id;
+      targetPhoneId = firstWaba.phoneNumbers[0].id;
+    }
+  }
+
   if (!token || !targetPhoneId) {
-    const err = new Error('Meta Access Token and Phone Number ID are required. Please connect your account using "Continue with Facebook".');
+    const err = new Error('Meta Access Token and Phone Number ID are required. Add META_ACCESS_TOKEN in backend/.env or connect via WhatsApp Accounts.');
     err.statusCode = 400;
     throw err;
   }

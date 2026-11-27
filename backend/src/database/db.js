@@ -719,15 +719,19 @@ export async function checkConnection() {
     useFallback = false;
     console.log(`✅ [Database] Successfully connected to MySQL at ${host}:${port}`);
 
-    // Check and seed audit_logs if empty
-    try {
-      const [logCount] = await p.execute('SELECT COUNT(*) as count FROM audit_logs');
-      if (logCount[0]?.count === 0) {
-        await seedMySqlAuditLogs(p);
-      }
-    } catch (_) { }
+    // Skip demo MySQL seeding in Single-Company / Production mode
+    const isSingleCompany = process.env.SINGLE_COMPANY_MODE !== 'false';
+    if (!isSingleCompany) {
+      // Check and seed audit_logs if empty
+      try {
+        const [logCount] = await p.execute('SELECT COUNT(*) as count FROM audit_logs');
+        if (logCount[0]?.count === 0) {
+          await seedMySqlAuditLogs(p);
+        }
+      } catch (_) { }
+    }
 
-    // Check and seed notifications if empty
+    // Ensure notifications table exists
     try {
       await p.execute(`CREATE TABLE IF NOT EXISTS notifications (
         id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -742,9 +746,11 @@ export async function checkConnection() {
         INDEX idx_notif_user_read (business_id, user_id, is_read)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`);
 
-      const [notifCount] = await p.execute('SELECT COUNT(*) as count FROM notifications');
-      if (notifCount[0]?.count === 0) {
-        await seedMySqlNotifications(p);
+      if (!isSingleCompany) {
+        const [notifCount] = await p.execute('SELECT COUNT(*) as count FROM notifications');
+        if (notifCount[0]?.count === 0) {
+          await seedMySqlNotifications(p);
+        }
       }
     } catch (_) { }
 
@@ -794,26 +800,28 @@ export async function checkConnection() {
         INDEX idx_prod_cat (category_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`);
 
-      const [prodCount] = await p.execute('SELECT COUNT(*) as count FROM products WHERE business_id = 1');
-      if (prodCount[0]?.count === 0) {
-        await seedMySqlProducts(p);
+      if (!isSingleCompany) {
+        const [prodCount] = await p.execute('SELECT COUNT(*) as count FROM products WHERE business_id = 1');
+        if (prodCount[0]?.count === 0) {
+          await seedMySqlProducts(p);
+        }
       }
     } catch (_) { }
 
-    // Ensure live Indian WhatsApp account has active encrypted access token matching its real WABA & Phone ID
+    // Ensure lazy schema columns exist on fresh MySQL installs (admin_status, allowed_phone_numbers, assigned_user_id)
     try {
-      const liveToken = 'EAAQjnGtRDZCgBS1tjbT3HB636ZArmfxy00RUrQLYzujvPZBN1sU0yDZClKaiBAQAhxiiECwnCp1k2YDlL9s6Ff3ZAZBGA4DvySmfnWutocges1MV3eIjW9bciSoNHfojmwcRcVizsWZCwMzDolQBQJfK9yXp6VsOFuabsnVn92TnosYP6AZBXGoRJob5J9STih1qfgZDZD';
-      const encToken = encryptToken(liveToken);
-      await p.execute(`
-        UPDATE whatsapp_accounts 
-        SET waba_id = '1618945099958602',
-            phone_number_id = '1341070215765610',
-            phone_number = '+91 86014 67210',
-            display_name = 'Yuvraj Kushawaha (Live)',
-            verified_name = 'Yuvraj Kushawaha',
-            access_token_encrypted = ?, status = 'connected', connection_status = 'CONNECTED'
-        WHERE business_id = 1 AND (id IN (45, 94, 85) OR is_primary = 1)
-      `, [encToken]);
+      const [waCols] = await p.execute("SHOW COLUMNS FROM whatsapp_accounts LIKE 'admin_status'");
+      if (!waCols || waCols.length === 0) {
+        await p.execute("ALTER TABLE whatsapp_accounts ADD COLUMN admin_status VARCHAR(20) DEFAULT 'ACTIVE'");
+      }
+      const [bizCols] = await p.execute("SHOW COLUMNS FROM businesses LIKE 'allowed_phone_numbers'");
+      if (!bizCols || bizCols.length === 0) {
+        await p.execute("ALTER TABLE businesses ADD COLUMN allowed_phone_numbers TEXT NULL");
+      }
+      const [cCols] = await p.execute("SHOW COLUMNS FROM contacts LIKE 'assigned_user_id'");
+      if (!cCols || cCols.length === 0) {
+        await p.execute("ALTER TABLE contacts ADD COLUMN assigned_user_id BIGINT UNSIGNED NULL");
+      }
     } catch (_) { }
 
     return true;
