@@ -450,11 +450,11 @@ export default function Inbox() {
     setHasMoreMessages(true);
     shouldScrollBottomRef.current = true;
     try {
-      const res = await inboxApi.getMessages(convId, { limit: 10 });
+      const res = await inboxApi.getMessages(convId, { limit: 30 });
       if (res.data?.success) {
         const msgs = res.data.data || [];
         setMessages(msgs);
-        if (msgs.length < 10) {
+        if (msgs.length < 30) {
           setHasMoreMessages(false);
         }
         // Mark as read on backend and locally
@@ -494,7 +494,7 @@ export default function Inbox() {
 
     try {
       const res = await inboxApi.getMessages(selectedConversation.id, {
-        limit: 10,
+        limit: 30,
         before: oldest.created_at
       });
       if (res.data?.success) {
@@ -513,7 +513,7 @@ export default function Inbox() {
             }
           });
         }
-        if (older.length < 10) {
+        if (older.length < 30) {
           setHasMoreMessages(false);
         }
       }
@@ -1376,124 +1376,126 @@ export default function Inbox() {
 
               {/* Message History Feed */}
               <div className="chat-messages-container" ref={chatMessagesRef} onScroll={handleChatScroll}>
-                {loadingOlderMessages && (
-                  <div className="text-center py-2">
-                    <div className="spinner-border spinner-border-sm text-success me-2" role="status"></div>
-                    <span className="small text-secondary" style={{ fontSize: '0.75rem' }}>Loading earlier messages...</span>
-                  </div>
-                )}
-                {!hasMoreMessages && uniqueMessages.length >= 25 && (
-                  <div className="text-center my-2">
-                    <span className="badge bg-light text-secondary border px-2 py-1" style={{ fontSize: '0.68rem', fontWeight: 500 }}>
-                      Start of conversation
+                <div className="chat-messages-thread">
+                  {loadingOlderMessages && (
+                    <div className="text-center py-2">
+                      <div className="spinner-border spinner-border-sm text-success me-2" role="status"></div>
+                      <span className="small text-secondary" style={{ fontSize: '0.75rem' }}>Loading earlier messages...</span>
+                    </div>
+                  )}
+                  {!hasMoreMessages && uniqueMessages.length >= 25 && (
+                    <div className="text-center my-2">
+                      <span className="badge bg-light text-secondary border px-2 py-1" style={{ fontSize: '0.68rem', fontWeight: 500 }}>
+                        Start of conversation
+                      </span>
+                    </div>
+                  )}
+                  <div className="date-divider">
+                    <span className="date-pill">
+                      <i className="bi bi-lock-fill text-muted me-1"></i>
+                      End-to-End Meta Cloud API Integration
                     </span>
                   </div>
-                )}
-                <div className="date-divider">
-                  <span className="date-pill">
-                    <i className="bi bi-lock-fill text-muted me-1"></i>
-                    End-to-End Meta Cloud API Integration
-                  </span>
-                </div>
 
-                {loadingMessages ? (
-                  <div className="text-center py-5 text-muted">
-                    <div className="spinner-border spinner-border-sm text-success me-2" role="status"></div>
-                    <span className="small">Loading conversation history...</span>
-                  </div>
-                ) : uniqueMessages.length === 0 ? (
-                  <div className="text-center py-5 text-muted my-auto">
-                    <div className="mb-2">
-                      <i className="bi bi-chat-dots text-success opacity-75" style={{ fontSize: '2.5rem' }}></i>
+                  {loadingMessages ? (
+                    <div className="text-center py-5 text-muted">
+                      <div className="spinner-border spinner-border-sm text-success me-2" role="status"></div>
+                      <span className="small">Loading conversation history...</span>
                     </div>
-                    <div className="fw-semibold text-dark">No messages in this chat yet</div>
-                    <div className="small text-secondary mt-1">Send a message or template below to initiate communication.</div>
-                  </div>
-                ) : (
-                  uniqueMessages.map((m) => {
-                    const isInbound = m.direction === 'INBOUND';
-                    const isTemplate = m.message_type === 'template';
+                  ) : uniqueMessages.length === 0 ? (
+                    <div className="text-center py-5 text-muted my-auto">
+                      <div className="mb-2">
+                        <i className="bi bi-chat-dots text-success opacity-75" style={{ fontSize: '2.5rem' }}></i>
+                      </div>
+                      <div className="fw-semibold text-dark">No messages in this chat yet</div>
+                      <div className="small text-secondary mt-1">Send a message or template below to initiate communication.</div>
+                    </div>
+                  ) : (
+                    uniqueMessages.map((m) => {
+                      const isInbound = m.direction === 'INBOUND';
+                      const isTemplate = m.message_type === 'template';
 
-                    return (
-                      <div
-                        key={m.id || m.meta_message_id}
-                        className={`message-row ${isInbound ? 'inbound' : 'outbound'}`}
-                      >
-                        <div className={`message-bubble ${isInbound ? 'inbound' : 'outbound'}`}>
-                          {/* Template Header Badge */}
-                          {isTemplate && (
-                            <div className="template-badge">
-                              <i className="bi bi-patch-check-fill text-success"></i>
-                              Official Template
-                            </div>
-                          )}
+                      return (
+                        <div
+                          key={m.id || m.meta_message_id}
+                          className={`message-row ${isInbound ? 'inbound' : 'outbound'}`}
+                        >
+                          <div className={`message-bubble ${isInbound ? 'inbound' : 'outbound'}`}>
+                            {/* Template Header Badge */}
+                            {isTemplate && (
+                              <div className="template-badge">
+                                <i className="bi bi-patch-check-fill text-success"></i>
+                                Official Template
+                              </div>
+                            )}
 
-                          {/* Media Preview if attached */}
-                          {m.media_url && (
-                            <div className="bubble-media-wrapper">
-                              {m.message_type === 'image' ? (
-                                <img
-                                  src={m.media_url}
-                                  alt="media"
-                                  className="bubble-image-preview"
-                                  onClick={() => window.open(m.media_url, '_blank')}
-                                  title="Click to view full image"
-                                />
-                              ) : (
-                                <div className="bubble-doc-card">
-                                  <i className="bi bi-file-earmark-pdf-fill fs-3 text-danger"></i>
-                                  <div className="min-w-0 flex-1">
-                                    <div className="small fw-semibold text-truncate">
-                                      Attached {m.message_type?.toUpperCase()}
+                            {/* Media Preview if attached */}
+                            {m.media_url && (
+                              <div className="bubble-media-wrapper">
+                                {m.message_type === 'image' ? (
+                                  <img
+                                    src={m.media_url}
+                                    alt="media"
+                                    className="bubble-image-preview"
+                                    onClick={() => window.open(m.media_url, '_blank')}
+                                    title="Click to view full image"
+                                  />
+                                ) : (
+                                  <div className="bubble-doc-card">
+                                    <i className="bi bi-file-earmark-pdf-fill fs-3 text-danger"></i>
+                                    <div className="min-w-0 flex-1">
+                                      <div className="small fw-semibold text-truncate">
+                                        Attached {m.message_type?.toUpperCase()}
+                                      </div>
+                                      <a
+                                        href={m.media_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="small text-primary text-decoration-none"
+                                      >
+                                        <i className="bi bi-download me-1"></i>Download Document
+                                      </a>
                                     </div>
-                                    <a
-                                      href={m.media_url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="small text-primary text-decoration-none"
-                                    >
-                                      <i className="bi bi-download me-1"></i>Download Document
-                                    </a>
                                   </div>
-                                </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Message Body Content */}
+                            <div className="message-text">{m.message_body}</div>
+
+                            {/* Template Mockup Action Buttons */}
+                            {isTemplate && (
+                              <div className="template-button-mockup">
+                                <i className="bi bi-arrow-up-right-square"></i>
+                                <span>Interactive Template</span>
+                              </div>
+                            )}
+
+                            {/* Meta timestamp & status ticks */}
+                            <div className="message-meta">
+                              <span>{formatTime(m.created_at)}</span>
+                              {!isInbound && (
+                                <span className="ms-1">
+                                  {m.message_status === 'read' ? (
+                                    <i className="bi bi-check2-all tick-icon read" title="Read (Blue Ticks)"></i>
+                                  ) : m.message_status === 'delivered' ? (
+                                    <i className="bi bi-check2-all tick-icon delivered" title="Delivered (Double Ticks)"></i>
+                                  ) : m.message_status === 'failed' ? (
+                                    <i className="bi bi-exclamation-circle-fill tick-icon failed" title={m.failure_reason || 'Failed to deliver'}></i>
+                                  ) : (
+                                    <i className="bi bi-check tick-icon sent" title="Sent to WhatsApp"></i>
+                                  )}
+                                </span>
                               )}
                             </div>
-                          )}
-
-                          {/* Message Body Content */}
-                          <div className="message-text">{m.message_body}</div>
-
-                          {/* Template Mockup Action Buttons */}
-                          {isTemplate && (
-                            <div className="template-button-mockup">
-                              <i className="bi bi-arrow-up-right-square"></i>
-                              <span>Interactive Template</span>
-                            </div>
-                          )}
-
-                          {/* Meta timestamp & status ticks */}
-                          <div className="message-meta">
-                            <span>{formatTime(m.created_at)}</span>
-                            {!isInbound && (
-                              <span className="ms-1">
-                                {m.message_status === 'read' ? (
-                                  <i className="bi bi-check2-all tick-icon read" title="Read (Blue Ticks)"></i>
-                                ) : m.message_status === 'delivered' ? (
-                                  <i className="bi bi-check2-all tick-icon delivered" title="Delivered (Double Ticks)"></i>
-                                ) : m.message_status === 'failed' ? (
-                                  <i className="bi bi-exclamation-circle-fill tick-icon failed" title={m.failure_reason || 'Failed to deliver'}></i>
-                                ) : (
-                                  <i className="bi bi-check tick-icon sent" title="Sent to WhatsApp"></i>
-                                )}
-                              </span>
-                            )}
                           </div>
                         </div>
-                      </div>
-                    );
-                  })
-                )}
-                <div ref={messagesEndRef} />
+                      );
+                    })
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
               </div>
 
               {/* Bottom Message Composer (WhatsApp Web Style) */}

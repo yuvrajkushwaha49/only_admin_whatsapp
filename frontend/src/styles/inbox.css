@@ -29,8 +29,9 @@
   margin: 0 !important;
   padding: 0 !important;
   width: 100% !important;
-  height: 100vh !important;
-  max-height: 100vh !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
   max-width: 100% !important;
   min-width: 0 !important;
   display: flex;
@@ -48,6 +49,7 @@
   width: 100% !important;
   height: 100% !important;
   max-height: 100% !important;
+  min-height: 0 !important;
   max-width: 100% !important;
   min-width: 0 !important;
   background: #ffffff;
@@ -72,6 +74,7 @@
   z-index: 10;
   height: 100% !important;
   max-height: 100% !important;
+  min-height: 0 !important;
   box-sizing: border-box;
   overflow: hidden !important;
   overscroll-behavior: contain !important;
@@ -318,6 +321,7 @@
 /* Conversation List */
 .conversation-list {
   flex: 1;
+  min-height: 0 !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
   background: #ffffff;
@@ -500,6 +504,7 @@
 .inbox-chat {
   flex: 1 1 0;
   min-width: 0 !important;
+  min-height: 0 !important;
   width: 0;
   display: flex;
   flex-direction: column;
@@ -774,7 +779,8 @@
    Messages Feed & Wallpaper
    -------------------------------------------------------------------------- */
 .chat-messages-container {
-  flex: 1;
+  flex: 1 1 0;
+  min-height: 0 !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
   padding: 16px 20px;
@@ -788,6 +794,15 @@
   box-sizing: border-box;
   overscroll-behavior: contain !important;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Bottom-anchored chat thread (shows messages from bottom like WhatsApp/Telegram without breaking top scroll) */
+.chat-messages-thread {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
 }
 
 .date-divider {
