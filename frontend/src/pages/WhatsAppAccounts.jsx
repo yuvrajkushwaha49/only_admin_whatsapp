@@ -21,20 +21,11 @@ export default function WhatsAppAccounts() {
   const [syncingId, setSyncingId] = useState(null);
   const [verifyingId, setVerifyingId] = useState(null);
   const [settingPrimaryId, setSettingPrimaryId] = useState(null);
-  const [showManualModal, setShowManualModal] = useState(false);
   const [showAddNumberModal, setShowAddNumberModal] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', text: '' });
   const [disconnectModal, setDisconnectModal] = useState(null);
   const [deleteModal, setDeleteModal] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
-
-  const [manualForm, setManualForm] = useState({
-    displayName: '',
-    phoneNumber: '',
-    phoneNumberId: '',
-    wabaId: '',
-    accessToken: ''
-  });
 
   // In-Software Meta Test Messenger & Webhook Status States
   const [testModal, setTestModal] = useState({
@@ -333,19 +324,6 @@ export default function WhatsAppAccounts() {
     }
   };
 
-  const handleManualConnect = async (e) => {
-    e.preventDefault();
-    try {
-      await api.post('/whatsapp/connect', manualForm);
-      setShowManualModal(false);
-      setManualForm({ displayName: '', phoneNumber: '', phoneNumberId: '', wabaId: '', accessToken: '' });
-      setFeedback({ type: 'success', text: 'WhatsApp Business account successfully connected!' });
-      fetchAccounts();
-    } catch (err) {
-      setFeedback({ type: 'danger', text: err.response?.data?.message || 'Failed to connect WhatsApp account' });
-    }
-  };
-
   return (
     <div>
       <AiwavoHeader
@@ -431,16 +409,6 @@ export default function WhatsAppAccounts() {
               >
                 <i className="bi bi-plus-circle-fill"></i>
                 <span>+ Add Number (OTP)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setShowManualModal(true)}
-                className="wa-action-btn-outline"
-                title="Advanced Manual Configuration"
-              >
-                <i className="bi bi-gear fs-5"></i>
-                <span>Manual Setup</span>
               </button>
             </div>
           )}
@@ -764,15 +732,6 @@ export default function WhatsAppAccounts() {
 
                         {readiness && readiness.hasAllocatedNumbers === false ? (
                           <div className="d-flex flex-wrap align-items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setShowManualModal(true)}
-                              className="btn btn-warning btn-lg d-inline-flex align-items-center gap-2 px-4 py-2 fw-bold text-dark shadow-sm"
-                              style={{ borderRadius: '10px' }}
-                            >
-                              <i className="bi bi-shield-lock-fill fs-5"></i>
-                              <span>Manual WABA Setup</span>
-                            </button>
                             <Link to="/settings" className="btn btn-outline-dark btn-lg fw-semibold" style={{ borderRadius: '10px' }}>
                               <i className="bi bi-gear-fill me-1"></i> Configure Meta App
                             </Link>
@@ -1339,90 +1298,6 @@ export default function WhatsAppAccounts() {
                           Verify & Save Token
                         </>
                       )}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Manual Advanced Connection Modal */}
-        {showManualModal && (
-          <div className="modal show d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,0.5)' }}>
-            <div className="modal-dialog modal-dialog-centered">
-              <div className="modal-content">
-                <form onSubmit={handleManualConnect}>
-                  <div className="modal-header">
-                    <h5 className="modal-title fw-bold">Manual WABA Credentials Setup</h5>
-                    <button type="button" className="btn-close" onClick={() => setShowManualModal(false)}></button>
-                  </div>
-                  <div className="modal-body">
-                    <div className="alert alert-secondary small mb-3">
-                      Use this form only if you have custom Meta Permanent System User tokens instead of the one-click Facebook Login.
-                    </div>
-                    <div className="mb-2">
-                      <label className="form-label small fw-semibold">Display / Channel Name</label>
-                      <input
-                        type="text"
-                        required
-                        className="form-control form-control-sm"
-                        placeholder="e.g. Acme Support"
-                        value={manualForm.displayName}
-                        onChange={(e) => setManualForm({ ...manualForm, displayName: e.target.value })}
-                      />
-                    </div>
-                    <div className="mb-2">
-                      <label className="form-label small fw-semibold">WhatsApp Phone Number</label>
-                      <input
-                        type="text"
-                        required
-                        className="form-control form-control-sm"
-                        placeholder="+91 98765 43210"
-                        value={manualForm.phoneNumber}
-                        onChange={(e) => setManualForm({ ...manualForm, phoneNumber: e.target.value })}
-                      />
-                    </div>
-                    <div className="mb-2">
-                      <label className="form-label small fw-semibold">Meta Phone Number ID</label>
-                      <input
-                        type="text"
-                        required
-                        className="form-control form-control-sm"
-                        placeholder="e.g. 1341070215765610"
-                        value={manualForm.phoneNumberId}
-                        onChange={(e) => setManualForm({ ...manualForm, phoneNumberId: e.target.value })}
-                      />
-                    </div>
-                    <div className="mb-2">
-                      <label className="form-label small fw-semibold">Meta WABA ID</label>
-                      <input
-                        type="text"
-                        required
-                        className="form-control form-control-sm"
-                        placeholder="e.g. 28532933229644434"
-                        value={manualForm.wabaId}
-                        onChange={(e) => setManualForm({ ...manualForm, wabaId: e.target.value })}
-                      />
-                    </div>
-                    <div className="mb-2">
-                      <label className="form-label small fw-semibold">Meta Access Token</label>
-                      <textarea
-                        required
-                        className="form-control form-control-sm"
-                        rows="3"
-                        placeholder="EAAB..."
-                        value={manualForm.accessToken}
-                        onChange={(e) => setManualForm({ ...manualForm, accessToken: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div className="modal-footer">
-                    <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowManualModal(false)}>
-                      Cancel
-                    </button>
-                    <button type="submit" className="btn btn-sm btn-success">
-                      Save Account
                     </button>
                   </div>
                 </form>

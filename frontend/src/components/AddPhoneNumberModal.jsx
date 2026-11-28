@@ -240,7 +240,7 @@ export default function AddPhoneNumberModal({ isOpen, onClose, onSuccess }) {
               </div>
             ) : !wabaInfo?.configured ? (
               <div className="alert alert-warning mb-0">
-                <strong>No active WABA / Token configured yet.</strong> Please connect your primary Meta WABA in `.env` or via Manual Setup first.
+                <strong>No active WABA / Token configured yet.</strong> Please configure `META_ACCESS_TOKEN`, `META_WABA_ID`, and `META_BUSINESS_ID` in `backend/.env`.
               </div>
             ) : step === 1 ? (
               <>
