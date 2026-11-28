@@ -873,6 +873,7 @@ export default function WhatsAppAccounts() {
                                 <i className="bi bi-eye me-2 text-primary"></i> View Credentials
                               </Link>
                             </li>
+                            {/* Token, Disconnect & Delete menu items commented out per request
                             <li>
                               <button
                                 type="button"
@@ -886,6 +887,7 @@ export default function WhatsAppAccounts() {
                                 <i className="bi bi-key-fill me-2 text-warning"></i> Update Access Token
                               </button>
                             </li>
+                            */}
                             {isSuper && (
                               <li>
                                 <button
@@ -897,6 +899,7 @@ export default function WhatsAppAccounts() {
                                 </button>
                               </li>
                             )}
+                            {/*
                             <li><hr className="dropdown-divider" /></li>
                             <li>
                               <button
@@ -916,6 +919,7 @@ export default function WhatsAppAccounts() {
                                 <i className="bi bi-trash3 me-2"></i> Delete
                               </button>
                             </li>
+                            */}
                           </ul>
                         </div>
                       </div>
@@ -1025,6 +1029,7 @@ export default function WhatsAppAccounts() {
                         <span>Details</span>
                       </Link>
 
+                      {/* Token button commented out per request
                       <button
                         type="button"
                         className="btn btn-sm btn-outline-warning text-dark py-1 px-2 d-inline-flex align-items-center gap-1"
@@ -1039,9 +1044,11 @@ export default function WhatsAppAccounts() {
                         <i className="bi bi-key-fill"></i>
                         <span>Token</span>
                       </button>
+                      */}
                     </div>
 
-                    {/* Action Buttons: Row 2 (Disconnect & Delete - Only Owner / Admin) */}
+                    {/* Action Buttons: Row 2 (Disconnect & Delete - Commented out per request) */}
+                    {/*
                     {canDisconnectOrDelete && (
                       <div className="wa-actions-row-2">
                         <button
@@ -1065,6 +1072,7 @@ export default function WhatsAppAccounts() {
                         </button>
                       </div>
                     )}
+                    */}
                   </div>
                 </div>
               );
