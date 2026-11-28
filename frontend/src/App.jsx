@@ -37,6 +37,7 @@ import ContactReports from './pages/ContactReports';
 import Analytics from './pages/Analytics/Analytics';
 import AiAssistant from './pages/AiAssistant';
 import TeamManagement from './pages/TeamManagement';
+import Billing from './pages/Billing';
 import ActivityLogs from './pages/ActivityLogs';
 import Settings from './pages/Settings';
 
@@ -349,7 +350,11 @@ export default function App() {
         />
         <Route
           path="/billing"
-          element={<Navigate to="/dashboard" replace />}
+          element={
+            <ProtectedRoute allowedRoles={['owner', 'admin']}>
+              <Billing />
+            </ProtectedRoute>
+          }
         />
         <Route
           path="/activity-logs"

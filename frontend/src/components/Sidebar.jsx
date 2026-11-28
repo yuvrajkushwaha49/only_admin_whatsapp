@@ -132,6 +132,12 @@ export default function Sidebar({ isOpen, onClose, onToggle }) {
         { to: '/team?role=lead', label: 'Team Leads', icon: 'bi-person-badge', roles: ['owner', 'admin'] },
         { to: '/team?role=agent', label: 'Members', icon: 'bi-people', roles: ['owner', 'admin'] }
       ]
+    },
+    {
+      heading: 'BILLING',
+      items: [
+        { to: '/billing', label: 'Billing & Meta Payment', icon: 'bi-credit-card-2-front', roles: ['owner', 'admin'] }
+      ]
     }
   ];
 
