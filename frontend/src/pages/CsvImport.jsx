@@ -1323,7 +1323,7 @@ export default function CsvImport() {
                 </div>
                 <div className="modal-body p-4">
                   <p className="mb-3 text-dark">
-                    Kya aap is imported file aur uske audit history ko delete karna chahte hain?
+                    Are you sure you want to delete this imported file and its audit history?
                   </p>
                   <div className="p-3 bg-light rounded-3 mb-3 small border">
                     <div><strong>File Name:</strong> {deleteTargetJob.file_name}</div>
@@ -1341,10 +1341,10 @@ export default function CsvImport() {
                       onChange={(e) => setAlsoDeleteContacts(e.target.checked)}
                     />
                     <label className="form-check-label small fw-semibold text-danger" htmlFor="alsoDeleteContactsCheck">
-                      Is file se import hue Contacts ko bhi Database se permanently Delete karein
+                      Also permanently delete contacts imported from this file
                     </label>
                     <div className="text-muted small mt-1 ms-4">
-                      Agar tick karenge, toh is Excel/CSV se add hue contacts CRM se poori tarah delete ho jayenge.
+                      If checked, all contacts added from this Excel/CSV file will be permanently deleted from the CRM.
                     </div>
                   </div>
                 </div>

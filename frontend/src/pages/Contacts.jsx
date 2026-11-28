@@ -1096,7 +1096,7 @@ export default function Contacts() {
                 </div>
                 <div className="modal-body p-4">
                   <p className="text-dark mb-3">
-                    Kya aap <strong>"{deleteTargetJob.file_name}"</strong> (Job #{deleteTargetJob.id}) ko import history se delete karna chahte hain?
+                    Are you sure you want to delete <strong>&ldquo;{deleteTargetJob.file_name}&rdquo;</strong> (Job #{deleteTargetJob.id}) from import history?
                   </p>
 
                   <div className="form-check p-3 bg-danger-subtle rounded-3 border border-danger-subtle mb-3">
@@ -1108,10 +1108,10 @@ export default function Contacts() {
                       onChange={(e) => setAlsoDeleteContacts(e.target.checked)}
                     />
                     <label className="form-check-label text-dark small fw-semibold" htmlFor="alsoDeleteContactsCheck">
-                      Is file se import hue saare contacts bhi Contacts list se delete karein (Rollback Contacts)
+                      Also delete all contacts imported from this file (Rollback Contacts)
                     </label>
                     <div className="text-muted small mt-1" style={{ fontSize: '0.78rem' }}>
-                      Agarka box uncheck rahega to sirf import queue ka record delete hoga, contacts database me surakshit rahenge.
+                      If left unchecked, only the import queue record will be deleted and your contacts will remain safely in the database.
                     </div>
                   </div>
                 </div>
