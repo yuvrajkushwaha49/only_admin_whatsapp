@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 
-const DEFAULT_BILLING_HUB_URL = 'https://business.facebook.com/billing_hub/payment_settings';
+const DEFAULT_BILLING_HUB_URL = 'https://business.facebook.com/latest/billing_hub/payment_methods';
 
 /**
  * Opens Meta Business Billing / Payment Settings inside a centered browser popup window

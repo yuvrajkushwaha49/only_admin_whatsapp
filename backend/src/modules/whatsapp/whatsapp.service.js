@@ -3103,8 +3103,8 @@ export async function getWabaBillingStatus(businessId, preferredWabaId = null) {
   const ctx = await resolveWabaAuthContext(businessId, preferredWabaId);
   const configuredBusinessId = String(process.env.META_BUSINESS_ID || '').trim() || null;
   const bizQuery = configuredBusinessId ? `?business_id=${encodeURIComponent(configuredBusinessId)}` : '';
-  const billingHubUrl = `https://business.facebook.com/billing_hub/payment_settings${bizQuery}`;
-  const whatsappBillingSettingsUrl = `https://business.facebook.com/settings/whatsapp-accounts${bizQuery}`;
+  const billingHubUrl = `https://business.facebook.com/latest/billing_hub/payment_methods${bizQuery}`;
+  const whatsappBillingSettingsUrl = `https://business.facebook.com/latest/settings/whatsapp_accounts${bizQuery}`;
 
   if (!ctx.wabaId || !ctx.token) {
     return {
