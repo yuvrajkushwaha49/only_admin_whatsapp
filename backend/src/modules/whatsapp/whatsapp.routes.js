@@ -16,12 +16,10 @@ router.get('/accounts/detect-meta', whatsappController.detectMetaAccount);
 router.post('/auto-connect', requireRole(['owner', 'admin', 'marketer']), whatsappController.autoConnectMetaAccount);
 router.post('/accounts/auto-connect', requireRole(['owner', 'admin', 'marketer']), whatsappController.autoConnectMetaAccount);
 router.post('/accounts/connect/complete', requireRole(['owner', 'admin', 'marketer']), whatsappController.completeEmbeddedSignup);
-
-// System User 1-Click Multi-App & Multi-Number Discovery & Bulk Connect
-router.post('/system-user/discover', requireRole(['owner', 'admin', 'marketer']), whatsappController.discoverSystemUserAccounts);
-router.post('/accounts/system-user/discover', requireRole(['owner', 'admin', 'marketer']), whatsappController.discoverSystemUserAccounts);
-router.post('/system-user/bulk-connect', requireRole(['owner', 'admin', 'marketer']), whatsappController.bulkConnectSystemUserAccounts);
-router.post('/accounts/system-user/bulk-connect', requireRole(['owner', 'admin', 'marketer']), whatsappController.bulkConnectSystemUserAccounts);
+router.get('/accounts/waba-info', requireRole(['owner', 'admin', 'marketer']), whatsappController.getWabaOnboardingInfo);
+router.post('/accounts/phone-numbers/add-and-send-otp', requireRole(['owner', 'admin', 'marketer']), whatsappController.addPhoneNumberAndSendOtp);
+router.post('/accounts/phone-numbers/resend-otp', requireRole(['owner', 'admin', 'marketer']), whatsappController.resendPhoneNumberOtp);
+router.post('/accounts/phone-numbers/verify-and-connect', requireRole(['owner', 'admin', 'marketer']), whatsappController.verifyPhoneNumberAndConnect);
 router.post('/connect', requireRole(['owner', 'admin', 'marketer']), whatsappController.connect);
 router.get('/accounts', whatsappController.listAccounts);
 router.get('/accounts/:id', whatsappController.getAccount);

@@ -777,10 +777,114 @@ export class MetaCloudApiClient {
   }
 
   /**
+   * Extract readable error message from Meta Graph API axios error
+   */
+  extractMetaApiError(error, fallbackMsg) {
+    const errData = error?.response?.data?.error;
+    const msg = errData?.error_user_msg || errData?.error_user_title || errData?.message || error?.message || fallbackMsg;
+    const err = new Error(msg);
+    err.statusCode = error?.response?.status || 400;
+    err.metaCode = errData?.code;
+    err.metaSubcode = errData?.error_subcode;
+    return err;
+  }
+
+  /**
+   * Add a new phone number to an existing WhatsApp Business Account (WABA)
+   * POST /{WABA_ID}/phone_numbers
+   */
+  async addPhoneNumberToWaba({ wabaId, countryCode, phoneNumber, verifiedName }) {
+    const targetWabaId = wabaId || this.wabaId;
+    if (!targetWabaId) {
+      throw new Error('WhatsApp Business Account (WABA ID) is required.');
+    }
+
+    if (this.isMock) {
+      const mockPhoneId = `${Date.now()}`;
+      logger.info(`[MetaClient:Mock] Added phone +${countryCode}${phoneNumber} to WABA ${targetWabaId} -> ${mockPhoneId}`);
+      return { id: mockPhoneId };
+    }
+
+    try {
+      const response = await axios.post(
+        `${META_BASE_URL}/${targetWabaId}/phone_numbers`,
+        {
+          cc: String(countryCode).replace(/\D/g, ''),
+          phone_number: String(phoneNumber).replace(/\D/g, ''),
+          verified_name: String(verifiedName || '').trim()
+        },
+        { headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' } }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.extractMetaApiError(error, 'Failed to add phone number to Meta WhatsApp Business Account');
+    }
+  }
+
+  /**
+   * Request SMS or VOICE OTP verification code for a phone number on Meta Cloud API
+   * POST /{PHONE_NUMBER_ID}/request_code
+   */
+  async requestPhoneVerificationCode({ phoneNumberId, codeMethod = 'SMS', language = 'en_US' } = {}) {
+    const targetPhoneId = phoneNumberId || this.phoneNumberId;
+    if (!targetPhoneId) {
+      throw new Error('Meta Phone Number ID is required to request OTP.');
+    }
+    const cleanMethod = String(codeMethod || 'SMS').toUpperCase() === 'VOICE' ? 'VOICE' : 'SMS';
+
+    if (this.isMock) {
+      logger.info(`[MetaClient:Mock] Requested ${cleanMethod} verification OTP for ${targetPhoneId}`);
+      return { success: true };
+    }
+
+    try {
+      const response = await axios.post(
+        `${META_BASE_URL}/${targetPhoneId}/request_code`,
+        {
+          code_method: cleanMethod,
+          language: language || 'en_US'
+        },
+        { headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' } }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.extractMetaApiError(error, 'Failed to request verification OTP from Meta');
+    }
+  }
+
+  /**
+   * Verify 6-digit OTP code received via SMS or Voice
+   * POST /{PHONE_NUMBER_ID}/verify_code
+   */
+  async verifyPhoneVerificationCode({ phoneNumberId, code } = {}) {
+    const targetPhoneId = phoneNumberId || this.phoneNumberId;
+    const cleanCode = String(code || '').replace(/\D/g, '');
+    if (!targetPhoneId || !cleanCode) {
+      throw new Error('Phone Number ID and 6-digit OTP code are required.');
+    }
+
+    if (this.isMock) {
+      logger.info(`[MetaClient:Mock] Verified OTP code for ${targetPhoneId}`);
+      return { success: true };
+    }
+
+    try {
+      const response = await axios.post(
+        `${META_BASE_URL}/${targetPhoneId}/verify_code`,
+        { code: cleanCode },
+        { headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' } }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.extractMetaApiError(error, 'Invalid or expired verification OTP code');
+    }
+  }
+
+  /**
    * Register Phone Number with Meta Cloud API
    * POST /{PHONE_NUMBER_ID}/register
    */
-  async registerPhoneNumber(phoneNumberId, pin = '123456') {
+  async registerPhoneNumber(phoneNumberId, pin = '123456', { throwOnError = false } = {}) {
     const targetPhoneId = phoneNumberId || this.phoneNumberId;
     if (this.isMock) {
       logger.info(`[MetaClient:Mock] Registered phone number ${targetPhoneId}`);
@@ -792,12 +896,15 @@ export class MetaCloudApiClient {
         `${META_BASE_URL}/${targetPhoneId}/register`,
         {
           messaging_product: 'whatsapp',
-          pin: pin
+          pin: String(pin || '123456')
         },
         { headers: { Authorization: `Bearer ${this.accessToken}` } }
       );
       return response.data;
     } catch (error) {
+      if (throwOnError) {
+        throw this.extractMetaApiError(error, 'Failed to register phone number on Meta Cloud API');
+      }
       // If already registered or not required, log and proceed gracefully
       logger.info(`[MetaClient] Phone registration note for ${targetPhoneId}: ${error.response?.data?.error?.message || error.message}`);
       return { success: true };

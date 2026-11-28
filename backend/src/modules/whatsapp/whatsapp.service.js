@@ -2747,343 +2747,345 @@ export async function autoConnectMetaAccount(businessId, payload = {}) {
 }
 
 /**
- * Discover all WABAs and Phone Numbers across all apps for a System User Token or Facebook Login OAuth Code
+ * Resolve the active WABA ID and decrypted Meta Access Token for a business
+ * (Checks existing connected accounts first, then falls back to .env credentials)
  */
-export async function discoverSystemUserAccounts(businessId, payload = {}, requestingUser = {}) {
+async function resolveWabaAuthContext(businessId, preferredWabaId = null) {
   const numBusinessId = Number(businessId);
-  let token = payload.accessToken || payload.token;
-  const { code, redirectUri, redirect_uri } = payload;
+  let accounts = [];
 
-  if (!token && code) {
-    const effectiveRedirectUri = redirectUri || redirect_uri || `${process.env.FRONTEND_URL || 'https://whatsapp.bhaktisong.fun'}/whatsapp/callback`;
-    logger.info(`🔄 [Discover] Exchanging Facebook Login OAuth code for Access Token...`);
-    const tokenData = await MetaCloudApiClient.exchangeCodeForToken(code, effectiveRedirectUri);
-    token = tokenData.access_token;
-  }
-
-  if (!token) {
-    const err = new Error('Permanent System User Access Token or Facebook Login authorization code is required to scan Meta Business Manager.');
-    err.statusCode = 400;
-    throw err;
-  }
-
-  logger.info(`🔍 [SystemUserDiscover] Discovering all Meta WABAs & Numbers for Business #${numBusinessId}...`);
-  // 1. Fetch ALL WABAs and all phone numbers directly from Meta
-  const discovery = await MetaCloudApiClient.discoverAllWabasAndNumbers(token);
-
-  await ensureAllowedNumbersColumn();
-
-  const isSuperAdmin = requestingUser?.role === 'superadmin';
-
-  // 2. Fetch existing accounts to check active/deactive status and detect cross-tenant conflicts
-  let tenantAccounts = [];
-  let otherAccounts = [];
   if (isUsingFallback()) {
     const store = getMemoryStore();
-    tenantAccounts = (store.whatsapp_accounts || []).filter(a => a.business_id === numBusinessId);
-    otherAccounts = (store.whatsapp_accounts || []).filter(a => a.business_id && a.business_id !== numBusinessId);
+    accounts = (store.whatsapp_accounts || []).filter(a => a.business_id === numBusinessId && a.admin_status !== 'DEACTIVE');
   } else {
-    const allAccounts = await executeQuery(
-      'SELECT id, business_id, waba_id, phone_number_id, phone_number, display_name, status, is_primary, COALESCE(admin_status, "ACTIVE") as admin_status FROM whatsapp_accounts'
+    accounts = await executeQuery(
+      `SELECT id, business_id, waba_id, phone_number_id, phone_number, display_name, status, is_primary, access_token_encrypted
+       FROM whatsapp_accounts
+       WHERE business_id = ? AND (admin_status IS NULL OR admin_status != 'DEACTIVE')
+       ORDER BY is_primary DESC, created_at ASC`,
+      [numBusinessId]
     );
-    tenantAccounts = (allAccounts || []).filter(a => a.business_id === numBusinessId);
-    otherAccounts = (allAccounts || []).filter(a => a.business_id && a.business_id !== numBusinessId);
   }
 
-  // 3. Fetch SuperAdmin pre-approved allowed_phone_numbers for this business
-  let allowedList = [];
-  if (isUsingFallback()) {
-    const store = getMemoryStore();
-    const biz = (store.businesses || []).find(b => b.id === numBusinessId);
-    if (biz?.allowed_phone_numbers) {
-      try {
-        allowedList = typeof biz.allowed_phone_numbers === 'string' ? JSON.parse(biz.allowed_phone_numbers) : biz.allowed_phone_numbers;
-      } catch (_) {
-        allowedList = String(biz.allowed_phone_numbers).split(',').map(s => s.trim()).filter(Boolean);
-      }
-    }
-  } else {
-    const bizRows = await executeQuery('SELECT allowed_phone_numbers FROM businesses WHERE id = ?', [numBusinessId]);
-    const rawAllowed = bizRows?.[0]?.allowed_phone_numbers;
-    if (rawAllowed) {
-      try {
-        allowedList = typeof rawAllowed === 'string' ? JSON.parse(rawAllowed) : rawAllowed;
-      } catch (_) {
-        allowedList = String(rawAllowed).split(',').map(s => s.trim()).filter(Boolean);
-      }
-    }
-  }
-
-  const existingPhoneMap = new Map();
-  for (const acc of tenantAccounts) {
-    existingPhoneMap.set(String(acc.phone_number_id), acc);
-  }
-
-  const normalizeDigits = (p) => String(p || '').replace(/\D/g, '');
-
-  // Verification helper: Determine if a Meta discovered phone number is approved/allocated for this client
-  const isNumberAllowedForTenant = (candidateId, candidatePhone) => {
-    const candDigits = normalizeDigits(candidatePhone);
-    const candId = String(candidateId || '');
-
-    // Rule A: Strictly block numbers already connected to ANOTHER tenant
-    const belongsToOther = otherAccounts.some(oa => {
-      if (String(oa.phone_number_id) === candId) return true;
-      const otherDigits = normalizeDigits(oa.phone_number);
-      return otherDigits && candDigits && (otherDigits === candDigits || (otherDigits.length >= 10 && candDigits.length >= 10 && otherDigits.slice(-10) === candDigits.slice(-10)));
-    });
-    if (belongsToOther) return false;
-
-    // Rule B: Check existing account for this tenant
-    const myExisting = tenantAccounts.find(ma => {
-      if (String(ma.phone_number_id) === candId) return true;
-      const myDigits = normalizeDigits(ma.phone_number);
-      return myDigits && candDigits && (myDigits === candDigits || (myDigits.length >= 10 && candDigits.length >= 10 && myDigits.slice(-10) === candDigits.slice(-10)));
-    });
-
-    // If SuperAdmin explicitly DEACTIVATED this account for this tenant in Matrix, hide/block it!
-    if (myExisting && myExisting.admin_status === 'DEACTIVE') {
-      return false;
-    }
-
-    // If account already exists and is active, it is allowed!
-    if (myExisting && myExisting.admin_status !== 'DEACTIVE') {
-      return true;
-    }
-
-    // In Single-Company Mode, the Workspace Owner owns all discovered Meta numbers directly
-    if (SINGLE_COMPANY_MODE) {
-      return true;
-    }
-
-    // Rule C: Check SuperAdmin Pre-Approved allowed_phone_numbers list
-    if (Array.isArray(allowedList) && allowedList.length > 0) {
-      return isNumberAllocatedToTenant(candId, candidatePhone, allowedList);
-    }
-
-    // By default, if not in allowed list and not an active account, hide from tenant
-    return false;
+  const normalizeToken = (raw) => {
+    const t = String(raw || '').trim();
+    if (!t || t.includes(':') || t.startsWith('placeholder') || t.includes('your_')) return null;
+    return t;
   };
 
-  let totalDiscoveredFromMeta = 0;
-  const annotatedWabas = (discovery.wabas || []).map(waba => {
-    const rawPhones = waba.phoneNumbers || [];
-    totalDiscoveredFromMeta += rawPhones.length;
+  const envToken = normalizeToken(process.env.META_ACCESS_TOKEN || process.env.WHATSAPP_TOKEN);
+  const envWabaId = String(process.env.META_WABA_ID || process.env.WHATSAPP_WABA_ID || '').trim() || null;
 
-    // Filter numbers according to SuperAdmin Allocation Matrix for this business
-    const filteredPhones = rawPhones.filter(phone => isNumberAllowedForTenant(phone.id, phone.display_phone_number));
+  const cleanPreferredWaba = String(preferredWabaId || '').trim() || null;
+  const matchingAccount = (cleanPreferredWaba
+    ? accounts.find(a => String(a.waba_id) === cleanPreferredWaba)
+    : null) || accounts.find(a => a.is_primary) || accounts[0] || null;
 
-    const phones = filteredPhones.map(phone => {
-      const existing = existingPhoneMap.get(String(phone.id));
-      return {
-        id: phone.id,
-        displayPhoneNumber: phone.display_phone_number || (phone.id ? `+${phone.id}` : 'Unregistered'),
-        verifiedName: phone.verified_name || phone.display_phone_number || 'WhatsApp Business',
-        qualityRating: phone.quality_rating || 'GREEN',
-        codeVerificationStatus: phone.code_verification_status || 'VERIFIED',
-        messagingLimitTier: phone.messaging_limit_tier || 'TIER_10K',
-        wabaId: waba.id,
-        wabaName: waba.name,
-        isAlreadyConnected: Boolean(existing),
-        connectedAccountId: existing ? existing.id : null,
-        isPrimary: existing ? Boolean(existing.is_primary) : false,
-        isAllowedBySuperAdmin: true
-      };
-    });
+  const targetWabaId = cleanPreferredWaba || matchingAccount?.waba_id || envWabaId;
 
-    return {
-      id: waba.id,
-      name: waba.name,
-      businessName: waba.businessName || waba.name,
-      currency: waba.currency || 'USD',
-      timezoneId: waba.timezone_id || 'UTC',
-      phoneNumbers: phones
-    };
-  });
+  let token = null;
+  if (matchingAccount?.access_token_encrypted) {
+    token = normalizeToken(decryptToken(matchingAccount.access_token_encrypted));
+  }
+  if (!token) {
+    for (const acc of accounts) {
+      const candidate = normalizeToken(decryptToken(acc.access_token_encrypted));
+      if (candidate) {
+        token = candidate;
+        break;
+      }
+    }
+  }
+  if (!token) {
+    token = envToken;
+  }
 
-  const hasAllocatedNumbers = SINGLE_COMPANY_MODE ? true : (Array.isArray(allowedList) && allowedList.length > 0);
-  // Only keep WABAs that have at least 1 visible allowed number
-  const visibleWabas = annotatedWabas.filter(w => w.phoneNumbers.length > 0);
-
-  const totalPhoneNumbers = visibleWabas.reduce((sum, w) => sum + (w.phoneNumbers?.length || 0), 0);
-
-  logger.info(`🔍 [SystemUserDiscover] Result for Business #${numBusinessId}: ${totalPhoneNumbers} allowed numbers (Total in Meta: ${totalDiscoveredFromMeta})`);
+  const connectedWabasMap = new Map();
+  for (const acc of accounts) {
+    if (acc.waba_id && !connectedWabasMap.has(String(acc.waba_id))) {
+      connectedWabasMap.set(String(acc.waba_id), {
+        wabaId: String(acc.waba_id),
+        label: acc.display_name || `WABA ${acc.waba_id}`
+      });
+    }
+  }
+  if (envWabaId && !connectedWabasMap.has(envWabaId)) {
+    connectedWabasMap.set(envWabaId, { wabaId: envWabaId, label: `Configured WABA (${envWabaId})` });
+  }
 
   return {
-    success: true,
-    user: discovery.user,
-    accessToken: token,
-    totalWabas: visibleWabas.length,
-    totalPhoneNumbers,
-    totalDiscoveredFromMeta,
-    hasAllocatedNumbers,
-    isFilteredBySuperAdmin: !SINGLE_COMPANY_MODE,
-    allowedPhoneNumbers: allowedList || [],
-    allocationWarning: SINGLE_COMPANY_MODE
-      ? null
-      : (!hasAllocatedNumbers
-          ? 'No WhatsApp numbers have been allocated to this business by the Super Admin in the Number Allocation & Approval Matrix. Please allocate an approved number first.'
-          : (totalPhoneNumbers === 0 ? 'None of the discovered WhatsApp numbers in this Meta account match the numbers allocated to this business by the Super Admin.' : null)),
-    wabas: visibleWabas
+    wabaId: targetWabaId,
+    token,
+    accounts,
+    availableWabas: Array.from(connectedWabasMap.values())
   };
 }
 
 /**
- * Bulk Import / Connect Selected WABAs & Phone Numbers
+ * Fetch active WABA details & all accessible WABAs/phone numbers from Meta (including Meta-provided +1 555 / pre-verified / pending numbers)
  */
-export async function bulkConnectSystemUserAccounts(businessId, payload = {}, requestingUser = {}) {
-  const numBusinessId = Number(businessId);
-  const token = payload.accessToken || payload.token;
-  const selectedPhones = Array.isArray(payload.selectedPhoneNumbers) ? payload.selectedPhoneNumbers : [];
-  const isSuperAdmin = requestingUser?.role === 'superadmin';
-
-  if (!token) {
-    const err = new Error('Access Token is required to complete bulk connect.');
-    err.statusCode = 400;
-    throw err;
+export async function getWabaOnboardingInfo(businessId, preferredWabaId = null) {
+  const ctx = await resolveWabaAuthContext(businessId, preferredWabaId);
+  if (!ctx.wabaId || !ctx.token) {
+    return {
+      configured: false,
+      wabaId: ctx.wabaId || null,
+      availableWabas: ctx.availableWabas,
+      wabaPhoneNumbers: []
+    };
   }
 
-  if (selectedPhones.length === 0) {
-    const err = new Error('Please select at least one WhatsApp phone number to connect.');
-    err.statusCode = 400;
-    throw err;
+  const client = new MetaCloudApiClient(ctx.token, null, ctx.wabaId);
+  const [wabaDetails, primaryWabaPhones, discovered] = await Promise.all([
+    client.getWabaDetails(ctx.wabaId),
+    client.getWabaPhoneNumbers(ctx.wabaId),
+    MetaCloudApiClient.discoverAllWabasAndNumbers(ctx.token).catch(() => ({ wabas: [] }))
+  ]);
+
+  const connectedIds = new Set(ctx.accounts.map(a => String(a.phone_number_id)));
+
+  // Merge available WABAs from connected accounts + Meta portfolio discovery
+  const wabaOptionsMap = new Map();
+  for (const w of ctx.availableWabas) {
+    wabaOptionsMap.set(String(w.wabaId), w);
   }
-
-  // Security gate: strictly verify that selected numbers are allocated to this business in the Super Admin Number Allocation Matrix
-  await ensureAllowedNumbersColumn();
-
-  let allowedList = [];
-  if (isUsingFallback()) {
-    const store = getMemoryStore();
-    const biz = (store.businesses || []).find(b => b.id === numBusinessId);
-    if (biz?.allowed_phone_numbers) {
-      try { allowedList = JSON.parse(biz.allowed_phone_numbers); } catch (_) { allowedList = String(biz.allowed_phone_numbers).split(',').map(s => s.trim()).filter(Boolean); }
-    }
-  } else {
-    const bizRows = await executeQuery('SELECT allowed_phone_numbers FROM businesses WHERE id = ?', [numBusinessId]);
-    const rawAllowed = bizRows?.[0]?.allowed_phone_numbers;
-    if (rawAllowed) {
-      try { allowedList = JSON.parse(rawAllowed); } catch (_) { allowedList = String(rawAllowed).split(',').map(s => s.trim()).filter(Boolean); }
+  for (const dw of (discovered?.wabas || [])) {
+    if (dw?.id && !wabaOptionsMap.has(String(dw.id))) {
+      wabaOptionsMap.set(String(dw.id), {
+        wabaId: String(dw.id),
+        label: dw.name || dw.businessName || `WABA ${dw.id}`
+      });
     }
   }
 
-  let tenantAccounts = [];
-  let otherAccounts = [];
-  if (isUsingFallback()) {
-    const store = getMemoryStore();
-    tenantAccounts = (store.whatsapp_accounts || []).filter(a => a.business_id === numBusinessId);
-    otherAccounts = (store.whatsapp_accounts || []).filter(a => a.business_id && a.business_id !== numBusinessId);
-  } else {
-    const allAccounts = await executeQuery(
-      'SELECT id, business_id, waba_id, phone_number_id, phone_number, COALESCE(admin_status, "ACTIVE") as admin_status FROM whatsapp_accounts'
-    );
-    tenantAccounts = (allAccounts || []).filter(a => a.business_id === numBusinessId);
-    otherAccounts = (allAccounts || []).filter(a => a.business_id && a.business_id !== numBusinessId);
-  }
-
-  const normalizeDigits = (p) => String(p || '').replace(/\D/g, '');
-
-  const isAllowed = (candId, candPhone) => {
-    const candDigits = normalizeDigits(candPhone);
-    const idStr = String(candId || '');
-
-    const belongsToOther = otherAccounts.some(oa => {
-      if (String(oa.phone_number_id) === idStr) return true;
-      const oDigits = normalizeDigits(oa.phone_number);
-      return oDigits && candDigits && (oDigits === candDigits || (oDigits.length >= 10 && candDigits.length >= 10 && oDigits.slice(-10) === candDigits.slice(-10)));
+  // Merge phone numbers from selected WABA and all discovered Meta WABAs (deduped by phone id)
+  const phoneMap = new Map();
+  const pushPhone = (p, wabaId, wabaName) => {
+    if (!p?.id) return;
+    const key = String(p.id);
+    if (phoneMap.has(key)) return;
+    const digits = String(p.display_phone_number || '').replace(/\D/g, '');
+    const isMetaVirtual = digits.startsWith('1555');
+    phoneMap.set(key, {
+      id: p.id,
+      wabaId: String(wabaId),
+      wabaName: wabaName || 'WhatsApp Business Account',
+      displayPhoneNumber: p.display_phone_number,
+      verifiedName: p.verified_name,
+      qualityRating: p.quality_rating || 'GREEN',
+      codeVerificationStatus: p.code_verification_status || (isMetaVirtual ? 'VERIFIED' : 'NOT_VERIFIED'),
+      messagingLimitTier: p.messaging_limit_tier || 'TIER_10K',
+      isMetaProvided: isMetaVirtual,
+      isConnectedInSoftware: connectedIds.has(key)
     });
-    if (belongsToOther) return false;
-
-    const myExisting = tenantAccounts.find(ma => {
-      if (String(ma.phone_number_id) === idStr) return true;
-      const mDigits = normalizeDigits(ma.phone_number);
-      return mDigits && candDigits && (mDigits === candDigits || (mDigits.length >= 10 && candDigits.length >= 10 && mDigits.slice(-10) === candDigits.slice(-10)));
-    });
-    if (myExisting && myExisting.admin_status === 'DEACTIVE') return false;
-    if (myExisting && myExisting.admin_status !== 'DEACTIVE') return true;
-    if (SINGLE_COMPANY_MODE) return true;
-
-    return isNumberAllocatedToTenant(idStr, candPhone, allowedList);
   };
 
-  const disallowed = selectedPhones.filter(p => !isAllowed(p.phoneNumberId || p.id, p.phoneNumber || p.displayPhoneNumber));
-  if (disallowed.length > 0) {
-    const rejectedPhone = disallowed[0].phoneNumber || disallowed[0].displayPhoneNumber || disallowed[0].phoneNumberId || disallowed[0].id;
-    const hasAllocated = Array.isArray(allowedList) && allowedList.length > 0;
-    const errMsg = !hasAllocated
-      ? 'No WhatsApp numbers have been allocated to this business by the Super Admin in the Number Allocation & Approval Matrix. Please allocate an approved number first.'
-      : `WhatsApp number ${rejectedPhone} is not allocated to this business in the Super Admin Number Allocation Matrix.`;
-    const err = new Error(errMsg);
-    err.statusCode = 403;
+  for (const p of (primaryWabaPhones || [])) {
+    pushPhone(p, ctx.wabaId, wabaDetails?.name);
+  }
+  for (const dw of (discovered?.wabas || [])) {
+    for (const p of (dw.phoneNumbers || [])) {
+      pushPhone(p, dw.id, dw.name || dw.businessName);
+    }
+  }
+
+  return {
+    configured: true,
+    wabaId: ctx.wabaId,
+    wabaName: wabaDetails?.name || 'WhatsApp Business Account',
+    availableWabas: Array.from(wabaOptionsMap.values()),
+    wabaPhoneNumbers: Array.from(phoneMap.values())
+  };
+}
+
+/**
+ * Step 1: Add new phone number to existing WABA (or pick existing pending number) and request OTP via SMS/VOICE
+ */
+export async function addPhoneNumberAndRequestOtp(businessId, payload = {}) {
+  const {
+    wabaId: requestedWabaId,
+    countryCode = '91',
+    phoneNumber = '',
+    verifiedName = '',
+    codeMethod = 'SMS',
+    language = 'en_US',
+    existingPhoneNumberId = null
+  } = payload;
+
+  const ctx = await resolveWabaAuthContext(businessId, requestedWabaId);
+  if (!ctx.wabaId || !ctx.token) {
+    const err = new Error('No connected WhatsApp Business Account (WABA) or permanent Meta Access Token found. Connect a primary WABA account first.');
+    err.statusCode = 400;
     throw err;
   }
 
-  logger.info(`⚡ [BulkConnect] Connecting ${selectedPhones.length} WhatsApp numbers concurrently for Business #${numBusinessId}...`);
+  const client = new MetaCloudApiClient(ctx.token, null, ctx.wabaId);
+  const cleanMethod = String(codeMethod || 'SMS').toUpperCase() === 'VOICE' ? 'VOICE' : 'SMS';
+  const cleanCc = String(countryCode || '91').replace(/\D/g, '') || '91';
+  let cleanLocalPhone = String(phoneNumber || '').replace(/\D/g, '');
+  if (cleanLocalPhone.startsWith(cleanCc) && cleanLocalPhone.length > 10) {
+    cleanLocalPhone = cleanLocalPhone.slice(cleanCc.length);
+  }
+  const cleanVerifiedName = String(verifiedName || '').trim();
 
-  // 1. Subscribe unique WABA webhooks once in parallel (avoids redundant Meta calls)
-  const uniqueWabaIds = [...new Set(selectedPhones.map(p => p.wabaId).filter(Boolean))];
-  await Promise.allSettled(uniqueWabaIds.map(async (wabaId) => {
-    try {
-      const client = new MetaCloudApiClient(token, null, wabaId);
-      await client.subscribeWabaWebhook(wabaId);
-    } catch (_) {}
-  }));
+  let targetPhoneId = existingPhoneNumberId ? String(existingPhoneNumberId).trim() : null;
+  let resolvedDisplayPhone = cleanLocalPhone ? `+${cleanCc} ${cleanLocalPhone}` : '';
+  let resolvedVerifiedName = cleanVerifiedName;
 
-  // 2. Connect phone numbers concurrently (in chunks of 4)
-  const results = [];
-  const chunkSize = 4;
-  for (let i = 0; i < selectedPhones.length; i += chunkSize) {
-    const chunk = selectedPhones.slice(i, i + chunkSize);
-    const chunkResults = await Promise.all(chunk.map(async (item) => {
-      const phoneId = item.phoneNumberId || item.id;
-      const wabaId = item.wabaId;
-      const displayName = item.displayName || item.verifiedName || 'Official WhatsApp Account';
-      const phoneNumber = item.phoneNumber || item.displayPhoneNumber || `+${phoneId}`;
+  if (!targetPhoneId) {
+    if (!cleanLocalPhone || cleanLocalPhone.length < 6) {
+      const err = new Error('Please enter a valid mobile number without the country code.');
+      err.statusCode = 400;
+      throw err;
+    }
+    if (!cleanVerifiedName || cleanVerifiedName.length < 3) {
+      const err = new Error('Business Display Name (at least 3 characters) is required for WhatsApp.');
+      err.statusCode = 400;
+      throw err;
+    }
 
-      if (!phoneId) return null;
+    // Check if number already exists on this WABA in Meta so retries don't fail
+    const fullDigits = `${cleanCc}${cleanLocalPhone}`;
+    const existingOnWaba = await client.getWabaPhoneNumbers(ctx.wabaId);
+    const matched = (existingOnWaba || []).find(p => {
+      const metaDigits = String(p.display_phone_number || '').replace(/\D/g, '');
+      return metaDigits && (metaDigits === fullDigits || (cleanLocalPhone.length >= 10 && metaDigits.endsWith(cleanLocalPhone.slice(-10))));
+    });
 
-      try {
-        const saved = await autoConnectMetaAccount(numBusinessId, {
-          accessToken: token,
-          phoneNumberId: phoneId,
-          wabaId,
-          displayName,
-          phoneNumber
-        });
+    if (matched) {
+      targetPhoneId = matched.id;
+      resolvedDisplayPhone = matched.display_phone_number || resolvedDisplayPhone;
+      resolvedVerifiedName = matched.verified_name || resolvedVerifiedName;
 
+      if (matched.code_verification_status === 'VERIFIED') {
         return {
           success: true,
-          phoneNumberId: phoneId,
-          wabaId,
-          phoneNumber,
-          displayName,
-          account: saved
-        };
-      } catch (err) {
-        logger.error(`[BulkConnect] Failed to connect phone number ${phoneId}:`, err);
-        return {
-          success: false,
-          phoneNumberId: phoneId,
-          wabaId,
-          error: err.message
+          wabaId: ctx.wabaId,
+          phoneNumberId: targetPhoneId,
+          verifiedName: resolvedVerifiedName,
+          fullPhoneNumber: resolvedDisplayPhone,
+          codeMethod: cleanMethod,
+          alreadyVerified: true
         };
       }
-    }));
-
-    chunkResults.forEach(r => {
-      if (r) results.push(r);
-    });
+    } else {
+      const created = await client.addPhoneNumberToWaba({
+        wabaId: ctx.wabaId,
+        countryCode: cleanCc,
+        phoneNumber: cleanLocalPhone,
+        verifiedName: cleanVerifiedName
+      });
+      targetPhoneId = created?.id;
+      if (!targetPhoneId) {
+        throw new Error('Meta did not return a Phone Number ID after adding the number.');
+      }
+    }
   }
 
-  const successfulCount = results.filter(r => r.success).length;
-  logger.info(`✅ [BulkConnect] Successfully connected ${successfulCount}/${selectedPhones.length} numbers for Business #${numBusinessId}`);
+  await client.requestPhoneVerificationCode({
+    phoneNumberId: targetPhoneId,
+    codeMethod: cleanMethod,
+    language
+  });
+
+  logger.info(`📲 [AddPhoneOTP] Requested ${cleanMethod} OTP for Phone ID ${targetPhoneId} on WABA ${ctx.wabaId} (Business #${businessId})`);
 
   return {
     success: true,
-    totalRequested: selectedPhones.length,
-    connectedCount: successfulCount,
-    results
+    wabaId: ctx.wabaId,
+    phoneNumberId: targetPhoneId,
+    verifiedName: resolvedVerifiedName,
+    fullPhoneNumber: resolvedDisplayPhone,
+    codeMethod: cleanMethod,
+    alreadyVerified: false
   };
+}
+
+/**
+ * Resend SMS / VOICE OTP for a pending phone number on Meta
+ */
+export async function resendPhoneOtp(businessId, { wabaId, phoneNumberId, codeMethod = 'SMS', language = 'en_US' } = {}) {
+  if (!phoneNumberId) {
+    const err = new Error('Meta Phone Number ID is required to resend OTP.');
+    err.statusCode = 400;
+    throw err;
+  }
+  const ctx = await resolveWabaAuthContext(businessId, wabaId);
+  if (!ctx.wabaId || !ctx.token) {
+    const err = new Error('Active Meta WABA context or access token not found.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const client = new MetaCloudApiClient(ctx.token, phoneNumberId, ctx.wabaId);
+  await client.requestPhoneVerificationCode({ phoneNumberId, codeMethod, language });
+  return {
+    success: true,
+    phoneNumberId,
+    codeMethod: String(codeMethod || 'SMS').toUpperCase() === 'VOICE' ? 'VOICE' : 'SMS'
+  };
+}
+
+/**
+ * Step 2: Verify 6-digit OTP, register phone with PIN on Meta Cloud API, and save into software DB
+ */
+export async function verifyPhoneOtpAndConnect(businessId, payload = {}) {
+  const {
+    wabaId: requestedWabaId,
+    phoneNumberId,
+    code,
+    pin = '123456',
+    displayName,
+    phoneNumber,
+    skipVerifyCode = false
+  } = payload;
+
+  if (!phoneNumberId) {
+    const err = new Error('Meta Phone Number ID is required.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const ctx = await resolveWabaAuthContext(businessId, requestedWabaId);
+  if (!ctx.wabaId || !ctx.token) {
+    const err = new Error('Active Meta WABA context or access token not found.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const cleanPin = String(pin || '123456').replace(/\D/g, '').slice(0, 6);
+  if (cleanPin.length !== 6) {
+    const err = new Error('Two-step verification PIN must be exactly 6 digits.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const client = new MetaCloudApiClient(ctx.token, phoneNumberId, ctx.wabaId);
+
+  if (!skipVerifyCode) {
+    const cleanCode = String(code || '').replace(/\D/g, '');
+    if (cleanCode.length < 4) {
+      const err = new Error('Please enter the 6-digit verification OTP code.');
+      err.statusCode = 400;
+      throw err;
+    }
+    await client.verifyPhoneVerificationCode({ phoneNumberId, code: cleanCode });
+  }
+
+  await client.registerPhoneNumber(phoneNumberId, cleanPin, { throwOnError: !skipVerifyCode });
+
+  const phoneDetails = await client.getPhoneNumberDetails(phoneNumberId);
+  const savedAccount = await autoConnectMetaAccount(businessId, {
+    accessToken: ctx.token,
+    phoneNumberId,
+    wabaId: ctx.wabaId,
+    displayName: displayName || phoneDetails?.verified_name,
+    phoneNumber: phoneNumber || phoneDetails?.display_phone_number
+  });
+
+  logger.info(`✅ [AddPhoneOTP] Verified, registered, and connected Phone ID ${phoneNumberId} (${savedAccount.phone_number}) for Business #${businessId}`);
+
+  return savedAccount;
 }
 
 /**
@@ -3184,8 +3186,10 @@ export default {
   testWebhookPing,
   detectMetaAccount,
   autoConnectMetaAccount,
-  discoverSystemUserAccounts,
-  bulkConnectSystemUserAccounts,
+  getWabaOnboardingInfo,
+  addPhoneNumberAndRequestOtp,
+  resendPhoneOtp,
+  verifyPhoneOtpAndConnect,
   disconnectAccount,
   deleteAccount
 };

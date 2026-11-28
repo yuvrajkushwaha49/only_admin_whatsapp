@@ -3,7 +3,7 @@ import { Link, useOutletContext } from 'react-router-dom';
 import api from '../services/api';
 import WhatsAppConnectButton from '../components/WhatsAppConnectButton';
 import MetaSetupWizardModal from '../components/MetaSetupWizardModal';
-import SystemUserBulkConnectModal from '../components/SystemUserBulkConnectModal';
+import AddPhoneNumberModal from '../components/AddPhoneNumberModal';
 import AiwavoHeader from '../components/AiwavoHeader';
 import { useAuth } from '../hooks/useAuth';
 import { encodeHashId } from '../utils/hashId';
@@ -25,7 +25,7 @@ export default function WhatsAppAccounts() {
   const [settingPrimaryId, setSettingPrimaryId] = useState(null);
   const [showManualModal, setShowManualModal] = useState(false);
   const [showSetupWizard, setShowSetupWizard] = useState(false);
-  const [showSystemUserModal, setShowSystemUserModal] = useState(false);
+  const [showAddNumberModal, setShowAddNumberModal] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', text: '' });
   const [disconnectModal, setDisconnectModal] = useState(null);
   const [deleteModal, setDeleteModal] = useState(null);
@@ -447,12 +447,12 @@ export default function WhatsAppAccounts() {
 
               <button
                 type="button"
-                onClick={() => setShowSystemUserModal(true)}
+                onClick={() => setShowAddNumberModal(true)}
                 className="wa-action-btn-green"
-                title="Scan & Bulk Connect all WhatsApp numbers across multiple Meta Apps using System User"
+                title="Add and verify a new WhatsApp number via OTP inside this software"
               >
-                <i className="bi bi-qr-code-scan"></i>
-                <span>1-Click Multi-App Scan</span>
+                <i className="bi bi-plus-circle-fill"></i>
+                <span>+ Add Number (OTP)</span>
               </button>
 
               <button
@@ -462,7 +462,7 @@ export default function WhatsAppAccounts() {
                 title="Connect another number via official Meta Facebook dialog"
               >
                 <i className="bi bi-whatsapp text-success fs-5"></i>
-                <span>+ Connect Another Number</span>
+                <span>Connect via Facebook</span>
               </button>
 
               <button
@@ -1678,16 +1678,18 @@ export default function WhatsAppAccounts() {
           onSuccess={handleOnboardingSuccess}
         />
 
-        {/* Tareeqa 1: System User Bulk Connect Modal */}
-        <SystemUserBulkConnectModal
-          isOpen={showSystemUserModal}
-          onClose={() => setShowSystemUserModal(false)}
-          onSuccess={() => {
+        {/* In-Software New Phone Number + OTP Verification Modal */}
+        <AddPhoneNumberModal
+          isOpen={showAddNumberModal}
+          onClose={() => setShowAddNumberModal(false)}
+          onSuccess={(newAccount, msg) => {
+            setFeedback({
+              type: 'success',
+              text: msg || `WhatsApp number ${newAccount?.phone_number || ''} verified and connected!`
+            });
             fetchAccounts();
             checkDetectedMeta();
           }}
-          detectedToken={detectedMeta?.accessToken}
-          readiness={readiness}
         />
       </div>
     </div>

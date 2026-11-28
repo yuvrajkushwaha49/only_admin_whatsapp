@@ -329,12 +329,24 @@ export async function autoConnectMetaAccount(req, res, next) {
   }
 }
 
-export async function discoverSystemUserAccounts(req, res, next) {
+export async function getWabaOnboardingInfo(req, res, next) {
   try {
-    const result = await whatsappService.discoverSystemUserAccounts(req.businessId, req.body, req.user);
-    res.json({
+    const wabaId = req.query.wabaId || null;
+    const result = await whatsappService.getWabaOnboardingInfo(req.businessId, wabaId);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function addPhoneNumberAndSendOtp(req, res, next) {
+  try {
+    const result = await whatsappService.addPhoneNumberAndRequestOtp(req.businessId, req.body);
+    res.status(201).json({
       success: true,
-      message: `Discovered ${result.totalPhoneNumbers} WhatsApp numbers across ${result.totalWabas} WABAs in Meta Business Manager.`,
+      message: result.alreadyVerified
+        ? 'Phone number is already verified on Meta! Click Finish to register & connect it.'
+        : `Verification OTP sent via ${result.codeMethod} to ${result.fullPhoneNumber}.`,
       data: result
     });
   } catch (error) {
@@ -342,12 +354,25 @@ export async function discoverSystemUserAccounts(req, res, next) {
   }
 }
 
-export async function bulkConnectSystemUserAccounts(req, res, next) {
+export async function resendPhoneNumberOtp(req, res, next) {
   try {
-    const result = await whatsappService.bulkConnectSystemUserAccounts(req.businessId, req.body, req.user);
+    const result = await whatsappService.resendPhoneOtp(req.businessId, req.body);
+    res.json({
+      success: true,
+      message: `OTP resent via ${result.codeMethod}.`,
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function verifyPhoneNumberAndConnect(req, res, next) {
+  try {
+    const result = await whatsappService.verifyPhoneOtpAndConnect(req.businessId, req.body);
     res.status(201).json({
       success: true,
-      message: `Successfully connected ${result.connectedCount} of ${result.totalRequested} selected WhatsApp numbers!`,
+      message: `WhatsApp number ${result.phone_number} verified, registered, and connected successfully!`,
       data: result
     });
   } catch (error) {
@@ -383,6 +408,8 @@ export default {
   testWebhookPing,
   detectMetaAccount,
   autoConnectMetaAccount,
-  discoverSystemUserAccounts,
-  bulkConnectSystemUserAccounts
+  getWabaOnboardingInfo,
+  addPhoneNumberAndSendOtp,
+  resendPhoneNumberOtp,
+  verifyPhoneNumberAndConnect
 };
