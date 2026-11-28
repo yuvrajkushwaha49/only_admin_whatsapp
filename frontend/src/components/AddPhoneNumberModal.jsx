@@ -366,7 +366,7 @@ export default function AddPhoneNumberModal({ isOpen, onClose, onSuccess }) {
 
                   <div className="alert alert-light border small text-secondary mb-3">
                     <i className="bi bi-info-circle me-1 text-success"></i>
-                    Apna number regular WhatsApp / WhatsApp Business mobile app se remove hona chahiye. Agar aapko <strong>Meta ka naya free +1 555 number</strong> claim karna hai, to pehle <em>Connect via Facebook</em> se ya Meta Dashboard me generate karein — uske baad wo automatically upar <strong>Meta-Provided Numbers</strong> list me aa jayega.
+                    Apna number regular WhatsApp / WhatsApp Business mobile app se remove hona chahiye. Agar aapko <strong>Meta ka naya free +1 555 number</strong> claim karna hai, to pehle Meta Dashboard me generate karein — uske baad wo automatically upar <strong>Meta-Provided Numbers</strong> list me aa jayega.
                   </div>
 
                   <div className="d-flex justify-content-end gap-2">

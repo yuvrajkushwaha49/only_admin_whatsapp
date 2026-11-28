@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import api from '../services/api';
-import WhatsAppConnectButton from '../components/WhatsAppConnectButton';
-import MetaSetupWizardModal from '../components/MetaSetupWizardModal';
 import AddPhoneNumberModal from '../components/AddPhoneNumberModal';
 import AiwavoHeader from '../components/AiwavoHeader';
 import { useAuth } from '../hooks/useAuth';
@@ -24,7 +22,6 @@ export default function WhatsAppAccounts() {
   const [verifyingId, setVerifyingId] = useState(null);
   const [settingPrimaryId, setSettingPrimaryId] = useState(null);
   const [showManualModal, setShowManualModal] = useState(false);
-  const [showSetupWizard, setShowSetupWizard] = useState(false);
   const [showAddNumberModal, setShowAddNumberModal] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', text: '' });
   const [disconnectModal, setDisconnectModal] = useState(null);
@@ -241,21 +238,6 @@ export default function WhatsAppAccounts() {
     }
   };
 
-  const handleOnboardingSuccess = (newAccount) => {
-    setFeedback({
-      type: 'success',
-      text: `🎉 WhatsApp Business Account "${newAccount.display_name || newAccount.waba_id}" successfully connected and verified with Meta!`
-    });
-    fetchAccounts();
-  };
-
-  const handleOnboardingError = (errMsg) => {
-    setFeedback({
-      type: 'danger',
-      text: errMsg || 'WhatsApp connection failed. Please try again.'
-    });
-  };
-
   const handleSetPrimary = async (accountId) => {
     setSettingPrimaryId(accountId);
     setFeedback({ type: '', text: '' });
@@ -364,10 +346,6 @@ export default function WhatsAppAccounts() {
     }
   };
 
-  const handleContinueWithFacebook = () => {
-    setShowSetupWizard(true);
-  };
-
   return (
     <div>
       <AiwavoHeader
@@ -453,16 +431,6 @@ export default function WhatsAppAccounts() {
               >
                 <i className="bi bi-plus-circle-fill"></i>
                 <span>+ Add Number (OTP)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleContinueWithFacebook}
-                className="wa-action-btn-outline"
-                title="Connect another number via official Meta Facebook dialog"
-              >
-                <i className="bi bi-whatsapp text-success fs-5"></i>
-                <span>Connect via Facebook</span>
               </button>
 
               <button
@@ -733,11 +701,11 @@ export default function WhatsAppAccounts() {
                           </button>
                           <button
                             type="button"
-                            onClick={handleContinueWithFacebook}
-                            className="btn btn-outline-primary py-3 px-3 fw-semibold"
+                            onClick={() => setShowAddNumberModal(true)}
+                            className="btn btn-outline-success py-3 px-3 fw-semibold"
                             style={{ borderRadius: '10px' }}
                           >
-                            <i className="bi bi-facebook me-1"></i> Connect Another Number
+                            <i className="bi bi-plus-circle me-1"></i> + Add Number (OTP)
                           </button>
                         </div>
                       </div>
@@ -759,25 +727,25 @@ export default function WhatsAppAccounts() {
                     <div className="row align-items-center">
                       <div className="col-lg-8 mb-4 mb-lg-0">
                         <span className="badge bg-success-subtle text-success border border-success-subtle mb-2 px-3 py-1 fw-bold">
-                          OFFICIAL META EMBEDDED SIGNUP
+                          DIRECT META CLOUD API
                         </span>
-                        <h3 className="fw-bold text-dark mb-2">Connect Your WhatsApp Business Account in 2 Minutes</h3>
+                        <h3 className="fw-bold text-dark mb-2">Connect Your WhatsApp Business Number in 2 Minutes</h3>
                         <p className="text-secondary mb-4" style={{ maxWidth: '640px' }}>
-                          No complex Facebook developer setup required. Click <strong>"Continue with Facebook"</strong> to log in, select or create your Meta Business Portfolio, register your official phone number, and start receiving customer messages and sending broadcasts instantly!
+                          No Facebook login popup required. Click <strong>&ldquo;+ Add Number (OTP)&rdquo;</strong> to add a new phone number or connect an existing Meta-provided number directly via OTP verification!
                         </p>
 
                         {/* 4-Step Visual Onboarding Tracker */}
                         <div className="row g-2 mb-4">
                           <div className="col-6 col-md-3">
                             <div className="p-2 bg-white rounded shadow-xs text-center border">
-                              <div className="fw-bold text-primary small">1. Facebook Login</div>
-                              <div className="text-muted" style={{ fontSize: '0.72rem' }}>Authenticate with Meta</div>
+                              <div className="fw-bold text-primary small">1. Enter Number</div>
+                              <div className="text-muted" style={{ fontSize: '0.72rem' }}>Add or pick from WABA</div>
                             </div>
                           </div>
                           <div className="col-6 col-md-3">
                             <div className="p-2 bg-white rounded shadow-xs text-center border">
-                              <div className="fw-bold text-primary small">2. Select WABA</div>
-                              <div className="text-muted" style={{ fontSize: '0.72rem' }}>Choose or create account</div>
+                              <div className="fw-bold text-primary small">2. Request OTP</div>
+                              <div className="text-muted" style={{ fontSize: '0.72rem' }}>SMS or Voice Call</div>
                             </div>
                           </div>
                           <div className="col-6 col-md-3">
@@ -798,12 +766,12 @@ export default function WhatsAppAccounts() {
                           <div className="d-flex flex-wrap align-items-center gap-2">
                             <button
                               type="button"
-                              onClick={handleContinueWithFacebook}
+                              onClick={() => setShowManualModal(true)}
                               className="btn btn-warning btn-lg d-inline-flex align-items-center gap-2 px-4 py-2 fw-bold text-dark shadow-sm"
                               style={{ borderRadius: '10px' }}
                             >
                               <i className="bi bi-shield-lock-fill fs-5"></i>
-                              <span>Meta App Setup Required</span>
+                              <span>Manual WABA Setup</span>
                             </button>
                             <Link to="/settings" className="btn btn-outline-dark btn-lg fw-semibold" style={{ borderRadius: '10px' }}>
                               <i className="bi bi-gear-fill me-1"></i> Configure Meta App
@@ -812,12 +780,12 @@ export default function WhatsAppAccounts() {
                         ) : (
                           <button
                             type="button"
-                            onClick={handleContinueWithFacebook}
-                            className="btn btn-primary btn-lg d-inline-flex align-items-center gap-2 px-4 py-2 fw-bold shadow-sm"
-                            style={{ backgroundColor: '#1877F2', borderColor: '#1877F2', borderRadius: '10px' }}
+                            onClick={() => setShowAddNumberModal(true)}
+                            className="btn btn-success btn-lg d-inline-flex align-items-center gap-2 px-4 py-2 fw-bold shadow-sm"
+                            style={{ borderRadius: '10px' }}
                           >
-                            <i className="bi bi-facebook fs-5"></i>
-                            <span>Continue with Facebook</span>
+                            <i className="bi bi-plus-circle-fill fs-5"></i>
+                            <span>+ Add Number (OTP)</span>
                           </button>
                         )}
                       </div>
@@ -1670,13 +1638,6 @@ export default function WhatsAppAccounts() {
             </div>
           </div>
         )}
-
-        {/* Meta Setup Wizard Modal */}
-        <MetaSetupWizardModal
-          isOpen={showSetupWizard}
-          onClose={() => setShowSetupWizard(false)}
-          onSuccess={handleOnboardingSuccess}
-        />
 
         {/* In-Software New Phone Number + OTP Verification Modal */}
         <AddPhoneNumberModal
