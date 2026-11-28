@@ -1,4 +1,5 @@
 import { executeQuery, isUsingFallback, getMemoryStore } from '../../database/db.js';
+import { SINGLE_COMPANY_MODE } from '../../middleware/tenant.js';
 
 export async function listPlans() {
   if (isUsingFallback()) {
@@ -49,10 +50,11 @@ export async function getUsage(businessId) {
 
     return {
       periodMonth: currentMonth,
+      unlimited: SINGLE_COMPANY_MODE,
       metrics: {
-        contacts: { current: contactsCount, limit: 15000, percentage: Math.round((contactsCount / 15000) * 100) },
-        campaigns: { current: campaignsCount, limit: 50, percentage: Math.round((campaignsCount / 50) * 100) },
-        messages: { current: messagesCount, limit: 75000, percentage: Math.round((messagesCount / 75000) * 100) }
+        contacts: { current: contactsCount, limit: SINGLE_COMPANY_MODE ? null : 15000, unlimited: SINGLE_COMPANY_MODE, percentage: SINGLE_COMPANY_MODE ? 0 : Math.round((contactsCount / 15000) * 100) },
+        campaigns: { current: campaignsCount, limit: SINGLE_COMPANY_MODE ? null : 50, unlimited: SINGLE_COMPANY_MODE, percentage: SINGLE_COMPANY_MODE ? 0 : Math.round((campaignsCount / 50) * 100) },
+        messages: { current: messagesCount, limit: SINGLE_COMPANY_MODE ? null : 75000, unlimited: SINGLE_COMPANY_MODE, percentage: SINGLE_COMPANY_MODE ? 0 : Math.round((messagesCount / 75000) * 100) }
       }
     };
   }
@@ -64,21 +66,34 @@ export async function getUsage(businessId) {
     [businessId, currentMonth]
   );
 
+  const currentContacts = contactRow?.total || 0;
+  const currentCampaigns = campaignRow?.total || 0;
+  const currentMessages = Number(ledgerRow?.total || 0);
+
+  if (SINGLE_COMPANY_MODE) {
+    return {
+      periodMonth: currentMonth,
+      unlimited: true,
+      metrics: {
+        contacts: { current: currentContacts, limit: null, unlimited: true, percentage: 0 },
+        campaigns: { current: currentCampaigns, limit: null, unlimited: true, percentage: 0 },
+        messages: { current: currentMessages, limit: null, unlimited: true, percentage: 0 }
+      }
+    };
+  }
+
   const sub = await getSubscription(businessId);
   const maxContacts = sub?.max_contacts || 2500;
   const maxCampaigns = sub?.max_campaigns_per_month || 15;
   const maxMessages = sub?.max_messages_per_month || 10000;
 
-  const currentContacts = contactRow?.total || 0;
-  const currentCampaigns = campaignRow?.total || 0;
-  const currentMessages = Number(ledgerRow?.total || 0);
-
   return {
     periodMonth: currentMonth,
+    unlimited: false,
     metrics: {
-      contacts: { current: currentContacts, limit: maxContacts, percentage: Math.round((currentContacts / maxContacts) * 100) },
-      campaigns: { current: currentCampaigns, limit: maxCampaigns, percentage: Math.round((currentCampaigns / maxCampaigns) * 100) },
-      messages: { current: currentMessages, limit: maxMessages, percentage: Math.round((currentMessages / maxMessages) * 100) }
+      contacts: { current: currentContacts, limit: maxContacts, unlimited: false, percentage: Math.round((currentContacts / maxContacts) * 100) },
+      campaigns: { current: currentCampaigns, limit: maxCampaigns, unlimited: false, percentage: Math.round((currentCampaigns / maxCampaigns) * 100) },
+      messages: { current: currentMessages, limit: maxMessages, unlimited: false, percentage: Math.round((currentMessages / maxMessages) * 100) }
     }
   };
 }
