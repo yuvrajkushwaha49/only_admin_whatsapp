@@ -199,13 +199,13 @@ export default function MessagesBuilderTab({ definition, onChange }) {
 
         {/* PANEL 2: Step Editor */}
         <div className="step-editor-card">
-          <div className="d-flex justify-content-between align-items-center mb-3">
+          <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <h6 className="fw-bold mb-0 text-dark">
               <i className="bi bi-pencil-square text-success me-2"></i>
               Edit Step: <span className="text-primary">{selectedStep.name}</span>
             </h6>
             {selectedStep.isFirst && (
-              <span className="badge bg-success-subtle text-success border border-success-subtle">
+              <span className="badge bg-success-subtle text-success border border-success-subtle text-nowrap">
                 <i className="bi bi-flag-fill me-1"></i> Starting Step
               </span>
             )}
@@ -228,11 +228,11 @@ export default function MessagesBuilderTab({ definition, onChange }) {
 
           {/* Message Content */}
           <div className="mb-3">
-            <div className="d-flex justify-content-between align-items-center mb-1">
-              <label className="form-label small fw-semibold text-dark mb-0">
+            <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+              <label className="form-label small fw-semibold text-dark mb-0 text-nowrap">
                 Message Content <span className="text-danger">*</span>
               </label>
-              <div className="d-flex gap-1 align-items-center">
+              <div className="d-flex flex-wrap gap-1 align-items-center">
                 <span className="text-muted small me-1">Insert:</span>
                 <span className="dynamic-tag-pill" onClick={() => handleInsertTag('name')} title="Insert Customer Name">
                   + Name

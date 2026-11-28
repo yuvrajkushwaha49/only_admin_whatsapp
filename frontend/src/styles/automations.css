@@ -757,8 +757,103 @@
 }
 
 /* ========================================================================
-   7. Automation Builder Tabs & 3-Panel Layout
+   7. Automation Builder Shell, Header, Horizontal Tabs & 3-Panel Layout
    ======================================================================== */
+.builder-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 68px);
+  background: #f8fafc;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.builder-topbar {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0.85rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.85rem 1rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.builder-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.builder-topbar-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.builder-name-input {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.42rem 0.85rem;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #0f172a;
+  background: #f8fafc;
+  min-width: 180px;
+  max-width: 340px;
+  width: 100%;
+  transition: all 0.15s ease;
+}
+
+.builder-name-input:hover {
+  border-color: #cbd5e1;
+  background: #ffffff;
+}
+
+.builder-name-input:focus {
+  border-color: #10b981;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+  outline: none;
+}
+
+.builder-wrapper .status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.28rem 0.75rem;
+  border-radius: 9999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.builder-wrapper .status-badge.published {
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #a7f3d0;
+}
+
+.builder-wrapper .status-badge.paused {
+  background: #fffbeb;
+  color: #d97706;
+  border-color: #fde68a;
+}
+
+.builder-wrapper .status-badge.draft {
+  background: #f1f5f9;
+  color: #64748b;
+  border-color: #cbd5e1;
+}
+
 .auto-builder-header {
   background: #ffffff;
   border: 1px solid #e5eaf2;
@@ -772,48 +867,72 @@
   gap: 1rem;
 }
 
+.builder-tabs-bar,
 .auto-builder-tabs {
   display: flex;
+  flex-direction: row;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
+  padding: 0 1.5rem;
+  background: #ffffff;
   border-bottom: 1px solid #e2e8f0;
-  margin-bottom: 1.5rem;
   overflow-x: auto;
+  flex-shrink: 0;
+  scrollbar-width: thin;
 }
 
 .builder-tab-btn,
 .auto-builder-tab-btn {
-  padding: 0.75rem 1.25rem;
-  font-size: 0.88rem;
+  padding: 0.8rem 1.15rem;
+  font-size: 0.87rem;
   font-weight: 600;
   color: #64748b;
   border: none;
   background: transparent;
-  border-bottom: 2px solid transparent;
+  border-bottom: 2.5px solid transparent;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
   white-space: nowrap;
+  flex-shrink: 0;
   transition: all 0.15s ease;
 }
 
 .builder-tab-btn:hover,
 .auto-builder-tab-btn:hover {
   color: #0f172a;
+  background: #f8fafc;
 }
 
 .builder-tab-btn.active,
 .auto-builder-tab-btn.active {
   color: #059669;
   border-bottom-color: #059669;
+  background: transparent;
+}
+
+.builder-tab-pane {
+  padding: 1.35rem 1.5rem 2.25rem;
+  max-width: 1480px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .builder-topbar,
+  .builder-tabs-bar,
+  .builder-tab-pane {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
 }
 
 /* 3-Panel Grid */
 .messages-3panel-grid {
   display: grid;
-  grid-template-columns: 280px 1fr 360px;
-  gap: 1.25rem;
+  grid-template-columns: minmax(225px, 260px) minmax(380px, 1fr) 320px;
+  gap: 1.15rem;
   align-items: start;
 }
 
@@ -823,6 +942,9 @@
   }
   .preview-panel-col {
     grid-column: 1 / -1;
+    max-width: 380px;
+    margin: 0 auto;
+    width: 100%;
   }
 }
 
@@ -915,30 +1037,37 @@
   border: 1px solid #e2e8f0;
   color: #334155;
   font-size: 0.75rem;
-  padding: 0.25rem 0.65rem;
+  font-weight: 600;
+  padding: 0.22rem 0.6rem;
   border-radius: 9999px;
   cursor: pointer;
   transition: all 0.15s ease;
-  font-family: monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .dynamic-tag-pill:hover {
-  background: #e2e8f0;
-  color: #0f172a;
+  background: #ecfdf5;
+  border-color: #10b981;
+  color: #059669;
 }
 
 /* Right Panel: WhatsApp Live Preview Phone */
 .whatsapp-preview-frame {
   background: #eae6df;
   border: 10px solid #1e293b;
-  border-radius: 36px;
+  border-radius: 34px;
   box-shadow: 0 16px 36px rgba(15, 23, 42, 0.15);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  height: 590px;
+  height: 560px;
+  max-height: calc(100vh - 210px);
   position: sticky;
-  top: 90px;
+  top: 1rem;
 }
 
 .whatsapp-phone-notch {
