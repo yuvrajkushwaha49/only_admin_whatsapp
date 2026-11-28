@@ -260,20 +260,6 @@ export default function AddPhoneNumberModal({ isOpen, onClose, onSuccess }) {
                       <code className="ms-1 text-success">({selectedWabaId || wabaInfo.wabaId})</code>
                     </div>
                   </div>
-                  {(wabaInfo.availableWabas || []).length > 1 && (
-                    <select
-                      className="form-select form-select-sm w-auto"
-                      value={selectedWabaId}
-                      onChange={(e) => {
-                        setSelectedWabaId(e.target.value);
-                        loadWabaInfo(e.target.value);
-                      }}
-                    >
-                      {wabaInfo.availableWabas.map(w => (
-                        <option key={w.wabaId} value={w.wabaId}>{w.label} ({w.wabaId})</option>
-                      ))}
-                    </select>
-                  )}
                 </div>
 
                 {/* Unconnected / Meta-Provided numbers already available on Meta WABAs */}
