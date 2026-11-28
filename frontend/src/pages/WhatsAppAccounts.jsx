@@ -485,8 +485,8 @@ export default function WhatsAppAccounts() {
         )}
         */}
 
-        {/* Meta Developer In-Software Control Center (Owner / Admin) */}
-        {canManageConnections && accounts.length > 0 && !loading && (
+        {/* Meta Developer In-Software Control Center (Owner / Admin) - Disabled per request */}
+        {false && canManageConnections && accounts.length > 0 && !loading && (
           <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: '14px', background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)' }}>
             <div className="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
               <div className="d-flex align-items-center gap-2">
