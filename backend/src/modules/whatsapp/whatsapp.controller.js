@@ -380,6 +380,16 @@ export async function verifyPhoneNumberAndConnect(req, res, next) {
   }
 }
 
+export async function getWabaBillingStatus(req, res, next) {
+  try {
+    const wabaId = req.query.wabaId || null;
+    const result = await whatsappService.getWabaBillingStatus(req.businessId, wabaId);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function updateAccountToken(req, res, next) {
   try {
     const accountId = req.params.id;
@@ -411,5 +421,6 @@ export default {
   getWabaOnboardingInfo,
   addPhoneNumberAndSendOtp,
   resendPhoneNumberOtp,
-  verifyPhoneNumberAndConnect
+  verifyPhoneNumberAndConnect,
+  getWabaBillingStatus
 };

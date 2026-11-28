@@ -648,6 +648,33 @@ export class MetaCloudApiClient {
   }
 
   /**
+   * Fetch WABA billing currency and health_status (detects payment blocks / 131042)
+   * GET /{WABA_ID}?fields=id,name,currency,account_review_status,health_status
+   */
+  async getWabaBillingHealth(wabaId) {
+    const targetWabaId = wabaId || this.wabaId;
+    if (this.isMock) {
+      return {
+        id: targetWabaId,
+        name: 'Official Business Portfolio WABA',
+        currency: 'INR',
+        account_review_status: 'APPROVED',
+        health_status: { can_send_message: 'AVAILABLE', entities: [] }
+      };
+    }
+
+    try {
+      const response = await axios.get(
+        `${META_BASE_URL}/${targetWabaId}?fields=id,name,currency,account_review_status,health_status`,
+        { headers: { Authorization: `Bearer ${this.accessToken}` } }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.extractMetaApiError(error, `Failed to verify Meta billing health for WABA ${targetWabaId}`);
+    }
+  }
+
+  /**
    * Fetch all phone numbers associated with a WABA
    * GET /{WABA_ID}/phone_numbers
    */

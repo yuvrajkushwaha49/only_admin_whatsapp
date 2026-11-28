@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import api from '../services/api';
 import AiwavoHeader from '../components/AiwavoHeader';
+import MetaBillingCard from '../components/MetaBillingCard';
 import '../styles/billing.css';
 
 export default function Billing() {
@@ -188,6 +189,9 @@ export default function Billing() {
             </div>
           </div>
         </div>
+
+        {/* 1.5 Meta Cloud API Payment & Billing Status */}
+        <MetaBillingCard variant="card" />
 
         {/* 2. Usage / Quota Metric Cards */}
         <div className="billing-metrics-row">

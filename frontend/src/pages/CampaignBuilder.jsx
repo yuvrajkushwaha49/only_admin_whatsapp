@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link, useOutletContext } from 'react-router-dom';
 import api from '../services/api';
 import AiwavoHeader from '../components/AiwavoHeader';
+import MetaBillingCard from '../components/MetaBillingCard';
 import '../styles/dashboard.css';
 
 export default function CampaignBuilder() {
@@ -2428,6 +2429,8 @@ export default function CampaignBuilder() {
                   </div>
                 </div>
               </div>
+
+              <MetaBillingCard variant="compact" className="mb-4" />
 
               {preflightData.issues.length > 0 ? (
                 <div className="alert alert-warning mb-4">

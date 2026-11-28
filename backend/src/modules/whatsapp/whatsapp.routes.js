@@ -17,6 +17,7 @@ router.post('/auto-connect', requireRole(['owner', 'admin', 'marketer']), whatsa
 router.post('/accounts/auto-connect', requireRole(['owner', 'admin', 'marketer']), whatsappController.autoConnectMetaAccount);
 router.post('/accounts/connect/complete', requireRole(['owner', 'admin', 'marketer']), whatsappController.completeEmbeddedSignup);
 router.get('/accounts/waba-info', requireRole(['owner', 'admin', 'marketer']), whatsappController.getWabaOnboardingInfo);
+router.get('/accounts/billing-status', requireRole(['owner', 'admin', 'marketer']), whatsappController.getWabaBillingStatus);
 router.post('/accounts/phone-numbers/add-and-send-otp', requireRole(['owner', 'admin', 'marketer']), whatsappController.addPhoneNumberAndSendOtp);
 router.post('/accounts/phone-numbers/resend-otp', requireRole(['owner', 'admin', 'marketer']), whatsappController.resendPhoneNumberOtp);
 router.post('/accounts/phone-numbers/verify-and-connect', requireRole(['owner', 'admin', 'marketer']), whatsappController.verifyPhoneNumberAndConnect);

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import api from '../services/api';
 import AddPhoneNumberModal from '../components/AddPhoneNumberModal';
+import MetaBillingCard from '../components/MetaBillingCard';
 import AiwavoHeader from '../components/AiwavoHeader';
 import { useAuth } from '../hooks/useAuth';
 import { encodeHashId } from '../utils/hashId';
@@ -622,6 +623,11 @@ export default function WhatsAppAccounts() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Meta Cloud API Billing & Payment Quick Banner */}
+        {canManageConnections && accounts.length > 0 && !loading && (
+          <MetaBillingCard variant="compact" className="mb-4" />
         )}
 
         {/* Embedded Signup Onboarding Banner (If no account connected) */}

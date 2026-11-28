@@ -3097,6 +3097,91 @@ export async function verifyPhoneOtpAndConnect(businessId, payload = {}) {
 }
 
 /**
+ * Fetch live Meta WABA billing & messaging health status + direct Meta Billing Hub URL
+ */
+export async function getWabaBillingStatus(businessId, preferredWabaId = null) {
+  const ctx = await resolveWabaAuthContext(businessId, preferredWabaId);
+  const configuredBusinessId = String(process.env.META_BUSINESS_ID || '').trim() || null;
+  const bizQuery = configuredBusinessId ? `?business_id=${encodeURIComponent(configuredBusinessId)}` : '';
+  const billingHubUrl = `https://business.facebook.com/billing_hub/payment_settings${bizQuery}`;
+  const whatsappBillingSettingsUrl = `https://business.facebook.com/settings/whatsapp-accounts${bizQuery}`;
+
+  if (!ctx.wabaId || !ctx.token) {
+    return {
+      configured: false,
+      metaBusinessId: configuredBusinessId,
+      wabaId: ctx.wabaId || null,
+      wabaName: null,
+      currency: null,
+      accountReviewStatus: null,
+      canSendMessages: null,
+      hasPaymentIssue: false,
+      paymentIssueMessage: null,
+      healthStatus: null,
+      billingHubUrl,
+      whatsappBillingSettingsUrl,
+      checkedAt: new Date().toISOString()
+    };
+  }
+
+  const client = new MetaCloudApiClient(ctx.token, null, ctx.wabaId);
+  try {
+    const data = await client.getWabaBillingHealth(ctx.wabaId);
+    const health = data?.health_status || null;
+    const canSend = health?.can_send_message || 'UNKNOWN';
+    const entities = Array.isArray(health?.entities) ? health.entities : [];
+
+    const paymentErrors = [];
+    for (const ent of entities) {
+      for (const errItem of (ent.errors || [])) {
+        const msg = `${errItem.error_description || ''} ${errItem.possible_solution || ''}`.trim();
+        if (
+          errItem.error_code === 131042 ||
+          /payment|billing|credit|card|eligibility/i.test(msg)
+        ) {
+          paymentErrors.push(errItem.error_description || errItem.possible_solution || `Meta Error ${errItem.error_code}`);
+        }
+      }
+    }
+
+    const hasPaymentIssue = canSend === 'BLOCKED' || paymentErrors.length > 0;
+
+    return {
+      configured: true,
+      metaBusinessId: configuredBusinessId,
+      wabaId: ctx.wabaId,
+      wabaName: data?.name || 'WhatsApp Business Account',
+      currency: data?.currency || 'INR',
+      accountReviewStatus: data?.account_review_status || 'APPROVED',
+      canSendMessages: canSend,
+      hasPaymentIssue,
+      paymentIssueMessage: paymentErrors[0] || (canSend === 'BLOCKED' ? 'Meta has blocked outbound sending on this WABA. Verify your Meta Billing payment method.' : null),
+      healthStatus: health,
+      billingHubUrl,
+      whatsappBillingSettingsUrl,
+      checkedAt: new Date().toISOString()
+    };
+  } catch (err) {
+    return {
+      configured: true,
+      metaBusinessId: configuredBusinessId,
+      wabaId: ctx.wabaId,
+      wabaName: ctx.accounts?.[0]?.display_name || 'WhatsApp Business Account',
+      currency: null,
+      accountReviewStatus: null,
+      canSendMessages: 'UNKNOWN',
+      hasPaymentIssue: false,
+      healthCheckError: err.message,
+      paymentIssueMessage: null,
+      healthStatus: null,
+      billingHubUrl,
+      whatsappBillingSettingsUrl,
+      checkedAt: new Date().toISOString()
+    };
+  }
+}
+
+/**
  * Update the Meta Access Token for an existing WhatsApp Account (e.g. when token expires or session is invalidated)
  */
 export async function updateAccountToken(businessId, accountId, newToken) {
@@ -3198,6 +3283,7 @@ export default {
   addPhoneNumberAndRequestOtp,
   resendPhoneOtp,
   verifyPhoneOtpAndConnect,
+  getWabaBillingStatus,
   disconnectAccount,
   deleteAccount
 };
