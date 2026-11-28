@@ -127,7 +127,7 @@ export default function WhatsAppConnectButton({ onSuccess, onError, className = 
           response_type: 'code',
           override_default_response_type: true,
           extras: {
-            setup: {},
+            setup: fbConfig?.businessId ? { business: { id: fbConfig.businessId } } : {},
             featureType: '',
             sessionInfoVersion: '3'
           }
@@ -135,7 +135,11 @@ export default function WhatsAppConnectButton({ onSuccess, onError, className = 
       );
     } else {
       // 2. Direct Popup Window: Works everywhere including http://localhost without SDK HTTP blocks
-      const fbDialogUrl = `https://www.facebook.com/v21.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=whatsapp_business_management,whatsapp_business_messaging&response_type=code`;
+      const extrasPayload = {
+        sessionInfoVersion: '3',
+        ...(fbConfig?.businessId ? { setup: { business: { id: fbConfig.businessId } } } : {})
+      };
+      const fbDialogUrl = `https://www.facebook.com/v21.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=whatsapp_business_management,whatsapp_business_messaging&response_type=code&extras=${encodeURIComponent(JSON.stringify(extrasPayload))}`;
       
       const width = 640;
       const height = 750;

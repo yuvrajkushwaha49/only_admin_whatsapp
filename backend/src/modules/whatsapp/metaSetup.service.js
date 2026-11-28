@@ -511,14 +511,21 @@ export async function initiateSignup(businessId, redirectOrigin = '') {
 
   await recordOnboardingSession(numBusinessId, stateToken, redirectOrigin, expiresAt);
 
+  const configuredBusinessId = String(process.env.META_BUSINESS_ID || '').trim() || null;
+  const extrasPayload = {
+    sessionInfoVersion: '3',
+    ...(configuredBusinessId ? { setup: { business: { id: configuredBusinessId } } } : {})
+  };
+  const encodedExtras = encodeURIComponent(JSON.stringify(extrasPayload));
+
   const effectiveConfigId = configId || '';
-  let oauthUrl = `https://www.facebook.com/${apiVersion}/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&response_type=code&state=${stateToken}`;
+  let oauthUrl = `https://www.facebook.com/${apiVersion}/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&response_type=code&state=${stateToken}&extras=${encodedExtras}`;
   if (effectiveConfigId && effectiveConfigId !== 'your_embedded_signup_config_id') {
     oauthUrl += `&config_id=${encodeURIComponent(effectiveConfigId)}`;
   }
 
   const metaHostedUrl = effectiveConfigId
-    ? `https://business.facebook.com/messaging/whatsapp/onboard/?app_id=${appId}&config_id=${encodeURIComponent(effectiveConfigId)}&extras=%7B%22sessionInfoVersion%22%3A%223%22%7D`
+    ? `https://business.facebook.com/messaging/whatsapp/onboard/?app_id=${appId}&config_id=${encodeURIComponent(effectiveConfigId)}&extras=${encodedExtras}`
     : oauthUrl;
 
   return {
@@ -526,6 +533,7 @@ export async function initiateSignup(businessId, redirectOrigin = '') {
     mode: isCustomClientApp ? 'client_owned' : 'platform_managed',
     appId,
     configId: effectiveConfigId,
+    businessId: configuredBusinessId,
     hasConfigId: Boolean(effectiveConfigId && effectiveConfigId !== 'your_embedded_signup_config_id'),
     redirectUri,
     scopes,

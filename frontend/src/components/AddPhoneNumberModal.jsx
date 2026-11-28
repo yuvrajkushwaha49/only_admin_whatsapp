@@ -244,9 +244,16 @@ export default function AddPhoneNumberModal({ isOpen, onClose, onSuccess }) {
               </div>
             ) : step === 1 ? (
               <>
-                {/* Active WABA Badge */}
+                {/* Active Portfolio & WABA Badge */}
                 <div className="p-3 rounded-3 mb-3 border bg-light d-flex flex-wrap align-items-center justify-content-between gap-2">
                   <div>
+                    {wabaInfo.businessId && (
+                      <div className="small text-secondary mb-1">
+                        Business Portfolio:{' '}
+                        <strong className="text-dark">{wabaInfo.businessName || 'Drt lifesciences llp'}</strong>{' '}
+                        <code className="text-primary">({wabaInfo.businessId})</code>
+                      </div>
+                    )}
                     <div className="small text-secondary fw-semibold">Target WhatsApp Business Account (WABA)</div>
                     <div className="fw-bold text-dark">
                       {wabaInfo.wabaName || 'Connected WABA'}{' '}

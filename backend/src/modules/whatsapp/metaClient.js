@@ -1029,45 +1029,74 @@ export class MetaCloudApiClient {
       } catch (_) {}
 
       const wabaMap = new Map();
+      const configuredBusinessId = String(process.env.META_BUSINESS_ID || '').trim();
 
-      // 1. Query /me/businesses (owned & client WABAs)
-      try {
-        const bizRes = await axios.get(`${META_BASE_URL}/me/businesses?fields=id,name`, {
-          headers: { Authorization: `Bearer ${accessToken}` }
-        });
-        const businesses = bizRes.data?.data || [];
-        for (const biz of businesses) {
-          try {
-            const ownedRes = await axios.get(`${META_BASE_URL}/${biz.id}/owned_whatsapp_business_accounts?fields=id,name,currency,timezone_id`, {
-              headers: { Authorization: `Bearer ${accessToken}` }
-            });
-            for (const w of (ownedRes.data?.data || [])) {
-              wabaMap.set(String(w.id), { ...w, businessName: biz.name });
-            }
-          } catch (_) {}
+      // 1. Query configured Business Portfolio (or /me/businesses when unset)
+      if (configuredBusinessId) {
+        let bizName = 'Configured Business Portfolio';
+        try {
+          const bizMeta = await axios.get(`${META_BASE_URL}/${configuredBusinessId}?fields=id,name`, {
+            headers: { Authorization: `Bearer ${accessToken}` }
+          });
+          if (bizMeta.data?.name) bizName = bizMeta.data.name;
+        } catch (_) {}
 
-          try {
-            const clientRes = await axios.get(`${META_BASE_URL}/${biz.id}/client_whatsapp_business_accounts?fields=id,name,currency,timezone_id`, {
-              headers: { Authorization: `Bearer ${accessToken}` }
-            });
-            for (const w of (clientRes.data?.data || [])) {
-              wabaMap.set(String(w.id), { ...w, businessName: biz.name });
-            }
-          } catch (_) {}
-        }
-      } catch (_) {}
-
-      // 2. Query /me/client_whatsapp_business_accounts
-      try {
-        const directClientRes = await axios.get(`${META_BASE_URL}/me/client_whatsapp_business_accounts?fields=id,name,currency,timezone_id`, {
-          headers: { Authorization: `Bearer ${accessToken}` }
-        });
-        for (const w of (directClientRes.data?.data || [])) {
-          if (!wabaMap.has(String(w.id))) {
-            wabaMap.set(String(w.id), w);
+        try {
+          const ownedRes = await axios.get(`${META_BASE_URL}/${configuredBusinessId}/owned_whatsapp_business_accounts?fields=id,name,currency,timezone_id`, {
+            headers: { Authorization: `Bearer ${accessToken}` }
+          });
+          for (const w of (ownedRes.data?.data || [])) {
+            wabaMap.set(String(w.id), { ...w, businessName: bizName });
           }
-        }
-      } catch (_) {}
+        } catch (_) {}
+
+        try {
+          const clientRes = await axios.get(`${META_BASE_URL}/${configuredBusinessId}/client_whatsapp_business_accounts?fields=id,name,currency,timezone_id`, {
+            headers: { Authorization: `Bearer ${accessToken}` }
+          });
+          for (const w of (clientRes.data?.data || [])) {
+            wabaMap.set(String(w.id), { ...w, businessName: bizName });
+          }
+        } catch (_) {}
+      } else {
+        try {
+          const bizRes = await axios.get(`${META_BASE_URL}/me/businesses?fields=id,name`, {
+            headers: { Authorization: `Bearer ${accessToken}` }
+          });
+          const businesses = bizRes.data?.data || [];
+          for (const biz of businesses) {
+            try {
+              const ownedRes = await axios.get(`${META_BASE_URL}/${biz.id}/owned_whatsapp_business_accounts?fields=id,name,currency,timezone_id`, {
+                headers: { Authorization: `Bearer ${accessToken}` }
+              });
+              for (const w of (ownedRes.data?.data || [])) {
+                wabaMap.set(String(w.id), { ...w, businessName: biz.name });
+              }
+            } catch (_) {}
+
+            try {
+              const clientRes = await axios.get(`${META_BASE_URL}/${biz.id}/client_whatsapp_business_accounts?fields=id,name,currency,timezone_id`, {
+                headers: { Authorization: `Bearer ${accessToken}` }
+              });
+              for (const w of (clientRes.data?.data || [])) {
+                wabaMap.set(String(w.id), { ...w, businessName: biz.name });
+              }
+            } catch (_) {}
+          }
+        } catch (_) {}
+
+        // 2. Query /me/client_whatsapp_business_accounts
+        try {
+          const directClientRes = await axios.get(`${META_BASE_URL}/me/client_whatsapp_business_accounts?fields=id,name,currency,timezone_id`, {
+            headers: { Authorization: `Bearer ${accessToken}` }
+          });
+          for (const w of (directClientRes.data?.data || [])) {
+            if (!wabaMap.has(String(w.id))) {
+              wabaMap.set(String(w.id), w);
+            }
+          }
+        } catch (_) {}
+      }
 
       // 3. Inspect debug_token target_ids
       try {

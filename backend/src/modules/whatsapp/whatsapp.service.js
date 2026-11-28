@@ -41,9 +41,12 @@ export async function getConnectConfig(businessId) {
   if (!configId) configId = process.env.META_EMBEDDED_SIGNUP_CONFIG_ID || '1162753462966713';
   if (!version) version = process.env.WHATSAPP_API_VERSION || 'v21.0';
 
+  const businessIdEnv = String(process.env.META_BUSINESS_ID || '').trim() || null;
+
   return {
     appId,
     configId,
+    businessId: businessIdEnv,
     version,
     hasConfigId: Boolean(configId && configId !== 'your_embedded_signup_config_id'),
     hasAppId: Boolean(appId && appId !== 'your_meta_app_id')
@@ -2889,8 +2892,13 @@ export async function getWabaOnboardingInfo(businessId, preferredWabaId = null) 
     }
   }
 
+  const configuredBusinessId = String(process.env.META_BUSINESS_ID || '').trim() || null;
+  const firstBusinessName = (discovered?.wabas || []).find(w => w.businessName)?.businessName || null;
+
   return {
     configured: true,
+    businessId: configuredBusinessId,
+    businessName: firstBusinessName,
     wabaId: ctx.wabaId,
     wabaName: wabaDetails?.name || 'WhatsApp Business Account',
     availableWabas: Array.from(wabaOptionsMap.values()),

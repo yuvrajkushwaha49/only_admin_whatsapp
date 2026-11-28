@@ -120,10 +120,15 @@ export default function MetaSetupWizardModal({ isOpen, onClose, onSuccess }) {
 
       let oauthUrl = initData?.oauthUrl;
       if (!oauthUrl) {
+        const extrasPayload = {
+          sessionInfoVersion: '3',
+          ...(initData?.businessId ? { setup: { business: { id: initData.businessId } } } : {})
+        };
+        const encodedExtras = encodeURIComponent(JSON.stringify(extrasPayload));
         if (configId && configId !== 'your_embedded_signup_config_id') {
-          oauthUrl = `https://www.facebook.com/v21.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&config_id=${encodeURIComponent(configId)}&response_type=code&state=${encodeURIComponent(state)}`;
+          oauthUrl = `https://www.facebook.com/v21.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&config_id=${encodeURIComponent(configId)}&response_type=code&state=${encodeURIComponent(state)}&extras=${encodedExtras}`;
         } else {
-          oauthUrl = `https://www.facebook.com/v21.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&response_type=code&state=${encodeURIComponent(state)}`;
+          oauthUrl = `https://www.facebook.com/v21.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&response_type=code&state=${encodeURIComponent(state)}&extras=${encodedExtras}`;
         }
       }
 
